@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🎒 Inventory</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+
+</head>
+<body>
+    <h1>🎒 Your Inventory</h1>
+
+    {% if inventory %}
+        <table>
+            {% for item in inventory %}
+                <tr>
+                  <td><strong>{{ item.item_name }}</strong> ({{ item.item_type }}) {% if item.item_type == 'gear' %}(+{{ item.effect }}) {% endif %}</td>
+                  <td>{{ item.description }} </td>
+                  <td>{% if item.uses_remaining is not none %} (Uses: {{ item.uses_remaining }}) {% endif %}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>🛑 Your inventory is empty.</p>
+    {% endif %}
+      <p>
+    <button onclick="window.location.href='{{ url_for('map_view') }}'">⬅️ Return to Map</button>
+</body>
+</html>

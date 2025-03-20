@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>🧙‍♂️ Riddle Challenge</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="riddle-container">
+        <h1>🧙‍♂️ A Wizard Appears!</h1>
+        <table>
+            <tr><td>{{ riddle.riddle_text }}</td></tr>
+
+            {% if show_hint == True %}
+            <tr><td>Pssst: a hint ( {{ session['current_riddle']['hint'] }} )</td></tr>
+            {% endif %}
+
+            {% if show_word_count == True %}
+            <tr><td>Number of words in this riddle: ( {{ session['current_riddle']['word_count'] }} )</td></tr>
+            {% endif %}
+
+            {% if show_word_length == True %}
+            <tr><td>Length of each word in this riddle: ( {{ session['current_riddle']['word_length_hint'] }} )</td></tr>
+            {% endif %}
+            <tr><td>
+                <form id="riddle-form" method="POST" action="{{ url_for('check_riddle') }}">
+                    <input type="text" id="riddle-answer" name="answer" placeholder="Your answer..." required>
+                    <button type="submit" class="submit-btn">Submit Answer</button>
+                </form>
+                <p id="result-message" class="message"></p>
+                <form action="{{ url_for('map_view') }}">
+                    <button type="submit">Return to Map</button>
+                </form>
+            </td></tr>
+        </table>
+    </div>
+
+    <script>
+    $(document).ready(function() {
+        $("#riddle-form").on('submit', function(e) {
+            e.preventDefault();
+            let userAnswer = $("#riddle-answer").val();
+            
+            $.ajax({
+                url: "{{ url_for('check_riddle') }}",
+                method: "POST",
+                data: {
+                    answer: userAnswer
+                },
+                success: function(response) {
+                    $("#result-message").text(response.message);
+                    if (response.success) {
+                        setTimeout(() => { window.location.href = "{{ url_for('map_view') }}"; }, 1500);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $("#result-message").text("❌ An error occurred. Please try again.");
+                    console.error("Error:", error);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

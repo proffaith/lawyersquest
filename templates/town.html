@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>🏙️ BitTown</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+
+</head>
+<body>
+    <h1>🏙️ Welcome to BitTown!</h1>
+    <p>What would you like to do?</p>
+
+
+
+
+    <script>
+function workInTown() {
+    fetch("{{ url_for('town_work') }}", { method: "POST" })
+        .then(response => response.json()) // ✅ Ensure JSON is properly handled
+        .then(data => {
+            if (!data.success) {
+                alert(data.message);  // ✅ Show message instead of blank page
+                if (data.message.includes("face the dangers")) {
+                    window.location.href = "{{ url_for('encounter_enemy') }}"; // ✅ Redirect to combat
+                }
+            } else {
+                alert(data.message);  // ✅ Show success message
+            }
+        })
+        .catch(error => console.error("Error:", error));
+}
+</script>
+
+
+    <form action="{{ url_for('shop') }}">
+        <button type="submit">🛒 Visit the Mall</button>
+    </form>
+
+    <form action="{{ url_for('town_work') }}">
+        <button type="submit">💼 Work at the Town Office (Earn Bits)</button>
+    </form>
+
+    <form action="{{ url_for('hall_of_fame') }}">
+        <button type="submit">🏆 Visit the Hall of Fame</button>
+    </form>
+
+    <form action="{{ url_for('map_view') }}">
+        <button type="submit">🚶 Leave Town</button>
+    </form>
+</body>
+</html>

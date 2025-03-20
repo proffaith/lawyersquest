@@ -1,0 +1,22 @@
+<!-- templates/travel.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Travel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+</head>
+<body>
+    <h1>Choose Your Direction</h1>
+    <p>{{ map|safe }}</p> <!-- Render the map -->
+
+    <form action="/travel" method="POST">
+        <button type="submit" name="direction" value="N">⬆️ North</button>
+        <button type="submit" name="direction" value="S">⬇️ South</button>
+        <button type="submit" name="direction" value="E">➡️ East</button>
+        <button type="submit" name="direction" value="W">⬅️ West</button>
+    </form>
+
+    <br>
+    <a href="{{ url_for('game') }}">Return to Game</a>
+</body>
+</html>

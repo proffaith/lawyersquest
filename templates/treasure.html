@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>🎁 Treasure Chest</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="chest-container">
+        <h1>🎁 You've Found a Treasure Chest!</h1>
+        <p>
+          <img src="/static/closed_treasure.jpeg" id="chestImage" height="150" width="150">
+        </p>
+
+        <table><tr><td>🔒 The chest is locked... Solve the riddle to open it!</td></tr>
+        <tr><td><strong>📜 Riddle:</strong> {{ chest.riddle_text }}</td></tr>
+
+        {% if chest.hint %}
+            <tr><td>💡 Clue: {{ chest.hint }}</td></tr></table>
+        {% endif %}
+
+        <input type="text" id="riddle-answer" placeholder="Your answer...">
+        <button class="submit-btn" onclick="submitAnswer()">Unlock Chest</button>
+
+        <p id="result-message" class="message"></p>
+
+        <form action="{{ url_for('map_view') }}">
+            <button type="submit">Return to Map</button>
+        </form>
+    </div>
+
+    <script>
+        function submitAnswer() {
+            let userAnswer = $("#riddle-answer").val();
+            $.post("/check_treasure", { answer: userAnswer }, function(response) {
+                $("#result-message").text(response.message);
+                if (response.success) {
+                    $("#chestImage").attr("src", "/static/open_treasure.jpeg");
+                    setTimeout(function() { window.location.href = "/map"; }, 2000);
+                } else {
+                    $("#chestImage").attr("src", "/static/closed_treasure.jpeg");
+                }
+
+            });
+        }
+    </script>
+</body>
+</html>

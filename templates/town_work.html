@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>🏛 Work in BiTown</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+
+</head>
+<body>
+    <h1>🏛 Town Office</h1>
+    <p>Take on a job and earn some Bits!</p>
+
+    <!-- ✅ Show job completion message -->
+    {% if job_message %}
+        <p style="color: green;">{{ job_message }}</p>
+    {% endif %}
+
+    {% if jobs %}
+        <form method="POST">
+            <table>
+                {% for job in jobs %}
+                    <tr>
+                        <td><input type="radio" name="job_id" value="{{ job.id }}" required></td>
+                        <td><strong>{{ job.job_name }}</strong>: {{ job.description }}</td>
+                        <td>(💰 Pays {{ job.min_payout }} - {{ job.max_payout }} Bits)</td>
+                    </tr>
+                {% endfor %}
+            </table>
+            <p>
+            <button type="submit">✅ Take the Job</button>
+        </form>
+    {% else %}
+        <p>❌ No jobs available at the moment. Check back later!</p>
+    {% endif %}
+
+    <form action="{{ url_for('visit_town') }}">
+        <button type="submit">⬅ Return to Town</button>
+    </form>
+</body>
+</html>

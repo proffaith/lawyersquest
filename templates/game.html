@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lawyer's Quest</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+
+</head>
+<body>
+    <h1>Lawyer's Quest</h1>
+    <p>{{ message }}</p>
+    <p>📍 You are at: {{ position }}</p>
+    <p>🎖️ XP: {{ xp }} | 💰 Bitcoin: {{ gold }} | 🔼 Level: {{ level }}</p>
+    <p>🍽️ Hunger: {{ hunger }}</p>
+    <p>📜 Quest Progress: {{ answered_riddles }}/{{ total_riddles }} Riddles Solved</p>
+    <p>{{ progress_bar }}</p>
+
+    <form action="/game" method="get">
+        <label for="direction">Choose a direction (N/S/E/W):</label>
+        <input type="text" name="direction">
+        <button type="submit">Go</button>
+    </form>
+
+    <a href="/combat">Check for Combat</a>
+    <a href="/shop">Visit Shop</a>
+    <a href="/riddle">Solve a Riddle</a>
+</body>
+</html>

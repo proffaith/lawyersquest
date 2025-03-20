@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🏰 Choose Your Quest</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+
+</head>
+<body>
+    <h1>🏰 Welcome, Squire!</h1>
+
+    {% if quest_message %}
+        <div id="quest-message">
+            <h3>📜 Quest Completion Log:</h3>
+            {% for msg in quest_message %}
+
+                <p style="border-left: 4px solid #4CAF50; padding-left: 10px;">{{ msg }}</p>
+            {% endfor %}
+        </div>
+
+      {% else %}
+          <p> Carry on with the quest you were working to complete, Squire</p>
+      {% endif %}
+
+      <h2>Select Your Course</h2>
+    <!-- Replacing list of links with a form and dropdown -->
+    <form method="get" action="{{ url_for('quest_select') }}">
+        <select name="course_id">
+            <option value="">-- Choose a Course --</option>
+            {% for course in courses %}
+                <option value="{{ course.id }}" {% if selected_course_id and selected_course_id|string == course.id|string %}selected{% endif %}>
+                    📘 {{ course.course_name }} - {{ course.description}}
+                </option>
+            {% endfor %}
+        </select>
+        <button type="submit">Load Quests</button>
+    </form>
+
+  {% if selected_course_id %}
+      <h2>Available Quests</h2>
+
+      <p>Select a quest to embark on:</p>
+
+      {% if quests %}
+          <table>
+              {% for quest in quests %}
+                  <tr>
+                      <td><h3>{{ quest.quest_name }}</h3></td>
+                      <td><p>{{ quest.description }}</p></td>
+                      <td><button onclick="startQuest({{ quest.id }})">🛡️ Begin Quest</button></td>
+                  </tr>
+              {% endfor %}
+          </table>
+      {% else %}
+          <p>⚠️ No quests available at this time.</p>
+      {% endif %}
+  {% endif %}
+
+    <script>
+        function startQuest(questId) {
+            fetch("{{ url_for('start_quest') }}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ quest_id: questId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                window.location.href = "{{ url_for('map_view') }}";  // ✅ Redirect to the game map
+            })
+            .catch(error => console.error("Error:", error));
+        }
+    </script>
+</body>
+</html>

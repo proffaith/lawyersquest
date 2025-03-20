@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>🏆 Hall of Fame</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+
+</head>
+<body>
+    <h1>🏆 Hall of Fame</h1>
+    <p>The greatest squires of all time!</p>
+
+    <ul>
+        {% for squire in leaders %}
+        <li>{{ squire.squire_name }} - 🎖 {{ squire.experience_points }} XP</li>
+        {% endfor %}
+    </ul>
+
+    <form action="{{ url_for('visit_town') }}">
+        <button type="submit">⬅ Return to Town</button>
+    </form>
+</body>
+</html>

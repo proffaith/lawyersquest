@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lawyer's Quest</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+
+
+</head>
+<body>
+    <h1>⚔️ Welcome, Squire!</h1>
+    <form action="/login" method="POST">
+        <label>Enter your Squire ID:</label>
+        <input type="text" name="squire_id" required>
+        <button type="submit">Start</button>
+    </form>
+</body>
+</html>

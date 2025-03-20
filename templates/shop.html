@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>🛒 Shop</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+    function buyItem(itemId) {
+console.log("Attempting to buy item with ID:", itemId);  // Debugging log
+$.ajax({
+    url: "/buy_item",
+    type: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({ item_id: itemId }),  // Ensure JSON format
+    dataType: "json",  // Ensure response is parsed correctly
+    success: function(response) {
+        if (response.success) {
+            $("#player-gold").text(response.new_gold);  // Update gold display
+            alert(response.message);  // Show confirmation message
+        } else {
+            alert(response.message);  // Show error message
+        }
+    },
+    error: function(xhr) {
+        console.error("Error buying item:", xhr.responseText);
+        alert("Something went wrong. Try again!");
+    }
+});
+}
+
+    </script>
+</head>
+<body>
+    <h1>🛒 Welcome to the Mall!</h1>
+
+    <p class="gold-display">💰 Your Gold: <span id="player-gold">{{ player_gold }}</span> bits</p>
+
+    <p>Select an item to buy:</p>
+
+    {% if items %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Item Name</th>
+                    <th>Price (💰 Bits)</th>
+                    <th>Max Uses</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.item_name }}</td>
+                    <td>{{ item.price }}</td>
+                    <td>{{ item.uses }}</td>
+                    <td>
+                        <button class="buy-button" onclick="buyItem({{ item.id }})">Buy</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>❌ No items available for purchase.</p>
+    {% endif %}
+
+    <form action="{{ url_for('visit_town') }}">
+        <button type="submit">⬅ Return to Town</button>
+    </form>
+</body>
+</html>

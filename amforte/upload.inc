@@ -1,0 +1,28 @@
+<form action="upload.php" method="post" enctype="multipart/form-data">
+  <div>
+    <label for="record">Select a Record:</label>
+    <select id="record" name="record">
+      <?php
+
+        // Execute a query to fetch the records
+        $query = 'SELECT inventoryID, left(itemdescription,80) as itemtitle FROM tbInventory where inventoryid=4893;';
+        $result = mysqli_query($conn, $query);
+
+        // Loop through the result set and generate the options
+        while ($row = mysqli_fetch_row($result)) {
+          echo '<option value=' . $row[0] . '>' . $row[1] . '</option>';
+        }
+
+
+      ?>
+    </select>
+  </div>
+  <div>
+    <label for="file">Upload a File:</label>
+    <input type="file" id="file" name="file">
+    <input type="hidden" name="nav" value="1"/>
+  </div>
+  <div>
+    <input type="submit" value="Submit">
+  </div>
+</form>

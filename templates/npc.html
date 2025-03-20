@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🌿 NPC Encounter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+
+</head>
+<body>
+    <h1>🌿 A Stranger Approaches</h1>
+    <<table><tr><td><img src="/static/wandering_trader.jpeg" width=150 height=150></td><td>{{ npc_message }}</td></tr></table>
+    <br>
+    <form action="{{ url_for('map_view') }}">
+        <button type="submit">Return to Map</button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>⚔️ Combat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+
+</head>
+<body>
+    <h1>⚔️ Battle with {{ enemy.name }}</h1>
+    <p>{{ enemy.description }}</p>
+    <table>
+      <tr>
+        <td> <div id="hunger-bars">
+        <div id="player-hunger-container">
+            <img src="/static/knight_fountain_pen.jpeg" width=100 height=100>
+            <p>Your Hunger: <span id="player_current_hunger">{{ session.get("player_current_hunger") }}</span>/<span id="player_max_hunger">{{ session.get("player_max_hunger") }}</span></p>
+            <progress id="player_hunger_progress" value="" max=""></progress>
+            <p id="player_message" class="battle-message"></p>
+        </div></td>
+        <td><div id="enemy-hunger-container">
+          {% if enemy.name == 'Unfriendly Lawyer' %} <img src="/static/unfriendly_lawyer.jpeg" width=100 height=100> {% endif %}
+          {% if enemy.name == 'Tax Auditor' %} <img src="/static/tax_auditor.jpeg" width=100 height=100> {% endif %}
+          {% if enemy.name == 'Rogue Judge' %} <img src="/static/rogue_judge.jpeg" width=100 height=100> {% endif %}
+          {% if enemy.name == 'Bureaucratic Troll' %} <img src="/static/troll.jpeg" width=100 height=100> {% endif %}
+          {% if enemy.name == 'Lexiconis' %} <img src="/static/lexiconis.jpeg" width=150 height=150> {% endif %}
+
+            <p>{{ enemy.name }}'s Hunger: <span id="enemy_current_hunger">{{ session.get("enemy_current_hunger") }}</span>/<span id="mod_enemy_max_hunger">{{ session.get("mod_enemy_max_hunger")}}</span></p>
+            <progress id="enemy_hunger_progress" value="" max=""></progress>
+            <p id="enemy_message" class="battle-message"></p>
+        </div></td>
+      </tr>
+    </table>
+
+    <h3>Choose Wisely, Squire!</h3>
+
+      <table>
+        <tr>
+          <td><p>Your chances of striking {{enemy.name}} is {{ session.get('hit_chance') }}% Do you...?</p></td>
+          <td>
+              <form id="combat-form" method="post">
+                  <button type="submit" name="action" value="question">🧠 Answer the question</button>
+                  {% if enemy.has_weapon %}
+                      <button type="submit" name="action" value="fight">⚔️ Fight the enemy</button>
+                  {% else %}
+                      <p> To fight this enemy, you need a <b>{{ enemy.weakness }}</b> from the Village Mall. </p>
+                  {% endif %}
+                  <button type="submit" name="action" value="flee">🏃 Run away</button>
+              </form>
+          </td>
+      </tr>
+    </table>
+
+    <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const combatForm = document.getElementById("combat-form");
+    let selectedAction = "";
+
+    // Capture the clicked button's value.
+    const buttons = combatForm.querySelectorAll("button[type=submit]");
+    buttons.forEach(button => {
+      button.addEventListener("click", () => {
+        selectedAction = button.value;
+      });
+    });
+
+    combatForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const choice = selectedAction;
+      console.log("Chosen action:", choice);
+
+      // If "question" is clicked, redirect immediately.
+      if (choice === "question") {
+        window.location.href = '{{ url_for("answer_question") }}';
+        return;
+      }
+
+      // Build the form data with the captured action.
+      const formData = new FormData();
+      formData.append("action", choice);
+
+      // Send the AJAX request.
+      fetch("{{ url_for('ajax_handle_combat') }}", {
+        method: "POST",
+        body: formData,
+        credentials: "same-origin"
+      })
+      .then(response => response.json())
+      .then(data => {
+        // If the server sends a redirect (as with flee), follow it.
+        if (data.redirect) {
+          window.location.href = data.redirect;
+          return;
+        }
+
+        // Otherwise, update the combat page for fight actions.
+        document.getElementById("player_current_hunger").textContent = data.player_current_hunger;
+        document.getElementById("player_max_hunger").textContent = data.player_max_hunger;
+        document.getElementById("enemy_current_hunger").textContent = data.enemy_current_hunger;
+        document.getElementById("mod_enemy_max_hunger").textContent = data.mod_enemy_max_hunger;
+
+        const playerProgress = document.getElementById("player_hunger_progress");
+        const enemyProgress = document.getElementById("enemy_hunger_progress");
+        playerProgress.value = data.player_current_hunger;
+        playerProgress.max = data.player_max_hunger;
+        enemyProgress.value = data.enemy_current_hunger;
+        enemyProgress.max = data.mod_enemy_max_hunger;
+
+        // Hide answer and fight buttons if player's hunger > 2.
+        if (parseInt(data.player_current_hunger, 10) > 2) {
+          const answerButton = document.querySelector("button[name='action'][value='question']");
+          const fleeButton = document.querySelector("button[name='action'][value='flee']");
+          if (answerButton) answerButton.style.display = 'none';
+          if (fleeButton) fleeButton.style.display = 'none';
+        } else {
+          // Otherwise, make sure they are visible.
+          const answerButton = document.querySelector("button[name='action'][value='question']");
+          const fleeButton = document.querySelector("button[name='action'][value='flee']");
+          if (answerButton) answerButton.style.display = 'inline-block';
+          if (fleeButton) fleeButton.style.display = 'inline-block';
+        }
+
+        // Process the latest battle message.
+        if (data.battle_log && data.battle_log.length > 0) {
+          const latestMessage = data.battle_log[data.battle_log.length - 1];
+          if (latestMessage.includes("hit the")) {
+            document.getElementById("enemy_message").textContent = latestMessage;
+            document.getElementById("player_message").textContent = "";
+          } else if (latestMessage.includes("Ouch")) {
+            document.getElementById("player_message").textContent = latestMessage;
+            document.getElementById("enemy_message").textContent = "";
+          }
+        }
+      })
+      .catch(error => {
+        console.error("Error during combat AJAX request:", error);
+      });
+    });
+  });
+</script>
+
+
+
+
+</body>
+</html>
