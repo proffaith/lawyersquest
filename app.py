@@ -3,7 +3,9 @@ import pymysql
 import random
 import logging
 import socks
-import socket 
+import socket
+from urllib.parse import urlparse
+
 from shared import get_squire_stats
 from shared import check_quest_completion
 from shared import complete_quest
@@ -58,17 +60,28 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your_secret_key')  # For session
 def get_db_connection():
     try:
 
-        fixie_url = os.getenv("FIXIE_SOCKS_HOST")  # e.g., fixie:password@speedway.usefixie.com:1080
+        fixie_url = os.getenv("FIXIE_SOCKS_HOST")  # e.g., fixie:pass@host:port
         if fixie_url.startswith("fixie:"):
             fixie_url = fixie_url.replace("fixie:", "")
 
-        proxy_user_pass, proxy_host_port = fixie_url.split("@")
-        proxy_host, proxy_port = proxy_host_port.split(":")
-        proxy_port = int(proxy_port)
+        # Parse the proxy URL properly
+        parsed = urlparse(f"http://{fixie_url}")
+        proxy_host = parsed.hostname
+        proxy_port = parsed.port
+        proxy_username = parsed.username
+        proxy_password = parsed.password
 
-        # Set up the SOCKS proxy
-        socks.set_default_proxy(socks.SOCKS5, proxy_host, proxy_port, True, *proxy_user_pass.split(":"))
-        socket.socket = socks.socksocket  # 👈 Monkey-patch all sockets
+        # Set up the SOCKS5 proxy with auth
+        socks.set_default_proxy(
+            socks.SOCKS5,
+            proxy_host,
+            proxy_port,
+            True,
+            proxy_username,
+            proxy_password
+        )
+        socket.socket = socks.socksocket  # 👈 Monkey patch the socket to route through proxy
+
 
         return pymysql.connect(
             host=os.getenv('DB_HOST', 'localhost'),
