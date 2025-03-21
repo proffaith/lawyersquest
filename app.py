@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 import pymysql
 import random
 import logging
+import socks
+import socket 
 from shared import get_squire_stats
 from shared import check_quest_completion
 from shared import complete_quest
