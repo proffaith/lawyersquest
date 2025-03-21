@@ -60,7 +60,8 @@ def get_db_connection():
             user=os.getenv('DB_USER', 'root'),
             password=os.getenv('DB_PASSWORD'),
             database=os.getenv('DB_NAME', 'lawgames'),
-            cursorclass=pymysql.cursors.DictCursor
+            cursorclass=pymysql.cursors.DictCursor,
+            ssl={"ssl":{}}
         )
     except pymysql.Error as e:
         logging.error(f"Database connection error: {str(e)}")
@@ -831,7 +832,7 @@ def ajax_handle_boss_combat():
     """Handles combat via AJAX by updating hunger levels and returning JSON."""
     boss = session.get("boss")
     squire_id = session.get("squire_id")
-    
+
     if not boss or not squire_id:
         logging.error("Missing boss or squire_id in session")
         return jsonify({"redirect": url_for("map_view")})
