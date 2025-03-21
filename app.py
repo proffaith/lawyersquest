@@ -62,8 +62,8 @@ def get_db_connection():
     try:
 
         fixie_url = os.getenv("FIXIE_SOCKS_HOST")
-        if fixie_url.startswith("fixie:"):
-            fixie_url = fixie_url.replace("fixie:", "")
+#        if fixie_url.startswith("fixie:"):
+#            fixie_url = fixie_url.replace("fixie:", "")
 
         parsed = urlparse(f"http://{fixie_url}")
         proxy_host = parsed.hostname
