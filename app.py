@@ -92,7 +92,7 @@ def get_db_connection():
         )
     except Exception as e:
         logging.error(f"Database connection error: {str(e)}")
-        return "Database connection failed: " + str(e), 500
+        raise
 
 
 # Configure logging based on environment
