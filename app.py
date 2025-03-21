@@ -85,9 +85,9 @@ def get_db_connection():
         )
         socket.socket = socks.socksocket  # Monkey patch
 
-        user=os.getenv('DB_USER', 'root').strip(),
-        password=os.getenv('DB_PASSWORD').strip(),
-        host=os.getenv('DB_HOST', 'localhost').strip(),
+        user=os.getenv('DB_USER', 'root').strip()
+        password=os.getenv('DB_PASSWORD').strip()
+        host=os.getenv('DB_HOST', 'localhost').strip()
         database=os.getenv('DB_NAME', 'lawgames').strip()
 
         print(f"Parsed db credentials: {user}, {password}, {host}, {database}")
