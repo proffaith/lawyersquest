@@ -60,27 +60,25 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your_secret_key')  # For session
 def get_db_connection():
     try:
 
-        fixie_url = os.getenv("FIXIE_SOCKS_HOST")  # e.g., fixie:pass@host:port
+        fixie_url = os.getenv("FIXIE_SOCKS_HOST")
         if fixie_url.startswith("fixie:"):
             fixie_url = fixie_url.replace("fixie:", "")
 
-        # Parse the proxy URL properly
         parsed = urlparse(f"http://{fixie_url}")
         proxy_host = parsed.hostname
         proxy_port = parsed.port
-        proxy_username = parsed.username
-        proxy_password = parsed.password
+        proxy_user = parsed.username
+        proxy_pass = parsed.password
 
-        # Set up the SOCKS5 proxy with auth
         socks.set_default_proxy(
             socks.SOCKS5,
             proxy_host,
             proxy_port,
             True,
-            proxy_username,
-            proxy_password
+            proxy_user,
+            proxy_pass
         )
-        socket.socket = socks.socksocket  # 👈 Monkey patch the socket to route through proxy
+        socket.socket = socks.socksocket  # Monkey patch
 
 
         return pymysql.connect(
