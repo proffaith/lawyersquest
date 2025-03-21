@@ -55,6 +55,19 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your_secret_key')  # For session
 # Database connection function
 def get_db_connection():
     try:
+
+        fixie_url = os.getenv("FIXIE_SOCKS_HOST")  # e.g., fixie:password@speedway.usefixie.com:1080
+        if fixie_url.startswith("fixie:"):
+            fixie_url = fixie_url.replace("fixie:", "")
+
+        proxy_user_pass, proxy_host_port = fixie_url.split("@")
+        proxy_host, proxy_port = proxy_host_port.split(":")
+        proxy_port = int(proxy_port)
+
+        # Set up the SOCKS proxy
+        socks.set_default_proxy(socks.SOCKS5, proxy_host, proxy_port, True, *proxy_user_pass.split(":"))
+        socket.socket = socks.socksocket  # 👈 Monkey-patch all sockets
+
         return pymysql.connect(
             host=os.getenv('DB_HOST', 'localhost'),
             user=os.getenv('DB_USER', 'root'),
@@ -74,19 +87,19 @@ def get_db_connection():
 def setup_logging():
     # Get log level from environment variable, default to INFO
     log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
-    
+
     # Create a formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    
+
     # Always log to stdout for Heroku
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
-    
+
     # Configure the root logger
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
     root_logger.addHandler(stream_handler)
-    
+
     # If we're in development, also log to a file
     if os.getenv('FLASK_ENV') == 'development':
         try:
@@ -96,7 +109,7 @@ def setup_logging():
             logging.info('File logging enabled in development mode')
         except Exception as e:
             logging.warning(f'Could not set up file logging: {e}')
-    
+
     # Quiet some of the noisier libraries
     logging.getLogger('werkzeug').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.WARNING)
