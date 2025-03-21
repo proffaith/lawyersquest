@@ -10,30 +10,6 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Configuration
-config = configparser.ConfigParser()
-config_path = os.getenv('CONFIG_PATH', '/users/timfaith/dev/LawGames/config.ini')
-log_path = os.getenv('LOG_PATH', '/Users/timfaith/dev/lawgames/debug.log')
-
-if not os.path.exists(config_path):
-    logging.warning(f"⚠️ Config file not found at {config_path}!")
-else:
-    config.read(config_path)
-
-# Ensure log directory exists
-os.makedirs(os.path.dirname(log_path), exist_ok=True)
-
-debug_level = config.get('debug', 'debug_level', fallback='INFO').upper()
-debug_level_constant = getattr(logging, debug_level, logging.INFO)
-logging.basicConfig(
-    filename=log_path,
-    level=debug_level_constant,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-
-script = 'riddles.py'
-ver = 0.2
-
 # ************************************
 # This Python Script created 3/4/25 TF
 # This script contains consolidated functions for use by the game play
