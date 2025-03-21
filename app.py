@@ -54,6 +54,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+app.config["DEBUG"] = True
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your_secret_key')  # For session management
 
 # Database connection function
@@ -89,12 +90,10 @@ def get_db_connection():
             cursorclass=pymysql.cursors.DictCursor,
             ssl={"ssl":{}}
         )
-    except pymysql.Error as e:
-        logging.error(f"Database connection error: {str(e)}")
-        raise
     except Exception as e:
-        logging.error(f"Unexpected error in database connection: {str(e)}")
-        raise
+        logging.error(f"Database connection error: {str(e)}")
+        return "Database connection failed: " + str(e), 500
+
 
 # Configure logging based on environment
 def setup_logging():
