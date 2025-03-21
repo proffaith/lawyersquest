@@ -70,26 +70,39 @@ def get_db_connection():
         logging.error(f"Unexpected error in database connection: {str(e)}")
         raise
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+# Configure logging based on environment
+def setup_logging():
+    # Get log level from environment variable, default to INFO
+    log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+    
+    # Create a formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    
+    # Always log to stdout for Heroku
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    
+    # Configure the root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+    root_logger.addHandler(stream_handler)
+    
+    # If we're in development, also log to a file
+    if os.getenv('FLASK_ENV') == 'development':
+        try:
+            file_handler = logging.FileHandler('debug.log')
+            file_handler.setFormatter(formatter)
+            root_logger.addHandler(file_handler)
+            logging.info('File logging enabled in development mode')
+        except Exception as e:
+            logging.warning(f'Could not set up file logging: {e}')
+    
+    # Quiet some of the noisier libraries
+    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+    logging.getLogger('urllib3').setLevel(logging.WARNING)
 
-# Session cleanup function
-def cleanup_session():
-    """Clean up session variables that should not persist."""
-    session_vars_to_clean = [
-        'player_current_hunger', 'enemy_current_hunger',
-        'boss_current_hunger', 'combat_active', 'battle_log', 'current_question'
-    ]
-    for var in session_vars_to_clean:
-        session.pop(var, None)
-
-@app.before_request
-def before_request():
-    """Clean up session before each request."""
-    cleanup_session()
+# Set up logging when the app starts
+setup_logging()
 
 if __name__ == '__main__':
     app.run(port=5050)
@@ -1081,6 +1094,40 @@ def ajax_handle_combat():
             session["combat_result"] = outcome
 
             # Clear session variables
+            session.pop("enemy", None)
+            session.pop("player_current_hunger", None)
+            session.pop("enemy_current_hunger", None)
+            session.pop("combat_active", None)
+            session.pop("battle_log", None)
+            cursor.close()
+            return jsonify({"redirect": url_for("combat_results"), "battle_log": battle_log})
+
+        # result if player won
+        if enemy_current_hunger >= mod_enemy_max_hunger:
+            xp = enemy["xp_reward"]
+            bitcoin = enemy["gold_reward"]
+            # Apply additional modifiers based on location
+            if enemy.get("in_forest"):
+                xp += 10
+            if 51 <= mod_for_distance <= 150:
+                xp += 5 if not enemy.get("in_forest") else 15
+                bitcoin += 10
+            elif 151 <= mod_for_distance <= 500:
+                xp += 10 if not enemy.get("in_forest") else 30
+                bitcoin += 20
+            elif 501 <= mod_for_distance <= 1000:
+                xp += 20 if not enemy.get("in_forest") else 40
+                bitcoin += 25
+            elif mod_for_distance > 1000:
+                xp += 25 if not enemy.get("in_forest") else 55
+                bitcoin += 100
+
+            update_squire_progress(squire_id, conn, xp, bitcoin)
+            degrade_gear(squire_id, enemy["weakness"], conn)
+            outcome = f"🍕 The {enemy['name']} is too hungry to continue! They run off to eat a pizza.\nYou gain {xp} XP and {bitcoin} bits."
+            session["combat_result"] = outcome
+
+            # Clear combat session variables
             session.pop("enemy", None)
             session.pop("player_current_hunger", None)
             session.pop("enemy_current_hunger", None)
