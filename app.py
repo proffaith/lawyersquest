@@ -72,6 +72,7 @@ def get_db_connection():
         proxy_pass = parsed.password
 
         print("Fixie URL from env:", os.getenv("FIXIE_SOCKS_HOST"))
+        print(f"Parsed proxy: host={proxy_host}, port={proxy_port}, user={proxy_user}")
 
 
         socks.set_default_proxy(
