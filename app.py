@@ -86,7 +86,7 @@ def get_db_connection():
         socket.socket = socks.socksocket  # Monkey patch
 
         DB_HOST=os.getenv("DB_HOST")
-        DB_USER="lawyersquest_dbadmin"
+        DB_USER="lawyersquest_dbadmin@lawyersquest"
         DB_PASSWORD=os.getenv("DB_PASSWORD")
         DB_NAME=os.getenv("DB_NAME")
 
@@ -99,7 +99,7 @@ def get_db_connection():
             cursorclass=pymysql.cursors.DictCursor,
             ssl={"ssl":{}}
         )
-        
+
     except Exception as e:
         logging.error(f"Database connection error: {str(e)}")
         raise
