@@ -35,7 +35,8 @@ function workInTown() {
 </script>
 
 <div class="map-container">
-    <img src='static/bittown.jpeg' alt="BitTown Map">
+  <img src="{{ url_for('static', filename='static/bittown-map-unlabeled.png') }}" alt="BitTown Map">
+
 
     <form action="{{ url_for('shop') }}">
         <button class="map-button" id="shop-btn" type="submit">🛒 Visit the Mall</button>
