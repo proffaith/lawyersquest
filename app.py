@@ -86,7 +86,7 @@ def get_db_connection():
         socket.socket = socks.socksocket  # Monkey patch
 
         DB_HOST="lawyersquest.mysql.database.azure.com"
-        DB_USER="lawyersquest_dbadmin@lawyersquest"
+        DB_USER="lawyersquest_dbadmin"
         DB_PASSWORD="dahhab-pydmuw-xyMba3"
         DB_NAME="lawyersquest"
 
