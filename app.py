@@ -5,6 +5,9 @@ import logging
 import socks
 import socket
 from urllib.parse import urlparse
+from sqlalchemy import create_engine
+from sqlalchemy.pool import QueuePool
+
 
 from shared import get_squire_stats
 from shared import check_quest_completion
@@ -53,51 +56,54 @@ from dotenv import load_dotenv
 # Load environment variables at the start of the application
 load_dotenv()
 
+#this is intended to pool connections to the proxy for MySQL and reduce the number of connections initiated
+
+fixie_url = os.getenv("FIXIE_SOCKS_HOST")
+
+parsed = urlparse(f"http://{fixie_url}")
+proxy_host = parsed.hostname
+proxy_port = parsed.port
+proxy_user = parsed.username
+proxy_pass = parsed.password
+
+
+socks.set_default_proxy(
+    socks.SOCKS5,
+    proxy_host,
+    proxy_port,
+    True,
+    proxy_user,
+    proxy_pass
+)
+socket.socket = socks.socksocket  # Monkey patch
+
+# Build DB URI for SQLAlchemy
+DB_URI = f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
+
+# Create engine with connection pool
+engine = create_engine(
+    DB_URI,
+    connect_args={
+        "ssl": {"ssl": {}}  # Minimal SSL context; Azure may require it
+    },
+    poolclass=QueuePool,
+    pool_size=5,         # Adjust as needed
+    max_overflow=10,     # Extra connections if pool is full
+    pool_timeout=30,     # Seconds to wait for connection
+    pool_recycle=1800    # Recycle connections every 30 min
+)
+
+#"cursorclass": pymysql.cursors.DictCursor,
+
 app = Flask(__name__)
 app.config["DEBUG"] = True
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your_secret_key')  # For session management
 
 # Database connection function
 def get_db_connection():
+
     try:
-
-        fixie_url = os.getenv("FIXIE_SOCKS_HOST")
-
-        parsed = urlparse(f"http://{fixie_url}")
-        proxy_host = parsed.hostname
-        proxy_port = parsed.port
-        proxy_user = parsed.username
-        proxy_pass = parsed.password
-
-        #print("Fixie URL from env:", os.getenv("FIXIE_SOCKS_HOST"))
-        #print(f"Parsed proxy: host={proxy_host}, port={proxy_port}, user={proxy_user}")
-
-
-        socks.set_default_proxy(
-            socks.SOCKS5,
-            proxy_host,
-            proxy_port,
-            True,
-            proxy_user,
-            proxy_pass
-        )
-        socket.socket = socks.socksocket  # Monkey patch
-
-        DB_HOST=os.getenv("DB_HOST")
-        DB_USER=os.getenv("DB_USER")
-        DB_PASSWORD=os.getenv("DB_PASSWORD")
-        DB_NAME=os.getenv("DB_NAME")
-
-
-        conn = pymysql.connect(
-            host = f'{DB_HOST}',
-            user = f'{DB_USER}',
-            password = f'{DB_PASSWORD}',
-            database = f'{DB_NAME}',
-            cursorclass=pymysql.cursors.DictCursor,
-            ssl={"ssl":{}}
-        )
-
+        conn = engine.raw_connection()
         return conn
 
     except Exception as e:
@@ -174,14 +180,14 @@ def login():
     if request.method == 'POST':
         squire = request.form['squire_id']
         conn = get_db_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
         cursor.execute("SELECT id FROM squires WHERE squire_name = %s", (squire,))
         squire = cursor.fetchone()
 
         if squire:
             session['squire_id'] = squire['id']
-            generate_terrain_features(conn, squire['id'])
+            generate_terrain_features(conn, session['squire_id'])
 
             return redirect(url_for("quest_select"))  # ✅ Redirect
 
@@ -203,7 +209,7 @@ def start_quest():
         return jsonify({"success": False, "message": "Invalid quest selection."}), 400
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # ✅ Update the player's active quest
     cursor.execute("""
@@ -233,7 +239,7 @@ def quest_select():
         return redirect(url_for("login"))
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     generate_terrain_features(conn, squire_id, random.randint(1, 10), 10, random.randint(50, 100), 5, 10, random.randint(50, 100))
 
@@ -258,7 +264,7 @@ def quest_select():
                     select distinct quest_id from squire_quest_status
                     where status = 'completed' and squire_id = %s
                 )
-                AND status = 'active' AND course_id = %s
+                AND status = 'active' AND course_id = %s LIMIT 1
         """, (squire_id, course_id,))
         quests = cursor.fetchall()
 
@@ -284,7 +290,7 @@ def map_view():
         return redirect(url_for("login"))
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
      # ✅ Fetch inventory
     inventory = get_inventory(squire_id, conn)
@@ -336,7 +342,7 @@ def ajax_move():
         return jsonify({"error": "Session expired. Please log in again."}), 400
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     direction = request.json.get("direction")  # Get movement direction from AJAX request
 
@@ -415,7 +421,7 @@ def ajax_move():
 
     # **🏞️ NPC Encounter (5% chance)**
     elif random.random() < 0.02:
-        cursor = conn.cursor()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         cursor.execute("""
             SELECT tc.x_coordinate, tc.y_coordinate
             FROM treasure_chests tc
@@ -463,7 +469,7 @@ def ajax_status():
         return jsonify({"error": "Not logged in"}), 403
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     cursor.execute("SELECT x_coordinate, y_coordinate FROM squires WHERE id = %s", (squire_id,))
     position = cursor.fetchone()
 
@@ -520,7 +526,7 @@ def handle_true_false_question():
         return jsonify({"success": False, "message": "Session expired. Please log in again."}), 400
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch a random True/False question for this quest
     cursor.execute("""
@@ -598,7 +604,7 @@ def answer_question():
     quest_id = session.get("quest_id")
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch a random question
     cursor.execute("""
@@ -643,7 +649,7 @@ def check_true_false_question():
     user_answer = request.form.get("answer")
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     enemy = session.get("enemy", {})
 
@@ -688,7 +694,7 @@ def combat():
     enemy = session.get('enemy')
     squire_id = session.get("squire_id")
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     if not enemy:
         logging.debug("No enemy found in session, redirecting to map.")
@@ -740,7 +746,7 @@ def encounter_enemy():
         return redirect(url_for("login"))
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch player's position
     cursor.execute("SELECT x_coordinate, y_coordinate, level FROM squires WHERE id = %s", (squire_id,))
@@ -798,7 +804,7 @@ def encounter_boss():
         return redirect(url_for("login"))
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch player's position
     cursor.execute("SELECT x_coordinate, y_coordinate, level FROM squires WHERE id = %s", (squire_id,))
@@ -839,7 +845,7 @@ def boss_combat():
     quest_id = session.get("quest_id")
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     logging.debug("in /boss_combat route.")
 
@@ -892,7 +898,7 @@ def ajax_handle_boss_combat():
         boss_max_hunger = session.get("boss_max_hunger", 0)
 
         conn = get_db_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
         logging.debug(f"Boss Status: {boss_current_hunger} / {boss_max_hunger} Player Status {player_current_hunger} / {player_max_hunger}")
 
@@ -929,7 +935,7 @@ def answer_MC_question():
     boss_current_hunger = session["boss_current_hunger"]
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch a random question -- edit this to be the multiple choice pool from unit 1
     cursor.execute("""
@@ -982,7 +988,7 @@ def check_MC_question():
 
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     enemy = session.get("enemy", {})
 
@@ -1067,7 +1073,7 @@ def ajax_handle_combat():
 
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     if not enemy:
         return jsonify({"redirect": url_for("map_view")})
@@ -1203,7 +1209,7 @@ def visit_town():
         return redirect(url_for("login"))
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch town-related stats
     cursor.execute("SELECT level FROM squires WHERE id = %s", (squire_id,))
@@ -1221,7 +1227,7 @@ def shop():
         return redirect(url_for("login"))
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("SELECT level from squires where id = %s",(squire_id,))
     level = cursor.fetchone()['level']
@@ -1248,7 +1254,7 @@ def buy_item():
             return jsonify({"success": False, "message": "Invalid item ID received"}), 400
 
         conn = get_db_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
         # Fetch the item details
         cursor.execute("SELECT id, item_name, description, price, item_type, uses FROM shop_items WHERE id = %s", (item_id,))
@@ -1297,7 +1303,7 @@ def town_work():
         return redirect(url_for("login"))
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("SELECT level from squires where id = %s",(squire_id,))
     level = cursor.fetchone()['level']
@@ -1355,7 +1361,7 @@ def town_work():
 def hall_of_fame():
     """Displays the Hall of Fame leaderboard."""
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch top 5 players by XP
     cursor.execute("SELECT squire_name, experience_points FROM squires ORDER BY experience_points DESC LIMIT 10")
@@ -1377,7 +1383,7 @@ def riddle_encounter():
 
     try:
         conn = get_db_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
         # Fetch a random unanswered riddle
         cursor.execute("""
@@ -1443,7 +1449,7 @@ def check_riddle():
         logging.debug(f"User answer: {user_answer}, Correct answer: {correct_answer}")
 
         conn = get_db_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
         if user_answer == correct_answer:
             riddle_id = session["current_riddle"]["id"]
@@ -1489,7 +1495,7 @@ def treasure_encounter():
     chest = session["current_treasure"]  # Retrieve stored treasure chest
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch the unopened treasure chest using session data
     cursor.execute("""
@@ -1552,7 +1558,7 @@ def check_treasure():
     correct_answer = chest["answer"].strip().lower()
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     if user_answer == correct_answer:
         # Reward the player

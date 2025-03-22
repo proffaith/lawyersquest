@@ -19,7 +19,7 @@ load_dotenv()
 # travel
 def log_travel_history(squire_id, x, y, conn):
     """Logs the player's movement in the travel_history table."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Insert position if not already logged
     cursor.execute("""
@@ -31,7 +31,7 @@ def log_travel_history(squire_id, x, y, conn):
     cursor.close()
 
 def can_enter_tile(squire_id, new_x, new_y, conn):
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     # Assume you have a table or function to determine the tile type at these coordinates
     cursor.execute("SELECT terrain_type FROM map_features WHERE x_coordinate = %s AND y_coordinate = %s", (new_x, new_y))
     tile = cursor.fetchone()
@@ -47,7 +47,7 @@ def can_enter_tile(squire_id, new_x, new_y, conn):
 
 def update_player_position(squire_id, direction, conn):
     """Updates the player's coordinates based on movement direction."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch current coordinates
     cursor.execute("SELECT x_coordinate, y_coordinate FROM squires WHERE id = %s", (squire_id,))
@@ -100,7 +100,7 @@ def update_player_position(squire_id, direction, conn):
 #experimental for narrowing tiles that can be viewed
 def get_viewport_map(squire_id, quest_id, conn, viewport_size=15):
     """Generates an HTML-based map showing only a viewport (e.g., 15x15) around the player."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch visited locations
     cursor.execute("SELECT x_coordinate, y_coordinate FROM travel_history WHERE squire_id = %s", (squire_id,))
@@ -159,7 +159,7 @@ def get_viewport_map(squire_id, quest_id, conn, viewport_size=15):
 
 def display_travel_map(squire_id, quest_id, conn):
     """Generates an HTML-based map showing forests, visited locations, and the player."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch visited locations
     cursor.execute("SELECT x_coordinate, y_coordinate FROM travel_history WHERE squire_id = %s", (squire_id,))
@@ -241,7 +241,7 @@ def display_travel_map(squire_id, quest_id, conn):
 # TREASURE! AAAARRRRRRRRRRRRR.
 
 def ishint(squire_id, conn):
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("SELECT count(*) as inv from inventory where squire_id = %s and item_name like %s",(squire_id,'%%lexiconis%%'))
     hint = cursor.fetchone()["inv"]
@@ -252,7 +252,7 @@ def ishint(squire_id, conn):
         return False
 
 def iswordlengthhint(squire_id, conn):
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("SELECT count(*) as inv from inventory where squire_id = %s and item_name like %s",(squire_id,'%%lexiconis%%'))
     hint = cursor.fetchone()["inv"]
@@ -263,7 +263,7 @@ def iswordlengthhint(squire_id, conn):
         return False
 
 def iswordcounthint(squire_id, conn):
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("SELECT count(*) as inv from inventory where squire_id = %s and item_name like %s",(squire_id,'%%four-leaf clover%%'))
     hint = cursor.fetchone()["inv"]
@@ -275,7 +275,7 @@ def iswordcounthint(squire_id, conn):
 
 def check_for_treasure_at_location(squire_id, x, y, conn, q, sqid):
     """Checks if there's a treasure chest exactly at the player's current position."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     cursor.execute(f"""
     SELECT tc.*
         FROM treasure_chests tc
@@ -294,7 +294,7 @@ def check_for_treasure_at_location(squire_id, x, y, conn, q, sqid):
 
 def check_for_treasure(squire_id, conn, q):
     """Checks if a treasure chest exists at the player's current location."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Get player's current coordinates
     cursor.execute("SELECT x_coordinate, y_coordinate FROM squires WHERE id = %s", (squire_id,))
@@ -323,7 +323,7 @@ def check_for_treasure(squire_id, conn, q):
 
 def open_treasure_chest(squire_id, chest, conn):
     """Handles treasure chest interaction and riddle solving."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     val = None
 
     print("\n🎁 You have discovered a Treasure Chest!")
@@ -393,7 +393,7 @@ def open_treasure_chest(squire_id, chest, conn):
     return val
 
 def calculate_riddle_reward(conn, r, s):
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("SELECT level from squires where id = %s", (s,))
     level = cursor.fetchone()["level"]
@@ -476,7 +476,7 @@ def calculate_enemy_encounter_probability(squire_id, quest_id, current_x, curren
     """
     base_probability = 0.05
 
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Adjust probability based on nearby map features (e.g., forests, mountains)
     cursor.execute("""
@@ -512,7 +512,7 @@ def calculate_enemy_encounter_probability(squire_id, quest_id, current_x, curren
 
 def calculate_hit_chance(squire_id, level, conn):
     """Calculates hit chance based on the number of correctly answered questions."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("SELECT count(*) as all_TF from true_false_questions;")
     total_tf_qs = cursor.fetchone()["all_TF"]
@@ -543,7 +543,7 @@ def combat_mods(squid,enemy,level,conn):
     #gear items in inventory each increase combat odds by 1 for the player
     #special items increase combat odds against particular enemies
     #hit chances are also modified by the player level
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("SELECT count(*) as gear_items from inventory where squire_id = %s and item_type = 'gear' and uses_remaining > 0", (squid,))
     base_mod = cursor.fetchone()['gear_items']
@@ -561,7 +561,7 @@ def combat_mods(squid,enemy,level,conn):
 
 def hunger_mods(squid,conn):
     #certain special items will modify the player's hunger level
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("""
     SELECT count(*) as spec_food from inventory where item_name = 'gold coin pouch' and squire_id = %s
@@ -573,7 +573,7 @@ def hunger_mods(squid,conn):
     return food_mod
 
 def degrade_gear(squire_id, weapon, conn):
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     #this section degrades the weapon used in combat
     cursor.execute ("SELECT id, uses_remaining from inventory WHERE squire_id = %s and CAST(item_name AS CHAR) = %s ORDER BY uses_remaining LIMIT 1", (squire_id,weapon,))
@@ -604,7 +604,7 @@ def degrade_gear(squire_id, weapon, conn):
 
 def update_work_for_combat(squire_id, conn):
 
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Reset work session count if needed
     cursor.execute("UPDATE squires SET work_sessions = 0 WHERE id = %s", (squire_id,))
@@ -616,7 +616,7 @@ def update_work_for_combat(squire_id, conn):
         return False
 
 def get_player_max_hunger(squire_id, conn):
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("SELECT sum(uses_remaining) as hunger FROM inventory WHERE item_type='food' and squire_id = %s", (squire_id,))
     max_hunger = cursor.fetchone()["hunger"] or 0
@@ -651,7 +651,7 @@ def mod_enemy_hunger(mod, enemy, forest, mountain):
 # stats & player functions
 def get_squire_stats(squire_id, conn):
     """Fetch the player's current XP and gold."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("""
         SELECT s.experience_points, t.gold
@@ -668,7 +668,7 @@ def get_squire_stats(squire_id, conn):
     return 0, 0
 
 def update_squire_progress(squire_id, conn, xp, gold):
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Update XP and check for level-up
     cursor.execute("UPDATE squires SET experience_points = experience_points + %s WHERE id = %s", (xp, squire_id))
@@ -681,7 +681,7 @@ def update_squire_progress(squire_id, conn, xp, gold):
 
 def check_for_level_up(squire_id, conn):
     """Checks if a player has enough XP to level up and applies level-up bonuses."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Get current XP and level
     cursor.execute("SELECT experience_points, level FROM squires WHERE id = %s", (squire_id,))
@@ -715,7 +715,7 @@ def check_for_level_up(squire_id, conn):
 
 def get_inventory(squire_id, conn):
     """Display all items the player has collected."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("""
         SELECT item_name, item_type, description, sum(uses_remaining) as uses_remaining, count(*) as effect FROM inventory
@@ -729,7 +729,7 @@ def get_inventory(squire_id, conn):
 
 def get_hunger_bar(squire_id, conn):
     """Generates a hunger bar displaying food status."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Count total food uses remaining in inventory
     cursor.execute("""
@@ -755,7 +755,7 @@ def get_hunger_bar(squire_id, conn):
 
 def check_quest_progress(squire_id, quest_id, conn):
     """Calculates and returns the player's progress in the current quest."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Count the total number of riddles required for quest completion
     cursor.execute("SELECT COUNT(*) AS total FROM riddles WHERE difficulty = 'hard' and quest_id = %s", (quest_id,))
@@ -786,7 +786,7 @@ def display_progress_bar(percentage):
 #town work functions
 def display_hall_of_fame(conn):
     """Displays the Hall of Fame with the top XP players."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch top 10 players sorted by XP
     cursor.execute("""
@@ -815,7 +815,7 @@ def display_hall_of_fame(conn):
 
 def visit_town_for_work(squire_id, conn):
     """Allows players to take on town jobs to earn gold."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch available jobs
     cursor.execute("SELECT id, job_name, description, min_payout, max_payout FROM jobs")
@@ -860,7 +860,7 @@ def visit_town_for_work(squire_id, conn):
 
 def update_riddle_hints(conn):
     """Updates the word length hints for all riddles in the database."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch all riddles and their answers
     cursor.execute("SELECT id, answer FROM riddles where word_length_hint is null OR word_count is null")
@@ -892,7 +892,7 @@ def generate_word_count(answer):
     return word_count
 
 def save_correct_answer(squire_id, quest_id, riddle_id, conn):
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("""
     INSERT INTO squire_riddle_progress (squire_id, riddle_id, quest_id, answered_correctly)
@@ -903,7 +903,7 @@ def save_correct_answer(squire_id, quest_id, riddle_id, conn):
     cursor.close()
 
 def check_quest_completion(squire_id, quest_id, conn):
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     if session.get("boss_defeated"):
         return True
@@ -929,7 +929,7 @@ def complete_quest(squire_id, quest_id, conn):
     if check_quest_completion(squire_id, quest_id, conn):
         messages = ["\n🎉 Congratulations! You have completed this quest!"]
 
-        cursor = conn.cursor()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
         # Fetch the quest reward
         cursor.execute("SELECT reward, effective_against FROM quests WHERE id = %s", (quest_id,))
@@ -985,7 +985,7 @@ def complete_quest(squire_id, quest_id, conn):
 
 
 def get_random_riddle(quest_id, squire_id, conn):
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Count how many riddles the squire has answered correctly for this quest
     cursor.execute("""
@@ -1072,7 +1072,7 @@ def check_riddle_answer(user_answer, riddle_id, conn):
         return False
 
 def get_active_quests(conn, squire_id):
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute(f"""
     SELECT id, quest_name, description FROM quests WHERE
@@ -1095,7 +1095,7 @@ def chooseq(conn, squire_id):
     return quest_id
 
 def get_riddles_for_quest(quest_id, conn):
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("SELECT id, riddle_text, answer, hint FROM riddles WHERE quest_id = %s", (quest_id,))
     riddles = cursor.fetchall()
@@ -1105,7 +1105,7 @@ def get_riddles_for_quest(quest_id, conn):
 # shop related functions
 def visit_shop(squire_id, level, conn):
     """Allows players to buy food & drinks using gold."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch available items
     cursor.execute(f"SELECT id, item_name, description, price, uses, item_type FROM shop_items where min_level <= {level}")
@@ -1157,7 +1157,7 @@ def visit_shop(squire_id, level, conn):
 def consume_food(squire_id, conn):
     """Uses up food from inventory when traveling."""
 
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Get player's level
     cursor.execute("SELECT level FROM squires WHERE id = %s", (squire_id,))

@@ -22,7 +22,7 @@ def generate_rewards(difficulty):
 
 def insert_treasure_chests(conn, quest_id, squire_quest_id):
 
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Fetch related riddles
     cursor.execute("SELECT id, difficulty FROM riddles WHERE quest_id = %s AND id not in (select riddle_id from treasure_chests WHERE squire_quest_id = %s)",(quest_id,squire_quest_id))
@@ -54,7 +54,7 @@ def insert_treasure_chests(conn, quest_id, squire_quest_id):
 def generate_terrain_features(conn, squire_id, num_forest_clusters=5, cluster_size=10, max_forests=75,
                               num_mountain_ranges=3, mountain_range_length=9, max_mountains=45):
     """Generates random forest clusters and mountain ranges and inserts them into the map_features table."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # ✅ Check existing forests in the database
     cursor.execute("SELECT COUNT(id) as existingtrees FROM map_features WHERE terrain_type = 'forest'")
@@ -167,7 +167,7 @@ def generate_terrain_features(conn, squire_id, num_forest_clusters=5, cluster_si
 
 def generate_forest_clusters(conn, num_clusters=5, cluster_size=10, max_forests=50):
     """Generates random forest clusters and inserts them into the map_features table."""
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("SELECT COUNT(id) as existingtrees from map_features where terrain_type = 'forest'")
     existing_forest_count = cursor.fetchone()["existingtrees"]
