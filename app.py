@@ -85,21 +85,21 @@ def get_db_connection():
         )
         socket.socket = socks.socksocket  # Monkey patch
 
-        user=os.getenv('DB_USER', 'root').strip()
-        password=os.getenv('DB_PASSWORD').strip()
-        host=os.getenv('DB_HOST', 'localhost').strip()
-        database=os.getenv('DB_NAME', 'lawgames').strip()
+        DB_HOST=os.getenv("DB_HOST")
+        DB_USER="lawyersquest_dbadmin"
+        DB_PASSWORD=os.getenv("DB_PASSWORD")
+        DB_NAME=os.getenv("DB_NAME")
 
-        print(f"Parsed db credentials: {user}, {password}, {host}, {database}")
 
-        return pymysql.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
+        conn = pymysql.connect(
+            host = f'{DB_HOST}',
+            user = f'{DB_USER}',
+            password = f'{DB_PASSWORD}',
+            database = f'{DB_NAME}',
             cursorclass=pymysql.cursors.DictCursor,
             ssl={"ssl":{}}
         )
+        
     except Exception as e:
         logging.error(f"Database connection error: {str(e)}")
         raise
