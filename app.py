@@ -100,6 +100,8 @@ def get_db_connection():
             ssl={"ssl":{}}
         )
 
+        return conn
+
     except Exception as e:
         logging.error(f"Database connection error: {str(e)}")
         raise
