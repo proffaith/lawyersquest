@@ -159,7 +159,7 @@ def logout():
 
 @app.route('/getting_started')
 def getting_started():
-    return render_template('getting_started.html')    
+    return render_template('getting_started.html')
 
 @app.route('/npc', methods=['GET'])
 def npc():
@@ -192,6 +192,7 @@ def login():
         if squire:
             session['squire_id'] = squire['id']
             generate_terrain_features(conn, session['squire_id'])
+            update_riddle_hints(conn)
 
             return redirect(url_for("quest_select"))  # ✅ Redirect
 
@@ -1057,11 +1058,6 @@ def check_MC_question():
         session["player_message"] = player_message
 
     return redirect(url_for("boss_combat"))
-
-
-
-
-
 
 @app.route('/ajax_handle_combat', methods=['POST'])
 def ajax_handle_combat():
