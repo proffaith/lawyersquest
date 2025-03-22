@@ -62,8 +62,6 @@ def get_db_connection():
     try:
 
         fixie_url = os.getenv("FIXIE_SOCKS_HOST")
-#        if fixie_url.startswith("fixie:"):
-#            fixie_url = fixie_url.replace("fixie:", "")
 
         parsed = urlparse(f"http://{fixie_url}")
         proxy_host = parsed.hostname
@@ -71,8 +69,8 @@ def get_db_connection():
         proxy_user = parsed.username
         proxy_pass = parsed.password
 
-        print("Fixie URL from env:", os.getenv("FIXIE_SOCKS_HOST"))
-        print(f"Parsed proxy: host={proxy_host}, port={proxy_port}, user={proxy_user}")
+        #print("Fixie URL from env:", os.getenv("FIXIE_SOCKS_HOST"))
+        #print(f"Parsed proxy: host={proxy_host}, port={proxy_port}, user={proxy_user}")
 
 
         socks.set_default_proxy(
@@ -86,7 +84,6 @@ def get_db_connection():
         socket.socket = socks.socksocket  # Monkey patch
 
         DB_HOST=os.getenv("DB_HOST")
-        #DB_USER="lawyersquest_dbadmin"
         DB_USER=os.getenv("DB_USER")
         DB_PASSWORD=os.getenv("DB_PASSWORD")
         DB_NAME=os.getenv("DB_NAME")
@@ -175,20 +172,20 @@ def select_course(course_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        squire_id = request.form['squire_id']
+        squire = request.form['squire_id']
         conn = get_db_connection()
         cursor = conn.cursor()
 
         generate_terrain_features(conn, squire_id)
 
-        cursor.execute("SELECT id FROM squires WHERE id = %s", (squire_id,))
+        cursor.execute("SELECT id FROM squires WHERE squire_name = %s", (squire,))
         squire = cursor.fetchone()
 
         if squire:
             session['squire_id'] = squire['id']
             return redirect(url_for("quest_select"))  # ✅ Redirect
 
-    return render_template('login.html')
+    return render_template('index.html')
 
 
 @app.route('/start_quest', methods=['POST'])
