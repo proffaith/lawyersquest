@@ -157,6 +157,10 @@ def home():
 def logout():
     return render_template('index.html')
 
+@app.route('/getting_started')
+def getting_started():
+    return render_template('getting_started.html')    
+
 @app.route('/npc', methods=['GET'])
 def npc():
     """Handles NPC encounters and displays hints."""
