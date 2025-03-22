@@ -176,13 +176,13 @@ def login():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        generate_terrain_features(conn, squire_id)
-
         cursor.execute("SELECT id FROM squires WHERE squire_name = %s", (squire,))
         squire = cursor.fetchone()
 
         if squire:
             session['squire_id'] = squire['id']
+            generate_terrain_features(conn, squire['id'])
+
             return redirect(url_for("quest_select"))  # ✅ Redirect
 
     return render_template('index.html')
