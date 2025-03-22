@@ -89,3 +89,34 @@ td {
 .fade-in {
     animation: fadeIn 1s;
 }
+
+
+
+.map-container {
+      position: relative;
+      display: inline-block;
+      max-width: 1000px;
+      margin-top: 2em;
+    }
+
+    .map-container img {
+      width: 100%;
+      border: 5px solid #ccc;
+      border-radius: 12px;
+    }
+
+    .map-button {
+      position: absolute;
+      background-color: rgba(0, 0, 0, 0.9);
+      border: 2px solid #444;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+      transition: transform 0.1s ease;
+    }
+
+    .map-button:hover {
+      transform: scale(1.05);
+    }

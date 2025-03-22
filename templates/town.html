@@ -4,14 +4,18 @@
     <title>🏙️ BitTown</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
 
+
 </head>
 <body>
     <h1>🏙️ Welcome to BitTown!</h1>
     <p>What would you like to do?</p>
-
-
-
-
+    <style>
+    /* 📍 Adjust these values based on your layout and test it in-browser */
+    #shop-btn { top: 26%; left: 18%; }
+    #town-office-btn { top: 55%; left: 52%; }
+    #hall-of-fame-btn { top: 20%; left: 70%; }
+    #exit-btn { top: 82%; left: 46%; }
+    </style>
     <script>
 function workInTown() {
     fetch("{{ url_for('town_work') }}", { method: "POST" })
@@ -30,21 +34,24 @@ function workInTown() {
 }
 </script>
 
+<div class="map-container">
+    <img src='static/bittown.jpeg' alt="BitTown Map">
 
     <form action="{{ url_for('shop') }}">
-        <button type="submit">🛒 Visit the Mall</button>
+        <button class="map-button" id="shop-btn" type="submit">🛒 Visit the Mall</button>
     </form>
 
     <form action="{{ url_for('town_work') }}">
-        <button type="submit">💼 Work at the Town Office (Earn Bits)</button>
+        <button class="map-button" id="town-office-btn" type="submit">💼 Work at the Town Office (Earn Bits)</button>
     </form>
 
     <form action="{{ url_for('hall_of_fame') }}">
-        <button type="submit">🏆 Visit the Hall of Fame</button>
+        <button class="map-button" id="hall-of-fame-btn" type="submit">🏆 Visit the Hall of Fame</button>
     </form>
 
     <form action="{{ url_for('map_view') }}">
-        <button type="submit">🚶 Leave Town</button>
+        <button class="map-button" id="exit-btn" type="submit">🚶 Leave Town</button>
     </form>
+</div>
 </body>
 </html>
