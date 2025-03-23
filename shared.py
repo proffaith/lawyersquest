@@ -458,6 +458,17 @@ def flee_safely(e,p, hit_chance):
     else:
         return True
 
+def calc_flee_safely(e,p, hit_chance):
+
+    e = int(e)
+    p = int(p)
+
+    if p == 0:
+        p = 1
+
+    damage_probability = (e / p) * (100 - hit_chance)
+
+    return damage_probability
 
 def calculate_enemy_encounter_probability(squire_id, quest_id, current_x, current_y, conn, squire_quest_id, proximity=2):
     """

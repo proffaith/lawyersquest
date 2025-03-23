@@ -7,6 +7,8 @@ import socket
 from urllib.parse import urlparse
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
+import os
+from dotenv import load_dotenv
 
 
 from shared import get_squire_stats
@@ -50,8 +52,8 @@ from shared import ishint
 from shared import iswordcounthint
 from shared import iswordlengthhint
 from shared import flee_safely
-import os
-from dotenv import load_dotenv
+from shared import calc_flee_safely
+
 
 # Load environment variables at the start of the application
 load_dotenv()
@@ -726,7 +728,7 @@ def combat():
     logging.debug(f"Dist / Base / F / M: {mod_for_distance} {enemy_max_hunger_base} {enemy_in_forest}  {enemy_in_mountain}")
     mod_enemy_max_hunger = mod_enemy_hunger(mod_for_distance, enemy_max_hunger_base, enemy_in_forest, enemy_in_mountain)
     logging.debug(f"mod_enemy_max_hunger = {mod_enemy_max_hunger}")
-    safe_chances = flee_safely(mod_enemy_max_hunger, player_max_hunger, hit_chance)
+    safe_chances = calc_flee_safely(mod_enemy_max_hunger, player_max_hunger, hit_chance)
 
     # initialize session variables for battle
     player_current_hunger = 0
