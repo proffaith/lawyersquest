@@ -718,6 +718,7 @@ def combat():
     hit_chance = int(min(base_hit_chance + combat_mods(squire_id, enemy["name"], level, conn), 95))
     player_max_hunger = min(max_hunger + hunger_mods(squire_id, conn), 8)
 
+
     mod_for_distance = abs(x * y)
     enemy_max_hunger_base = enemy["max_hunger"]
     enemy_in_forest = enemy.get("in_forest")
@@ -725,6 +726,7 @@ def combat():
     logging.debug(f"Dist / Base / F / M: {mod_for_distance} {enemy_max_hunger_base} {enemy_in_forest}  {enemy_in_mountain}")
     mod_enemy_max_hunger = mod_enemy_hunger(mod_for_distance, enemy_max_hunger_base, enemy_in_forest, enemy_in_mountain)
     logging.debug(f"mod_enemy_max_hunger = {mod_enemy_max_hunger}")
+    safe_chances = flee_safely(mod_enemy_max_hunger, player_max_hunger, hit_chance)
 
     # initialize session variables for battle
     player_current_hunger = 0
@@ -738,6 +740,7 @@ def combat():
     session["mod_enemy_max_hunger"] = mod_enemy_max_hunger
     session["hit_chance"] = hit_chance
     session["mod_for_distance"] = mod_for_distance
+    session["safe_chances"] = safe_chances
 
     return render_template('combat.html', enemy=enemy)
 

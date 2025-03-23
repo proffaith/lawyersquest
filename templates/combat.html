@@ -35,7 +35,13 @@
 
       <table>
         <tr>
-          <td><p>Your chances of striking {{enemy.name}} is {{ session.get('hit_chance') }}% Do you...?</p></td>
+          <td>
+            <p>Your chances of answering the enemy's question is 50%</p>
+            {% if enemy.has_weapon %}
+            <p>Your chances of striking {{enemy.name}} is {{ session.get('hit_chance') }}%</p>
+            {% endif %}
+            <p>Your chances of safely fleeing from {{enemy.name}} is {{ session.get('safe_chances') }}%</p>
+            <p> Do you...?</p></td>
           <td>
               <form id="combat-form" method="post">
                   <button type="submit" name="action" value="question">🧠 Answer the question</button>
