@@ -60,15 +60,15 @@ load_dotenv()
 
 #this is intended to pool connections to the proxy for MySQL and reduce the number of connections initiated
 
-fixie_url = os.getenv("FIXIE_SOCKS_HOST")
+fixie_url = os.getenv("QUOTA_GUARD_HOST")
 
-parsed = urlparse(f"http://{fixie_url}")
+parsed = urlparse(f"https://{fixie_url}")
 proxy_host = parsed.hostname
 proxy_port = parsed.port
 proxy_user = parsed.username
 proxy_pass = parsed.password
 
-
+print(f"{fixie_url}")
 socks.set_default_proxy(
     socks.SOCKS5,
     proxy_host,
@@ -520,6 +520,20 @@ def inventory():
 
 #Routes for Enemy Combat
 
+@app.template_filter('chance_image')
+def chance_image_filter(chance):
+    try:
+        chance = int(chance)
+        if chance >= 70:
+            return 'chance_high.png'
+        elif chance >= 40:
+            return 'chance_medium.png'
+        else:
+            return 'chance_low.png'
+    except:
+        return 'chance_unknown.png'
+
+
 @app.route('/handle_true_false_question', methods=['POST'])
 def handle_true_false_question():
     """Allows the player to defeat the enemy by answering a True/False question."""
@@ -713,6 +727,7 @@ def combat():
     level = squire["level"]
     x, y = squire["x_coordinate"], squire["y_coordinate"]
 
+
     #return necessary initial values for combat
     update_work_for_combat(squire_id,conn)
     max_hunger, food = get_player_max_hunger(squire_id, conn)
@@ -772,7 +787,7 @@ def encounter_enemy():
     in_mountain = cursor.fetchone()["in_mountain"]
 
     # Fetch a random enemy
-    cursor.execute("SELECT id, enemy_name, description, weakness, gold_reward, xp_reward, hunger_level, max_hunger FROM enemies where is_boss = 0 ORDER BY RAND() LIMIT 1")
+    cursor.execute("SELECT id, enemy_name, description, weakness, gold_reward, xp_reward, hunger_level, max_hunger,static_image FROM enemies where is_boss = 0 and min_level <= %s ORDER BY RAND() LIMIT 1", (level,))
     enemy = cursor.fetchone()
 
     if enemy:
@@ -795,7 +810,8 @@ def encounter_enemy():
             "xp_reward": int(enemy["xp_reward"]),
             "in_forest": bool(in_forest),  # Convert to True/False
             "in_mountain": bool(in_mountain),
-            "has_weapon": bool(weapon)
+            "has_weapon": bool(weapon),
+            "static_image": str(enemy["static_image"])
         }
 
 

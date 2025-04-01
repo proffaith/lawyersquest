@@ -18,11 +18,8 @@
             <p id="player_message" class="battle-message"></p>
         </div></td>
         <td><div id="enemy-hunger-container">
-          {% if enemy.name == 'Unfriendly Lawyer' %} <img src="/static/unfriendly_lawyer.jpeg" width=100 height=100> {% endif %}
-          {% if enemy.name == 'Tax Auditor' %} <img src="/static/tax_auditor.jpeg" width=100 height=100> {% endif %}
-          {% if enemy.name == 'Rogue Judge' %} <img src="/static/rogue_judge.jpeg" width=100 height=100> {% endif %}
-          {% if enemy.name == 'Bureaucratic Troll' %} <img src="/static/troll.jpeg" width=100 height=100> {% endif %}
-          {% if enemy.name == 'Lexiconis' %} <img src="/static/lexiconis.jpeg" width=150 height=150> {% endif %}
+          <img src="/static/{{ session.get("enemy", {}).get("static_image") }}" width=100 height=100>
+
 
             <p>{{ enemy.name }}'s Hunger: <span id="enemy_current_hunger">{{ session.get("enemy_current_hunger") }}</span>/<span id="mod_enemy_max_hunger">{{ session.get("mod_enemy_max_hunger")}}</span></p>
             <progress id="enemy_hunger_progress" value="" max=""></progress>
@@ -37,10 +34,16 @@
         <tr>
           <td>
             <p>Your chances of answering the enemy's question is 50%</p>
-            {% if enemy.has_weapon %}
-            <p>Your chances of striking {{enemy.name}} is {{ session.get('hit_chance') }}%</p>
-            {% endif %}
-            <p>Your chances of safely fleeing from {{enemy.name}} is {{ session.get('safe_chances') }}%</p>
+              <img src="/static/{{ 50|chance_image }}" width="50">
+
+              {% if enemy.has_weapon %}
+              <p>Your chances of striking {{ enemy.name }} is {{ session.get('hit_chance') }}%</p>
+              <img src="/static/{{ session.get('hit_chance')|chance_image }}" width="50">
+              {% endif %}
+
+              <p>Your chances of safely fleeing from {{ enemy.name }} is {{ session.get('safe_chances') }}%</p>
+              <img src="/static/{{ session.get('safe_chances')|chance_image }}" width="50">
+
             <p> Do you...?</p></td>
           <td>
               <form id="combat-form" method="post">
