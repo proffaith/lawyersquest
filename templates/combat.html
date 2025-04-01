@@ -33,18 +33,19 @@
       <table>
         <tr>
           <td>
-            <p>Your chances of answering the enemy's question is 50%</p>
-              <img src="/static/{{ 50|chance_image }}" width="50">
+            <table><tr><td>Your chances of answering the enemy's question is 50%</td>
+              <td><img src="/static/{{ 50|chance_image }}" width="50"></td></tr>
 
               {% if enemy.has_weapon %}
-              <p>Your chances of striking {{ enemy.name }} is {{ session.get('hit_chance') }}%</p>
-              <img src="/static/{{ session.get('hit_chance')|chance_image }}" width="50">
+              <tr><td>Your chances of striking {{ enemy.name }} is {{ session.get('hit_chance') }}%</td>
+              <td><img src="/static/{{ session.get('hit_chance')|chance_image }}" width="50"></td></tr>
               {% endif %}
 
-              <p>Your chances of safely fleeing from {{ enemy.name }} is {{ session.get('safe_chances') }}%</p>
-              <img src="/static/{{ session.get('safe_chances')|chance_image }}" width="50">
+              <tr><td>Your chances of safely fleeing from {{ enemy.name }} is {{ session.get('safe_chances') }}%</td>
+              <td><img src="/static/{{ session.get('safe_chances')|chance_image }}" width="50"></td></tr>
 
-            <p> Do you...?</p></td>
+            <tr><td colspan="2"> Do you...?</td></tr></table>
+          </td>
           <td>
               <form id="combat-form" method="post">
                   <button type="submit" name="action" value="question">🧠 Answer the question</button>
