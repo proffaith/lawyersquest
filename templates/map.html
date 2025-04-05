@@ -37,6 +37,10 @@
 </head>
 <body>
     <h1>🗺️ Lawyer's Quest - Game Map</h1>
+    <table><tr><td><p>🎮 Controls: Use <b>N S E W</b> to move | I shows your Inventory | V takes you to Town</p></td>
+      <td><a href="{{ url_for('getting_started') }}">Getting Started with the Game</a></td></tr>
+    </table>
+    
     <table><tr><td>
   <span id="xp-display">🎖️ XP: {{ xp }}</span>
   <span id="gold-display">💰 Bitcoin: {{ gold }}</span>
@@ -143,6 +147,6 @@
     <br>
     <a href="{{ url_for('logout') }}">Logout</a>
 
-    <p>🎮 Controls: Use <b>N S E W</b> to move | I shows your Inventory | V takes you to Town</p>
+
 </body>
 </html>
