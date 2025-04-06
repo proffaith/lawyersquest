@@ -155,6 +155,10 @@ if __name__ == '__main__':
 def home():
     return render_template("index.html")
 
+@app.route("/terms")
+def terms():
+    return render_template("terms.html")
+
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
     return render_template('index.html')
@@ -411,6 +415,12 @@ def ajax_move():
             "event": event
         })
 
+    if x == 0 and y ==0:
+        x,y,tm = update_player_position(squire_id, direction, conn)
+        visit_town()
+        message = "🏰 You arrive in Bitown."
+        return jsonify({"redirect": url_for("visit_town")})
+
     # ✅ Generate Updated Map
     #game_map = display_travel_map(squire_id, quest_id, conn)
     game_map = get_viewport_map(squire_id, quest_id, conn, 20)
@@ -501,8 +511,6 @@ def ajax_status():
         "position":[x,y]
 
     })
-
-
 
 @app.route('/inventory', methods=['GET'])
 def inventory():
@@ -1150,9 +1158,9 @@ def ajax_handle_combat():
         # result if player lost
         if player_current_hunger >= player_max_hunger:
             degrade_gear(squire_id, enemy["weakness"], conn)
-            cursor.execute("UPDATE squires SET experience_points = GREATEST(0, experience_points - 10) WHERE id = %s", (squire_id,))
+            cursor.execute("UPDATE squires SET experience_points = GREATEST(0, experience_points - %s) WHERE id = %s", (enemy["xp_reward"],squire_id,))
             conn.commit()
-            outcome = "🛑 You are too hungry to continue fighting! The enemy forces you to flee.\n❌ You lose 10 XP."
+            outcome = f"🛑 You are too hungry to continue fighting! The enemy forces you to flee and damages your gear.\n❌ You lose some XP."
             session["combat_result"] = outcome
 
             # Clear session variables
@@ -1226,6 +1234,7 @@ def combat_results():
 def visit_town():
     """Displays the town menu with options to shop, work, or leave."""
     squire_id = session.get("squire_id")
+    job_message = session.get("job_message")
     if not squire_id:
         return redirect(url_for("login"))
 
@@ -1237,7 +1246,7 @@ def visit_town():
     squire_data = cursor.fetchone()
     level = squire_data["level"]
 
-    return render_template("town.html", level=level)
+    return render_template("town.html", level=level, job_message=job_message)
 
 # 🏪 Shop
 @app.route('/shop', methods=['GET'])
@@ -1331,7 +1340,8 @@ def town_work():
 
     # ✅ Check if combat is required
     if session.get("forced_combat"):
-        return jsonify({"success": False, "message": "You must face the dangers beyond town before working again!"})
+        session["job_message"] = "You must face the dangers beyond town before working again!"
+        return redirect(url_for("visit_town"))
 
 
     # ✅ Get current work sessions for the player
@@ -1343,7 +1353,8 @@ def town_work():
 
     if work_sessions >= max_work_sessions:
         session["forced_combat"] = True  # ✅ Store in session that combat is required
-        return jsonify({"success": False, "message": "You've worked enough! It's time to face the dangers beyond town!"})
+        session["job_message"] = "You must face the dangers beyond town before working again!"
+        return redirect(url_for("visit_town"))
 
     if request.method == 'POST':
         job_id = request.form.get("job_id")
@@ -1368,15 +1379,14 @@ def town_work():
         conn.commit()
 
         session["job_message"] = f"✅ You completed '{job['job_name']}' and earned 💰 {payout} bits!"
+        #job_message = session.pop("job_message", None)  # Show the message **once**
         return redirect(url_for("visit_town"))
 
     # Fetch available jobs
     cursor.execute("SELECT id, job_name, description, min_payout, max_payout FROM jobs")
     jobs = cursor.fetchall()
 
-    job_message = session.pop("job_message", None)  # Show the message **once**
-
-    return render_template("town_work.html", jobs=jobs, job_message=job_message)
+    return render_template("town_work.html", jobs=jobs)
 
 @app.route('/hall_of_fame', methods=['GET'])
 def hall_of_fame():

@@ -48,13 +48,15 @@
           </td>
           <td>
               <form id="combat-form" method="post">
-                  <button type="submit" name="action" value="question">🧠 Answer the question</button>
+                <table border='none'>
+                  <tr><td><button type="submit" name="action" value="question">🧠 Answer the question</button></td></tr>
                   {% if enemy.has_weapon %}
-                      <button type="submit" name="action" value="fight">⚔️ Fight the enemy</button>
+                      <tr><td><button type="submit" name="action" value="fight">⚔️ Fight the enemy</button></td></tr>
                   {% else %}
-                      <p> To fight this enemy, you need a <b>{{ enemy.weakness }}</b> from the Village Mall. </p>
+                      <tr><td><p> To fight this enemy, you need a <b>{{ enemy.weakness }}</b> from the Village Mall.</p></td></tr>
                   {% endif %}
-                  <button type="submit" name="action" value="flee">🏃 Run away</button>
+                  <tr><td><button type="submit" name="action" value="flee">🏃 Run away</button></td></tr>
+                </table>
               </form>
           </td>
       </tr>
@@ -147,7 +149,15 @@
     });
   });
 </script>
-
+<footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
+  <p>
+    <a href="{{ url_for('terms') }}">Privacy & Terms of Use</a> |
+    <a href="{{ url_for('getting_started') }}">Getting Started</a> |
+    <a href="{{ url_for('logout') }}">Log Out</a> |
+    © 2025, Tim Faith <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank">CC BY-SA 4.0</a> |
+    ver 0.2
+  </p>
+</footer>
 
 
 

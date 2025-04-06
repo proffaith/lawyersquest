@@ -37,10 +37,10 @@
 </head>
 <body>
     <h1>🗺️ Lawyer's Quest - Game Map</h1>
-    <table><tr><td><p>🎮 Controls: Use <b>N S E W</b> to move | I shows your Inventory | V takes you to Town</p></td>
+    <table><tr><td><p>🎮 Controls: Use <b>N S E W</b> to move / <b>I</b> shows your Inventory / <b>V</b> takes you to Town</p></td>
       <td><a href="{{ url_for('getting_started') }}">Getting Started with the Game</a></td></tr>
     </table>
-    
+
     <table><tr><td>
   <span id="xp-display">🎖️ XP: {{ xp }}</span>
   <span id="gold-display">💰 Bitcoin: {{ gold }}</span>
@@ -145,7 +145,15 @@
 </script>
 
     <br>
-    <a href="{{ url_for('logout') }}">Logout</a>
+    <footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
+      <p>
+        <a href="{{ url_for('terms') }}">Privacy & Terms of Use</a> |
+        <a href="{{ url_for('getting_started') }}">Getting Started</a> |
+        <a href="{{ url_for('logout') }}">Log Out</a> |
+        © 2025, Tim Faith <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank">CC BY-SA 4.0</a> |
+        ver 0.2
+      </p>
+    </footer>
 
 
 </body>

@@ -8,7 +8,10 @@
 </head>
 <body>
     <h1>🏙️ Welcome to BitTown!</h1>
-    <p>What would you like to do?</p>
+    <!-- ✅ Show job completion message -->
+    {% if job_message %}
+        <p style="color: green;">{{ job_message }}</p>
+    {% endif %}
     <style>
     /* 📍 Adjust these values based on your layout and test it in-browser */
     #shop-btn { top: 26%; left: 18%; }
@@ -54,5 +57,14 @@ function workInTown() {
         <button class="map-button" id="exit-btn" type="submit">🚶 Leave Town</button>
     </form>
 </div>
+<footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
+  <p>
+    <a href="{{ url_for('terms') }}">Privacy & Terms of Use</a> |
+    <a href="{{ url_for('getting_started') }}">Getting Started</a> |
+    <a href="{{ url_for('logout') }}">Log Out</a> |
+    © 2025, Tim Faith <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank">CC BY-SA 4.0</a> |
+    ver 0.2
+  </p>
+</footer>
 </body>
 </html>
