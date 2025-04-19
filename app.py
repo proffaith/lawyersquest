@@ -166,7 +166,8 @@ def calculate_feature_counts(level, quest_id, base_trees=75, base_mountains=50):
 
     return tree_count, mountain_count
 
-
+def is_valid_email(email):
+    return re.match(r"[^@]+@[^@]+\.[^@]+", email)
 
 if __name__ == '__main__':
     app.run(port=5050)
