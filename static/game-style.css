@@ -30,6 +30,13 @@ h1, h2, h3 {
     white-space: pre;
 }
 
+.captcha-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 15px 0;
+}
+
 /* Buttons & UI */
 button {
     background: #8b5e3c;
