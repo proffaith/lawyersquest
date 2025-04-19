@@ -278,7 +278,7 @@ def register_squire():
         real_name = request.form["real_name"]
         email = request.form["email"]
         captcha_response = request.form.get("g-recaptcha-response")
-        team_id = request.form["team_id"]
+        team_id = int(request.form["team_id"])
 
         # Email format check
         if not is_valid_email(email):
@@ -300,6 +300,9 @@ def register_squire():
         })
         result = response.json()
 
+        # After CAPTCHA result:
+        print("✅ CAPTCHA result:", result)
+
         if not result.get("success"):
             flash("CAPTCHA verification failed.")
             return redirect(url_for("register_squire"))
@@ -317,7 +320,7 @@ def register_squire():
 
             flash("🎉 Welcome to the realm, noble squire!")
             return redirect(url_for("login"))  # Or map page, depending on your flow
-        except:
+        except Exception as e:
             flash("🔥 Something went wrong. Please try again.")
             print("❌ DB Error:", e)
             return redirect(url_for("register_squire"))
