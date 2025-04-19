@@ -58,6 +58,102 @@ def insert_treasure_chests(conn, quest_id, squire_quest_id):
     except Exception as e:
         logging.warning(f"There was an error inserting new treasure chests {e}")
 
+
+def generate_terrain_features_dynamic(
+    conn, squire_id, squire_quest_id,
+    num_forest_clusters=5, cluster_size=10, max_forests=75,
+    num_mountain_ranges=3, mountain_range_length=9, max_mountains=45
+):
+    try:
+        cursor = conn.cursor()
+
+        # Fetch squire level
+        cursor.execute("SELECT level FROM squires WHERE id = %s", (squire_id,))
+        level = cursor.fetchone()[0]
+
+        # Dynamic placement radius
+        placement_radius = 10 + level * 2
+        map_center = (0, 0)
+
+        # Fetch restricted tiles
+        cursor.execute("SELECT x_coordinate, y_coordinate FROM map_features WHERE squire_id = %s", (squire_id,))
+        restricted = set(cursor.fetchall())
+
+        cursor.execute("""
+            SELECT x_coordinate, y_coordinate FROM treasure_chests
+            WHERE squire_quest_id = %s AND is_opened = FALSE
+        """, (squire_quest_id,))
+        restricted.update(cursor.fetchall())
+        restricted.update([(40, 40), (0, 0)])
+
+        forests = set()
+        mountains = set()
+        river = []
+
+        # Generate river if not present
+        cursor.execute("SELECT COUNT(*) FROM map_features WHERE squire_id = %s AND terrain_type = 'river'", (squire_id,))
+        river_exists = cursor.fetchone()[0]
+
+        if river_exists == 0:
+            river_start_x = map_center[0] - placement_radius
+            river_start_y = map_center[1] + random.randint(-placement_radius, placement_radius)
+            x, y = river_start_x, river_start_y
+            for _ in range(25 + level * 2):
+                if (x, y) not in restricted:
+                    river.append((x, y, squire_id))
+                    restricted.add((x, y))
+                x += 1
+                y += random.choice([-1, 0, 1])
+
+        # Generate forest clusters
+        cursor.execute("SELECT COUNT(*) FROM map_features WHERE squire_id = %s AND terrain_type = 'forest'", (squire_id,))
+        existing_forests = cursor.fetchone()[0]
+        forests_needed = max_forests - existing_forests
+
+        for _ in range(min(num_forest_clusters, forests_needed // cluster_size)):
+            cx = random.randint(map_center[0] - placement_radius, map_center[0] + placement_radius)
+            cy = random.randint(map_center[1] - placement_radius, map_center[1] + placement_radius)
+
+            for _ in range(cluster_size):
+                fx = cx + random.randint(-2, 2)
+                fy = cy + random.randint(-2, 2)
+                if (fx, fy) not in restricted:
+                    forests.add((fx, fy, squire_id))
+                    restricted.add((fx, fy))
+                if len(forests) >= forests_needed:
+                    break
+
+        # Generate mountain ranges
+        cursor.execute("SELECT COUNT(*) FROM map_features WHERE squire_id = %s AND terrain_type = 'mountain'", (squire_id,))
+        existing_mountains = cursor.fetchone()[0]
+        mountains_needed = max_mountains - existing_mountains
+
+        for _ in range(min(num_mountain_ranges, mountains_needed // mountain_range_length)):
+            mx = random.randint(map_center[0] - placement_radius, map_center[0] + placement_radius)
+            my = random.randint(map_center[1] - placement_radius, map_center[1] + placement_radius)
+            horizontal = random.choice([True, False])
+            for i in range(mountain_range_length):
+                x = mx + (i if horizontal else 0)
+                y = my + (0 if horizontal else i)
+                if (x, y) not in restricted:
+                    mountains.add((x, y, squire_id))
+                    restricted.add((x, y))
+                if len(mountains) >= mountains_needed:
+                    break
+
+        # Insert into map_features
+        if river:
+            cursor.executemany("INSERT INTO map_features (x_coordinate, y_coordinate, squire_id, terrain_type) VALUES (%s, %s, %s, 'river')", river)
+        if forests:
+            cursor.executemany("INSERT INTO map_features (x_coordinate, y_coordinate, squire_id, terrain_type) VALUES (%s, %s, %s, 'forest')", list(forests))
+        if mountains:
+            cursor.executemany("INSERT INTO map_features (x_coordinate, y_coordinate, squire_id, terrain_type) VALUES (%s, %s, %s, 'mountain')", list(mountains))
+
+        conn.commit()
+        cursor.close()
+    except Exception as e:
+        print("🔥 TERRAIN ERROR:", e)
+
 def generate_terrain_features(conn, squire_id, squire_quest_id, num_forest_clusters=5, cluster_size=10, max_forests=75,
                               num_mountain_ranges=3, mountain_range_length=9, max_mountains=45):
 

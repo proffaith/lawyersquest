@@ -70,6 +70,7 @@ from init import insert_treasure_chests
 from shared import display_travel_map
 from shared import display_hall_of_fame
 from init import generate_terrain_features
+from init import generate_terrain_features_dynamic
 from shared import check_for_treasure_at_location
 from shared import calculate_hit_chance
 from shared import can_enter_tile
@@ -339,6 +340,16 @@ def register_squire():
                     VALUES (%s, %s, %s, %s, 0, 1, 0, 0, 0)
                 """, (squire_name, real_name, email, team_id))
                 conn.commit()
+
+                squire_id = cursor.lastrowid
+
+                cursor.execute("""
+                    INSERT INTO inventory (squire_id, item_name, description, uses_remaining, item_type) VALUES (
+                    %s, %s, %s, %s, %s
+                    )
+                """, (squire_id, "🍕 Large Pizza", "A starter pizza for your journey.", 16, "food"))
+                conn.commit()
+
                 cursor.close()
 
                 flash("🎉 Welcome to the realm, noble squire!")
@@ -393,7 +404,7 @@ def start_quest():
 
     treesize, mountainsize = calculate_feature_counts(level,quest_id)
 
-    generate_terrain_features(conn, squire_id, squire_quest_id,5,10,treesize,3,9,mountainsize)
+    generate_terrain_features_dynamic(conn, squire_id, squire_quest_id,5,10,treesize,3,9,mountainsize)
 
     # ✅ Store quest ID in session
     session["quest_id"] = quest_id
