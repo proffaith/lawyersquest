@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>⚔️ Combat Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+
+</head>
+<body>
+    <h1>Registration</h1>
+
+    <form method="POST" action="{{ url_for('register_squire') }}">
+      <label for="squire_name">Squire Name:</label>
+      <input type="text" name="squire_name" required><br>
+
+      <label for="real_name">Your Real Name:</label>
+      <input type="text" name="real_name" required><br>
+
+      <label for="email">Email:</label>
+      <input type="email" name="email" required><br>
+
+      <!-- Google reCAPTCHA v2 widget -->
+      <div class="g-recaptcha" data-sitekey="6Lc8eh0rAAAAAJvBfj7nFI_9zpersbTZ0X5U0Odw"></div>
+
+      <button type="submit">Register</button>
+    </form>
+
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+    <footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
+      <p>
+        <a href="{{ url_for('terms') }}">Privacy & Terms of Use</a> |
+        <a href="{{ url_for('getting_started') }}">Getting Started</a> |
+        <a href="{{ url_for('logout') }}">Log Out</a> |
+        © 2025, Tim Faith <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank">CC BY-SA 4.0</a> |
+        ver 0.2
+      </p>
+    </footer>
+</body>
+</html>

@@ -34,18 +34,22 @@
  }
 
       </script>
+
+
 </head>
 <body>
     <h1>🗺️ Lawyer's Quest - Game Map</h1>
     <table><tr><td><p>🎮 Controls: Use <b>N S E W</b> to move / <b>I</b> shows your Inventory / <b>V</b> takes you to Town</p></td>
-      <td><a href="{{ url_for('getting_started') }}">Getting Started with the Game</a></td></tr>
+      <td><a href="{{ url_for('getting_started') }}">Getting Started with the Game</a><br>
+      <a href="https://youtu.be/DTIb4VuoziA" target="_blank">Video Walkthrough</a></td></tr>
     </table>
 
     <table><tr><td>
   <span id="xp-display">🎖️ XP: {{ xp }}</span>
   <span id="gold-display">💰 Bitcoin: {{ gold }}</span>
 </td><td>Quest {{quest_id}} <span id="progress-bar">Progress: {{progress_bar}}</span></td><td> 🔼 Level: {{ level }} </td><td><span id="position">{{ position }}</span></td></tr>
-    <tr><td><span id="hunger-bar">🍽️ Hunger: {{ hunger }}</span> </td><td colspan="3"><span id="game-message"> {{ session.get('message', '') | safe }}</span></td></tr>
+    <tr><td><span id="hunger-bar">🍽️ Hunger: {{ hunger }}</span> </td><td colspan="3"><span id="game-message"> {{ session.get('message', '') | safe }}</span><br>
+    <span id="team-messages"></span></td></tr>
   </table>
 
     <div id="game-map">{{ game_map|safe }}</div>
@@ -143,7 +147,54 @@
         }
     });
 </script>
+<script>
+  function getAdjustedISO(secondsBack = 5) {
+    const now = new Date();
+    now.setSeconds(now.getSeconds() - secondsBack);  // ⏪ move back in time
+    return now.toISOString();
+  }
 
+  let lastCheck = getAdjustedISO();
+  const teamId = {{ team_id | tojson }}; // Replace with dynamic team ID if you have one in JS
+
+  function pollTeamMessages() {
+    fetch(`/team_messages/${teamId}?since=${lastCheck}`)
+        .then(response => response.json())
+        .then(messages => {
+            if (messages.length > 0) {
+                messages.forEach(msg => {
+                    displayTeamMessage(msg.message);
+                });
+
+                // Update lastCheck using last message's timestamp
+                const latest = messages[messages.length - 1].created_at;
+
+                // Add 1 second buffer to avoid overlap
+                const adjusted = new Date(new Date(latest).getTime() + 1000).toISOString();
+                lastCheck = adjusted;
+            }
+        })
+        .catch(error => console.error("Error fetching team messages:", error));
+}
+
+
+  function displayTeamMessage(message) {
+      const container = document.getElementById("team-messages");
+      const div = document.createElement("div");
+      div.classList.add("team-msg");
+      div.textContent = message;
+      container.appendChild(div);
+
+      // Optional: Auto-scroll to latest
+      container.scrollTop = container.scrollHeight;
+
+      // Optional: Remove after 30 seconds
+      setTimeout(() => div.remove(), 30000);
+  }
+
+  // 🔁 Poll every 5 seconds
+  setInterval(pollTeamMessages, 5000);
+</script>
     <br>
     <footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
       <p>

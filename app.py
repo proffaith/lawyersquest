@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 import pymysql
 import random
 import logging
@@ -8,8 +8,43 @@ from urllib.parse import urlparse
 from sqlalchemy import create_engine
 from sqlalchemy.pool import QueuePool
 import os
+import re
+import requests
 from dotenv import load_dotenv
 
+# Configure logging based on environment
+def setup_logging():
+    # Get log level from environment variable, default to INFO
+    log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+
+    # Create a formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # Always log to stdout for Heroku
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+
+    # Configure the root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+    root_logger.addHandler(stream_handler)
+
+    # If we're in development, also log to a file
+    if os.getenv('FLASK_ENV') == 'development':
+        try:
+            file_handler = logging.FileHandler('debug.log')
+            file_handler.setFormatter(formatter)
+            root_logger.addHandler(file_handler)
+            logging.info('File logging enabled in development mode')
+        except Exception as e:
+            logging.warning(f'Could not set up file logging: {e}')
+
+    # Quiet some of the noisier libraries
+    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+    logging.getLogger('urllib3').setLevel(logging.WARNING)
+
+# Set up logging when the app starts
+setup_logging()
 
 from shared import get_squire_stats
 from shared import check_quest_completion
@@ -53,7 +88,7 @@ from shared import iswordcounthint
 from shared import iswordlengthhint
 from shared import flee_safely
 from shared import calc_flee_safely
-
+#from flask_socketio import SocketIO, emit, join_room
 
 # Load environment variables at the start of the application
 load_dotenv()
@@ -61,6 +96,7 @@ load_dotenv()
 #this is intended to pool connections to the proxy for MySQL and reduce the number of connections initiated
 
 fixie_url = os.getenv("QUOTA_GUARD_HOST")
+recaptcha = os.getenv("RECAPTCHA_SECRET_KEY")
 
 parsed = urlparse(f"https://{fixie_url}")
 proxy_host = parsed.hostname
@@ -68,7 +104,7 @@ proxy_port = parsed.port
 proxy_user = parsed.username
 proxy_pass = parsed.password
 
-print(f"{fixie_url}")
+#print(f"{fixie_url}")
 socks.set_default_proxy(
     socks.SOCKS5,
     proxy_host,
@@ -112,48 +148,75 @@ def get_db_connection():
         logging.error(f"Database connection error: {str(e)}")
         raise
 
+def add_team_message(team_id, message, db):
+    cursor = db.cursor(pymysql.cursors.DictCursor)
+    cursor.execute(
+        "INSERT INTO team_messages (team_id, message) VALUES (%s, %s)",
+        (team_id, message)
+    )
+    db.commit()
 
-# Configure logging based on environment
-def setup_logging():
-    # Get log level from environment variable, default to INFO
-    log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+def calculate_feature_counts(level, quest_id, base_trees=75, base_mountains=50):
+    # Example formula: scale trees and mountains with level and quest
+    tree_multiplier = 1 + (level * 0.1) + (quest_id * 0.05)
+    mountain_multiplier = 1 + (level * 0.08) + (quest_id * 0.07)
 
-    # Create a formatter
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    tree_count = int(base_trees * tree_multiplier)
+    mountain_count = int(base_mountains * mountain_multiplier)
 
-    # Always log to stdout for Heroku
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(formatter)
+    return tree_count, mountain_count
 
-    # Configure the root logger
-    root_logger = logging.getLogger()
-    root_logger.setLevel(log_level)
-    root_logger.addHandler(stream_handler)
 
-    # If we're in development, also log to a file
-    if os.getenv('FLASK_ENV') == 'development':
-        try:
-            file_handler = logging.FileHandler('debug.log')
-            file_handler.setFormatter(formatter)
-            root_logger.addHandler(file_handler)
-            logging.info('File logging enabled in development mode')
-        except Exception as e:
-            logging.warning(f'Could not set up file logging: {e}')
-
-    # Quiet some of the noisier libraries
-    logging.getLogger('werkzeug').setLevel(logging.WARNING)
-    logging.getLogger('urllib3').setLevel(logging.WARNING)
-
-# Set up logging when the app starts
-setup_logging()
 
 if __name__ == '__main__':
     app.run(port=5050)
+
+#socketio = SocketIO(app)
 
 # 🏠 Homepage (Start Game)
 @app.route("/")
 def home():
     return render_template("index.html")
+
+#@socketio.on('join')
+#def handle_join(data):
+#    join_room(f"team_{data['team_id']}")
+
+#def broadcast_team_message(team_id, message):
+#    socketio.emit('team_message', {'message': message}, room=f"team_{team_id}")
+
+@app.route("/team_messages/<int:team_id>")
+def get_team_messages(team_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+    since = request.args.get("since", None)  # Timestamp of last check
+
+
+    if since:
+        try:
+            clean_since = since.split('.')[0].replace('T', ' ')
+            #print(f"{clean_since}")
+            query = """
+                SELECT message, created_at FROM team_messages
+                WHERE team_id = %s AND created_at > %s
+                ORDER BY created_at ASC
+            """
+            cursor.execute(query, (team_id, clean_since))
+        except Exception as e:
+            logging.debug("Timestamp parsing error:", e)
+            return jsonify([ ])
+
+    else:
+        query = """
+        SELECT id, message, created_at FROM team_messages
+        WHERE team_id = %s ORDER BY created_at DESC
+        LIMIT 1
+    """
+        cursor.execute(query, (team_id, ))
+
+    rows = cursor.fetchall()
+    return jsonify(rows)
 
 @app.route("/terms")
 def terms():
@@ -180,7 +243,7 @@ def select_course(course_id):
 
     session["course_id"] = course_id
 
-    print(f"🚀 DEBUG: Selected course_id set in session → {session.get('course_id', 'NOT SET')}")
+    #print(f"🚀 DEBUG: Selected course_id set in session → {session.get('course_id', 'NOT SET')}")
     return redirect(url_for('quest_select'))  # ✅ Refresh quest selection page
 
 
@@ -192,18 +255,60 @@ def login():
         conn = get_db_connection()
         cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-        cursor.execute("SELECT id FROM squires WHERE squire_name = %s", (squire,))
+        cursor.execute("SELECT id, squire_name, team_id FROM squires WHERE squire_name = %s", (squire,))
         squire = cursor.fetchone()
 
         if squire:
             session['squire_id'] = squire['id']
-            generate_terrain_features(conn, session['squire_id'])
+            session['squire_name'] = squire['squire_name']
+            session['team_id'] = squire['team_id']
+
+
             update_riddle_hints(conn)
 
             return redirect(url_for("quest_select"))  # ✅ Redirect
 
     return render_template('index.html')
 
+@app.route("/register", methods=["GET", "POST"])
+def register_squire():
+    if request.method == "POST":
+        squire_name = request.form["squire_name"]
+        real_name = request.form["real_name"]
+        email = request.form["email"]
+        captcha_response = request.form.get("g-recaptcha-response")
+
+        # Email format check
+        if not is_valid_email(email):
+            flash("Invalid email format.")
+            return redirect(url_for("register_squire"))
+
+        # Verify CAPTCHA
+        captcha_verify_url = "https://www.google.com/recaptcha/api/siteverify"
+        response = requests.post(captcha_verify_url, data={
+            'secret': recaptcha,
+            'response': captcha_response
+        })
+        result = response.json()
+
+        if not result.get("success"):
+            flash("CAPTCHA verification failed.")
+            return redirect(url_for("register_squire"))
+
+        # ✅ Add squire to DB
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO squires (squire_name, real_name, email, experience_points, level, x_coordinate, y_coordinate, work_sessions)
+            VALUES (%s, %s, %s, 0, 1, 0, 0, 0)
+        """, (squire_name, real_name, email))
+        conn.commit()
+        cursor.close()
+
+        flash("🎉 Welcome to the realm, noble squire!")
+        return redirect(url_for("login"))  # Or map page, depending on your flow
+
+    return render_template("register.html")
 
 @app.route('/start_quest', methods=['POST'])
 def start_quest():
@@ -231,6 +336,16 @@ def start_quest():
 
     squire_quest_id = cursor.lastrowid
 
+    cursor.execute("""
+        SELECT level from squires where id = %s
+    """, (squire_id,))
+    l = cursor.fetchone()
+    level = l["level"]
+
+    treesize, mountainsize = calculate_feature_counts(level,quest_id)
+
+    generate_terrain_features(conn, squire_id, squire_quest_id,5,10,treesize,3,9,mountainsize)
+
     # ✅ Store quest ID in session
     session["quest_id"] = quest_id
     session["squire_quest_id"] = squire_quest_id
@@ -252,7 +367,7 @@ def quest_select():
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-    generate_terrain_features(conn, squire_id, random.randint(1, 10), 10, random.randint(50, 100), 5, 10, random.randint(50, 100))
+
 
     # ✅ Fetch all available courses
     cursor.execute("SELECT id, course_name, description FROM courses")
@@ -283,7 +398,7 @@ def quest_select():
     # ✅ Debug session message before rendering
     # Retrieve quest completion message (if any)
     quest_message = session.get("quest_message", [])
-    print("Jinja received:", quest_message)
+    #print("Jinja received:", quest_message)
     logging.debug(f"DEBUG: Quest Message in Session → {quest_message}")
 
     session.pop("quest_message", None)
@@ -296,6 +411,7 @@ def quest_select():
 def map_view():
     squire_id = session.get("squire_id")
     quest_id = session.get("quest_id")
+    team_id = session.get('team_id')
 
     if not squire_id:
         return redirect(url_for("login"))
@@ -334,7 +450,8 @@ def map_view():
             level=level,
             message=message,
             position=(x,y),
-            inventory=inventory
+            inventory=inventory,
+            team_id=team_id
         )
     except Exception as e:
         logging.error(f"⚠️ Map rendering failed: {str(e)}")
@@ -597,6 +714,13 @@ def handle_true_false_question():
     if is_correct:
         update_squire_progress(squire_id, conn, enemy["xp_reward"], enemy["gold_reward"])
         session['message'] = f"✅ Correct! The enemy is defeated! You gain {enemy['xp_reward']} XP and {enemy['gold_reward']} bits."
+        session['success'] = True
+
+        toast = f"{session['squire_name']} defeated {enemy['name']} and gained {enemy['xp_reward']} XP and {enemy['gold_reward']} bits."
+        add_team_message(session['team_id'],toast,conn)
+
+        session.pop("success",None)
+
         return jsonify({
             "success": True,
             "message": f"✅ Correct! The enemy is defeated! You gain {enemy['xp_reward']} XP and {enemy['gold_reward']} bits.",
@@ -607,6 +731,8 @@ def handle_true_false_question():
 
     else:
         if has_weapon:
+
+
             return jsonify({
                 "success": False,
                 "message": "❌ Wrong answer! En Garde!",
@@ -619,6 +745,8 @@ def handle_true_false_question():
         conn.commit()
 
         session['message'] = "🛑 The enemy forces you to flee by your wrong answer.\n❌ You lose 10 XP and your gear is damaged."
+        session['success'] = False
+        session.pop("success",None)
 
         return jsonify({
             "success": False,
@@ -676,6 +804,8 @@ def check_true_false_question():
     squire_id = session.get("squire_id")
     question_id = request.form.get("question_id")
     user_answer = request.form.get("answer")
+    enemy = session.get("enemy", {})  # Retrieve enemy details from session
+    session.pop("success",None)
 
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
@@ -706,14 +836,65 @@ def check_true_false_question():
         """, (squire_id, question_id))
         conn.commit()
 
+
+
+        # Check if this was for a job
+        pending_job = session.pop("pending_job", None)
+        if pending_job:
+            level = cursor.execute("SELECT level FROM squires WHERE id = %s", (squire_id,))
+            level = cursor.fetchone()['level']
+            payout = random.randint(pending_job["min_payout"], pending_job["max_payout"]) * level
+
+            # Pay player
+            cursor.execute("""
+                UPDATE teams
+                SET gold = gold + %s
+                WHERE id = (SELECT team_id FROM squires WHERE id = %s)
+            """, (payout, squire_id))
+
+            # Increment work_sessions
+            cursor.execute("""
+                UPDATE squires
+                SET work_sessions = work_sessions + 1
+                WHERE id = %s
+            """, (squire_id,))
+
+            conn.commit()
+            session["job_message"] = f"✅ You completed '{pending_job['job_name']}' and earned 💰 {payout} bits!"
+            toast = f"{session['squire_name']} completed '{pending_job['job_name']}' and earned 💰 {payout} bits."
+            add_team_message(session['team_id'],toast,conn)
+
+            return redirect(url_for("visit_town"))
+
         xp_reward = enemy.get("xp_reward", 0)
         gold_reward = enemy.get("gold_reward", 0)
         update_squire_progress(squire_id, conn, xp_reward, gold_reward)
-        session["combat_result"] = f"✅ Correct! You have defeated the enemy and earned {xp_reward} XP and {gold_reward} bits."
-    else:
-        session["combat_result"] = "❌ Incorrect! The enemy strikes!"
 
-    return redirect(url_for("combat_results"))
+        toast = f"{session['squire_name']} defeated {enemy['name']} and gained {enemy['xp_reward']} XP and {enemy['gold_reward']} bits."
+        add_team_message(session['team_id'],toast,conn)
+
+        session["combat_result"] = f"✅ Correct! You have defeated the enemy and earned {xp_reward} XP and {gold_reward} bits."
+        session["success"] = True
+    else:
+        # Fail scenario for job or enemy
+        if session.get("pending_job"):
+            session.pop("pending_job", None)
+            session["job_message"] = "❌ Incorrect! You failed the task and earned nothing."
+            return redirect(url_for("visit_town"))
+
+        degrade_gear(squire_id, enemy["weakness"], conn)
+        cursor.execute("UPDATE squires SET experience_points = GREATEST(0, experience_points - %s) WHERE id = %s", (enemy["xp_reward"],squire_id,))
+        conn.commit()
+
+        session["combat_result"] = f"❌ Incorrect! You are defeated by {enemy['name']} and lose some experience points!"
+        session["success"] = False
+
+
+    return render_template(
+        "combat_results.html",
+        success=session.pop("success", None),
+        combat_result=session.pop("combat_result", "")
+    )
 
 
 # ⚔️ Combat
@@ -1043,6 +1224,8 @@ def check_MC_question():
         """, (squire_id, question_id))
         conn.commit()
 
+
+
         session["boss_current_hunger"] = boss_current_hunger + 1
         session["question_id"] = None
         enemy_message = f"💥 Good Answer! {boss['name']} is getting hungrier."
@@ -1067,6 +1250,10 @@ def check_MC_question():
         session.pop("boss", None)
         session.pop("player_current_hunger", None)
         session.pop("boss_current_hunger", None)
+
+        toast = f"{session['squire_name']} defeated {boss['name']} and gained {boss['xp_reward']} XP and {boss['gold_reward']} bits."
+        add_team_message(session['team_id'],toast,conn)
+
         return redirect(url_for("combat_results"))
 
     if player_current_hunger >= int(session["player_max_hunger"]):
@@ -1099,6 +1286,7 @@ def ajax_handle_combat():
     mod_enemy_max_hunger = session["mod_enemy_max_hunger"]
     hit_chance = session["hit_chance"]
     mod_for_distance = session["mod_for_distance"]
+    session.pop("success",None)
 
 
     conn = get_db_connection()
@@ -1121,15 +1309,18 @@ def ajax_handle_combat():
 
         if flee_safely(mod_enemy_max_hunger,player_max_hunger, hit_chance) == False:
             session["combat_result"] = "🏃 You managed to escape safely!"
+            session["success"] = True
         else:
             degrade_gear(squire_id, enemy["weakness"], conn)
             session["combat_result"] = "🏃 You managed to escape but your armor was damaged during the retreat."
+            session["success"] = False
         # Clear session combat variables
         session.pop("enemy", None)
         session.pop("player_current_hunger", None)
         session.pop("enemy_current_hunger", None)
         session.pop("combat_active", None)
         session.pop("battle_log", None)
+        session.pop("success",None)
         cursor.close()
         return jsonify({"redirect": url_for("combat_results")})
     elif action == "question":
@@ -1162,6 +1353,7 @@ def ajax_handle_combat():
             conn.commit()
             outcome = f"🛑 You are too hungry to continue fighting! The enemy forces you to flee and damages your gear.\n❌ You lose some XP."
             session["combat_result"] = outcome
+            session["success"] = False
 
             # Clear session variables
             session.pop("enemy", None)
@@ -1169,8 +1361,9 @@ def ajax_handle_combat():
             session.pop("enemy_current_hunger", None)
             session.pop("combat_active", None)
             session.pop("battle_log", None)
+
             cursor.close()
-            return jsonify({"redirect": url_for("combat_results"), "battle_log": battle_log})
+            return jsonify({"redirect": url_for("combat_results")})
 
         # result if player won
         if enemy_current_hunger >= mod_enemy_max_hunger:
@@ -1197,14 +1390,26 @@ def ajax_handle_combat():
             outcome = f"🍕 The {enemy['name']} is too hungry to continue! They run off to eat a pizza.\nYou gain {xp} XP and {bitcoin} bits."
             session["combat_result"] = outcome
 
+            # ✅ Reset combat flag and work sessions after combat
+            session["forced_combat"] = False
+            session["success"] = True
+            cursor.execute("UPDATE squires SET work_sessions = 0 WHERE id = %s", (squire_id,))
+            conn.commit()
+
+            toast = f"{session['squire_name']} defeated {enemy['name']} and gained {xp} XP and {bitcoin} bits."
+            add_team_message(session['team_id'],toast,conn)
+
             # Clear combat session variables
             session.pop("enemy", None)
             session.pop("player_current_hunger", None)
             session.pop("enemy_current_hunger", None)
             session.pop("combat_active", None)
             session.pop("battle_log", None)
+
             cursor.close()
-            return jsonify({"redirect": url_for("combat_results"), "battle_log": battle_log})
+
+            return jsonify({"redirect": url_for("combat_results")})
+
 
     # Save updated values in session
     session["player_current_hunger"] = player_current_hunger
@@ -1225,9 +1430,11 @@ def ajax_handle_combat():
 
 @app.route('/combat_results', methods=['GET'])
 def combat_results():
-    """Displays the results of combat."""
-    return render_template("combat_results.html", combat_result=session.pop("combat_result", "No battle log found."))
-
+    return render_template(
+        "combat_results.html",
+        success=session.pop("success", None),
+        combat_result=session.pop("combat_result", "")
+    )
 #Town Routes here
 
 @app.route('/town', methods=['GET'])
@@ -1322,7 +1529,7 @@ def buy_item():
         })
 
     except Exception as e:
-        print(f"Error: {str(e)}")  # Log error in console
+        #print(f"Error: {str(e)}")  # Log error in console
         return jsonify({"success": False, "message": "Something went wrong!"}), 500
 
 @app.route('/town_work', methods=['GET', 'POST'])
@@ -1370,17 +1577,15 @@ def town_work():
         # Generate payout within the range
         payout = random.randint(job["min_payout"], job["max_payout"]) * level
 
-        # Update player's gold
-        cursor.execute("UPDATE teams SET gold = gold + %s WHERE id in (select team_id from squires where id = %s)", (payout, squire_id))
-        conn.commit()
+        # ✅ Save job info to session before answering question
+        session["pending_job"] = {
+            "job_id": job_id,
+            "job_name": job["job_name"],
+            "min_payout": job["min_payout"],
+            "max_payout": job["max_payout"]
+        }
 
-        # ✅ Increment work session count
-        cursor.execute("UPDATE squires SET work_sessions = work_sessions + 1 WHERE id = %s", (squire_id,))
-        conn.commit()
-
-        session["job_message"] = f"✅ You completed '{job['job_name']}' and earned 💰 {payout} bits!"
-        #job_message = session.pop("job_message", None)  # Show the message **once**
-        return redirect(url_for("visit_town"))
+        return redirect(url_for("answer_question"))
 
     # Fetch available jobs
     cursor.execute("SELECT id, job_name, description, min_payout, max_payout FROM jobs")
@@ -1500,6 +1705,9 @@ def check_riddle():
 
             special_item = calculate_riddle_reward(conn, riddle_id, squire_id)
 
+            toast = f"{session['squire_name']} solved a riddle and received {special_item}."
+            add_team_message(session['team_id'],toast,conn)
+
             session.pop("current_riddle", None)  # Remove riddle from session
             return jsonify({"success": True, "message": f"🎉 Correct! The wizard nods in approval and grants you {special_item}"})
         else:
@@ -1606,23 +1814,30 @@ def check_treasure():
         food = chest["food_reward"]
         special_item = chest["special_item"]
         reward_messages = []
+        toast_messages = []
 
         if gold > 0:
             reward_messages.append(f"💰 You found {gold} bitcoin!")
+            toast_messages.append(f"{gold} bitcoin")
             cursor.execute("UPDATE teams SET gold = gold + %s WHERE id = (SELECT team_id FROM squires WHERE id = %s)", (gold, squire_id))
 
         if xp > 0:
             reward_messages.append(f"🎖️ You gained {xp} XP!")
+            toast_messages.append(f" / {xp} XP")
             cursor.execute("UPDATE squires SET experience_points = experience_points + %s WHERE id = %s", (xp, squire_id))
 
         if food > 0:
             reward_messages.append(f"🍖 You found {food} special food items!")
+            toast_messages.append(f" / magic food")
             cursor.execute("INSERT INTO inventory (squire_id, item_name, description, uses_remaining, item_type) VALUES (%s, 'Magic Pizza', 'Restores hunger', 15, 'food')", (squire_id,))
 
         if special_item:
             # Adjust item uses based on difficulty
             uses_remain = {"Easy": 10, "Medium": 25, "Hard": 50}.get(chest["difficulty"], 10)
             reward_messages.append(f"🛡️ You discovered a rare item: {special_item}!")
+            toast_messages.append(f" / {special_item}")
+
+
             cursor.execute("INSERT INTO inventory (squire_id, item_name, description, uses_remaining, item_type) VALUES (%s, %s, 'A special item that affects gameplay', %s, 'gear')",
                            (squire_id, special_item, uses_remain))
 
@@ -1630,6 +1845,10 @@ def check_treasure():
         cursor.execute("UPDATE treasure_chests SET is_opened = TRUE WHERE id = %s", (chest["id"],))
         cursor.execute("INSERT INTO squire_riddle_progress (squire_id, riddle_id, quest_id, answered_correctly) VALUES (%s, %s, %s, 1)",
                        (squire_id, chest["riddle_id"], quest_id,))
+        toast_str = ", ".join(toast_messages)
+
+        toast = f"{session['squire_name']} solved a riddle and received {toast_str}."
+        add_team_message(session['team_id'],toast,conn)
 
         conn.commit()
         cursor.close()

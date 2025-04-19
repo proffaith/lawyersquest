@@ -33,7 +33,7 @@ def log_travel_history(squire_id, x, y, conn):
 def can_enter_tile(squire_id, new_x, new_y, conn):
     cursor = conn.cursor(pymysql.cursors.DictCursor)
     # Assume you have a table or function to determine the tile type at these coordinates
-    cursor.execute("SELECT terrain_type FROM map_features WHERE x_coordinate = %s AND y_coordinate = %s", (new_x, new_y))
+    cursor.execute("SELECT terrain_type FROM map_features WHERE x_coordinate = %s AND y_coordinate = %s and squire_id=%s", (new_x, new_y, squire_id))
     tile = cursor.fetchone()
 
     # If the destination is a mountain, check for boots
@@ -42,6 +42,14 @@ def can_enter_tile(squire_id, new_x, new_y, conn):
         boots = cursor.fetchone()
         cursor.close()
         return bool(boots)  # Only allow entry if boots exist
+
+    if tile and tile["terrain_type"] == "river":
+        cursor.execute("SELECT * FROM inventory WHERE squire_id = %s AND item_name like '%%Boat%%'", (squire_id,))
+        boat = cursor.fetchone()
+        cursor.close()
+        return bool(boat)  # Only allow entry if boots exist
+
+
     cursor.close()
     return True
 
@@ -114,7 +122,7 @@ def get_viewport_map(squire_id, quest_id, conn, viewport_size=15):
     x, y = position["x_coordinate"], position["y_coordinate"]
 
     # Fetch feature locations (e.g., forests, mountains, etc.)
-    cursor.execute("SELECT x_coordinate, y_coordinate, terrain_type FROM map_features")
+    cursor.execute("SELECT x_coordinate, y_coordinate, terrain_type FROM map_features where squire_id = %s",(squire_id,))
     features = cursor.fetchall()
     feature_map = { (row["x_coordinate"], row["y_coordinate"]): row["terrain_type"] for row in features }
 
@@ -137,12 +145,16 @@ def get_viewport_map(squire_id, quest_id, conn, viewport_size=15):
                 cell_content = "📍"  # Player position
             elif (col, row) == (0, 0):
                 cell_content = "🏰"  # Home village
+            elif (col, row) == (40,40):
+                cell_content = "🏰"  # Enemy village
             elif (col, row) in feature_map:
                 terrain = feature_map[(col, row)]
                 if terrain == "forest":
                     cell_content = "🌲"
                 elif terrain == "mountain":
                     cell_content = "🏔️"
+                elif terrain == "river":
+                    cell_content = "🌊"
             elif (col, row) in visited_locations:
                 cell_content = "•"  # Visited location
 
@@ -171,7 +183,7 @@ def display_travel_map(squire_id, quest_id, conn):
     x, y = position["x_coordinate"], position["y_coordinate"]
 
     # Fetch feature locations
-    cursor.execute("SELECT x_coordinate, y_coordinate, terrain_type FROM map_features")
+    cursor.execute("SELECT x_coordinate, y_coordinate, terrain_type FROM map_features where squire_id=%s",(squire_id,))
     features = cursor.fetchall()
 
     #logging.debug(f"DEBUG of features: {features}")
@@ -505,6 +517,8 @@ def calculate_enemy_encounter_probability(squire_id, quest_id, current_x, curren
             base_probability += 0.02 * feature["count"]
         elif feature["terrain_type"] == "mountain":
             base_probability += 0.03 * feature["count"]
+        elif feature["terrain_type"] == "river":
+            base_probability += 0.04 * feature["count"]
 
     # Check for nearby unopened treasure chests
     cursor.execute("""
@@ -720,7 +734,7 @@ def check_for_level_up(squire_id, conn):
     if new_level > current_level:
         cursor.execute("UPDATE squires SET level = %s WHERE id = %s", (new_level, squire_id))
         conn.commit()
-        print(f"\n🎉 Congratulations! You leveled up to Level {new_level}!")
+        session.message=[f"\n🎉 Congratulations! You leveled up to Level {new_level}!"]
 
     cursor.close()
 
