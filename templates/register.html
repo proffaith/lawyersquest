@@ -8,22 +8,31 @@
 <body>
     <h1>Registration</h1>
 
-    <form method="POST" action="{{ url_for('register_squire') }}">
-      <label for="squire_name">Squire Name:</label>
-      <input type="text" name="squire_name" required><br>
+    <table>
+      <tr>
+        <td>
 
-      <label for="real_name">Your Real Name:</label>
-      <input type="text" name="real_name" required><br>
+          <form method="POST" action="{{ url_for('register_squire') }}">
+            <label for="squire_name">Squire Name:</label>
+            <input type="text" name="squire_name" required><br>
 
-      <label for="email">Email:</label>
-      <input type="email" name="email" required><br>
+            <label for="real_name">Your Real Name:</label>
+            <input type="text" name="real_name" required><br>
+
+            <label for="email">Email:</label>
+            <input type="email" name="email" required><br>
+        </td>
+        <td>
 
       <!-- Google reCAPTCHA v2 widget -->
       <div class="captcha-wrapper">
         <div class="g-recaptcha" data-sitekey="6Lc8eh0rAAAAAJvBfj7nFI_9zpersbTZ0X5U0Odw"></div>
       </div>
       <button type="submit">Register</button>
+    </td>
+  </tr>
     </form>
+</table>
 
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
