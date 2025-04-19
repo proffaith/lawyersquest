@@ -8,6 +8,17 @@
 <body>
   <h1>Registration</h1>
 
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class="flashes">
+      {% for message in messages %}
+        <li style="color: red;">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
+
 <form method="POST" action="{{ url_for('register_squire') }}" onsubmit="return validateCaptcha();" class="registration-form">
   <table>
     <tr>
@@ -54,6 +65,7 @@
 
     <footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
       <p>
+        <a href="{{ url_for('login') }}">Login</a> |
         <a href="{{ url_for('terms') }}">Privacy & Terms of Use</a> |
         <a href="{{ url_for('getting_started') }}">Getting Started</a> |
         © 2025, Tim Faith <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank">CC BY-SA 4.0</a> |

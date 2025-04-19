@@ -314,16 +314,36 @@ def register_squire():
         try:
             # ✅ Add squire to DB
             conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO squires (squire_name, real_name, email, team_id, experience_points, level, x_coordinate, y_coordinate, work_sessions)
-                VALUES (%s, %s, %s, %s, 0, 1, 0, 0, 0)
-            """, (squire_name, real_name, email, team_id))
-            conn.commit()
-            cursor.close()
+            cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-            flash("🎉 Welcome to the realm, noble squire!")
-            return redirect(url_for("login"))  # Or map page, depending on your flow
+            cursor.execute("""
+                SELECT
+                    SUM(squire_name = %s) as name_taken,
+                    SUM(email = %s) as email_taken
+                FROM squires
+            """, (squire_name, email))
+
+            result = cursor.fetchone()
+            if result["name_taken"]:
+                flash("Squire name already registered. Click the login link to login with it.")
+                return redirect(url_for("register_squire"))
+
+
+            elif result["email_taken"]:
+                flash("Your email is already registered. You can login or request an email to recover your squire name.")
+                return redirect(url_for("register_squire"))
+
+            else:
+                cursor.execute("""
+                    INSERT INTO squires (squire_name, real_name, email, team_id, experience_points, level, x_coordinate, y_coordinate, work_sessions)
+                    VALUES (%s, %s, %s, %s, 0, 1, 0, 0, 0)
+                """, (squire_name, real_name, email, team_id))
+                conn.commit()
+                cursor.close()
+
+                flash("🎉 Welcome to the realm, noble squire!")
+                return redirect(url_for("login"))  # Or map page, depending on your flow
+
         except Exception as e:
             flash("🔥 Something went wrong. Please try again.")
             logging.warning("❌ DB Error:", e)
