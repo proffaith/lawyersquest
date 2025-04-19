@@ -21,6 +21,14 @@
 
             <label for="email">Email:</label>
             <input type="email" name="email" required><br>
+
+            <label for="team_id">Choose Your Team:</label>
+            <select name="team_id" id="team_id" required>
+              <option value="" disabled selected>Select a team</option>
+              {% for team in teams %}
+                <option value="{{ team.id }}">{{ team.team_name }}</option>
+              {% endfor %}
+            </select>
         </td>
         <td>
 

@@ -278,6 +278,7 @@ def register_squire():
         real_name = request.form["real_name"]
         email = request.form["email"]
         captcha_response = request.form.get("g-recaptcha-response")
+        team_id = request.form["team_id"]
 
         # Email format check
         if not is_valid_email(email):
@@ -300,16 +301,23 @@ def register_squire():
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO squires (squire_name, real_name, email, experience_points, level, x_coordinate, y_coordinate, work_sessions)
-            VALUES (%s, %s, %s, 0, 1, 0, 0, 0)
-        """, (squire_name, real_name, email))
+            INSERT INTO squires (squire_name, real_name, email, team_id, experience_points, level, x_coordinate, y_coordinate, work_sessions)
+            VALUES (%s, %s, %s, %s, 0, 1, 0, 0, 0)
+        """, (squire_name, real_name, email, team_id))
         conn.commit()
         cursor.close()
 
         flash("🎉 Welcome to the realm, noble squire!")
         return redirect(url_for("login"))  # Or map page, depending on your flow
+    else:
+        # Fetch teams to display in dropdown
+        conn = get_db_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("SELECT id, team_name FROM teams")
+        teams = cursor.fetchall()
+        cursor.close()
 
-    return render_template("register.html")
+        return render_template("register.html", teams=teams)
 
 @app.route('/start_quest', methods=['POST'])
 def start_quest():
