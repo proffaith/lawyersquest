@@ -43,7 +43,16 @@
 </table>
 
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-
+<script>
+  function validateCaptcha() {
+    const response = grecaptcha.getResponse();
+    if (response.length === 0) {
+      alert("⚠️ Please complete the CAPTCHA.");
+      return false;
+    }
+    return true;
+  }
+</script>
     <footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
       <p>
         <a href="{{ url_for('terms') }}">Privacy & Terms of Use</a> |
