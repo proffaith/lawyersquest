@@ -304,18 +304,24 @@ def register_squire():
             flash("CAPTCHA verification failed.")
             return redirect(url_for("register_squire"))
 
-        # ✅ Add squire to DB
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO squires (squire_name, real_name, email, team_id, experience_points, level, x_coordinate, y_coordinate, work_sessions)
-            VALUES (%s, %s, %s, %s, 0, 1, 0, 0, 0)
-        """, (squire_name, real_name, email, team_id))
-        conn.commit()
-        cursor.close()
+        try:
+            # ✅ Add squire to DB
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO squires (squire_name, real_name, email, team_id, experience_points, level, x_coordinate, y_coordinate, work_sessions)
+                VALUES (%s, %s, %s, %s, 0, 1, 0, 0, 0)
+            """, (squire_name, real_name, email, team_id))
+            conn.commit()
+            cursor.close()
 
-        flash("🎉 Welcome to the realm, noble squire!")
-        return redirect(url_for("login"))  # Or map page, depending on your flow
+            flash("🎉 Welcome to the realm, noble squire!")
+            return redirect(url_for("login"))  # Or map page, depending on your flow
+        except:
+            flash("🔥 Something went wrong. Please try again.")
+            print("❌ DB Error:", e)
+            return redirect(url_for("register_squire"))
+
     else:
         # Fetch teams to display in dropdown
         conn = get_db_connection()
