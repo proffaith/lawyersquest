@@ -6,53 +6,52 @@
 
 </head>
 <body>
-    <h1>Registration</h1>
+  <h1>Registration</h1>
 
-    <table>
-      <tr>
-        <td>
+<form method="POST" action="{{ url_for('register_squire') }}" onsubmit="return validateCaptcha();" class="registration-form">
+  <table>
+    <tr>
+      <td>
+        <label>Squire Name:</label>
+        <input type="text" name="squire_name" required><br>
 
-          <form method="POST" action="{{ url_for('register_squire') }}">
-            <label for="squire_name">Squire Name:</label>
-            <input type="text" name="squire_name" required><br>
+        <label>Real Name:</label>
+        <input type="text" name="real_name" required><br>
 
-            <label for="real_name">Your Real Name:</label>
-            <input type="text" name="real_name" required><br>
+        <label>Email:</label>
+        <input type="email" name="email" required><br>
 
-            <label for="email">Email:</label>
-            <input type="email" name="email" required><br>
-
-            <label for="team_id">Choose Your Team:</label>
-            <select name="team_id" id="team_id" required>
-              <option value="" disabled selected>Select a team</option>
-              {% for team in teams %}
-                <option value="{{ team.id }}">{{ team.team_name }}</option>
-              {% endfor %}
-            </select>
-        </td>
-        <td>
-
-      <!-- Google reCAPTCHA v2 widget -->
-      <div class="captcha-wrapper">
+        <label for="team_id">Team:</label>
+        <select name="team_id" required>
+          {% for team in teams %}
+            <option value="{{ team.id }}">{{ team.team_name }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td style="vertical-align: top;">
         <div class="g-recaptcha" data-sitekey="6Lc8eh0rAAAAAJvBfj7nFI_9zpersbTZ0X5U0Odw"></div>
-      </div>
-      <button type="submit">Register</button>
-    </td>
-  </tr>
-    </form>
-</table>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" style="text-align: center;">
+        <button type="submit">Register</button>
+      </td>
+    </tr>
+  </table>
+</form>
 
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <script>
   function validateCaptcha() {
     const response = grecaptcha.getResponse();
-    if (response.length === 0) {
+    if (!response) {
       alert("⚠️ Please complete the CAPTCHA.");
       return false;
     }
     return true;
   }
 </script>
+
     <footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
       <p>
         <a href="{{ url_for('terms') }}">Privacy & Terms of Use</a> |
