@@ -285,6 +285,13 @@ def register_squire():
             flash("Invalid email format.")
             return redirect(url_for("register_squire"))
 
+        print("🌱 FORM DATA:", squire_name, real_name, email, team_id)
+
+        # Validate inputs
+        if not squire_name or not real_name or not email or not team_id:
+            flash("🚫 Please fill out all required fields.")
+            return redirect(url_for("register_squire"))
+
         # Verify CAPTCHA
         captcha_verify_url = "https://www.google.com/recaptcha/api/siteverify"
         response = requests.post(captcha_verify_url, data={
