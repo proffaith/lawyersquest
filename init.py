@@ -20,11 +20,11 @@ def generate_random_coordinates(difficulty):
 def generate_rewards(difficulty):
     """Assigns rewards based on riddle difficulty."""
     if difficulty == "Easy":
-        return random.randint(10, 20), random.randint(5, 15), random.randint(1, 2), None
+        return random.randint(10, 20), random.randint(5, 15), random.randint(5, 10), None
     elif difficulty == "Medium":
-        return random.randint(25, 40), random.randint(15, 25), random.randint(2, 3), random.choice(["Small Shield", None])
+        return random.randint(25, 40), random.randint(15, 25), random.randint(10, 20), random.choice(["Small Shield", None])
     else:  # Hard
-        return random.randint(50, 75), random.randint(30, 50), random.randint(3, 5), random.choice(["Ring of Protection", "Golden Amulet", None])
+        return random.randint(50, 75), random.randint(30, 50), random.randint(15, 30), random.choice(["Ring of Protection", "Golden Amulet", None])
 
 
 def insert_treasure_chests(quest_id: int, squire_quest_id: int) -> str:
