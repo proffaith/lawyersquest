@@ -10,9 +10,9 @@ bypass_proxy = os.getenv("BYPASS_PROXY") == "1"
 
 if not bypass_proxy:
     fixie_url = os.getenv("QUOTA_GUARD_HOST")
-    user_pass, host_port = fixie_url.split('@')
-    username, password = user_pass.split(':')
-    host, port = host_port.split(':')
+#    user_pass, host_port = fixie_url.split('@')
+#    username, password = user_pass.split(':')
+#    host, port = host_port.split(':')
 
     print(f"[QG INIT] Proxy: {host}:{port}, user={username}")
 
