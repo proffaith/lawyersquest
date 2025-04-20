@@ -73,6 +73,7 @@ class Squire(Base):
 
     id = Column(Integer, primary_key=True)
     squire_name = Column(String(255), unique=True, nullable=False)
+    real_name = Column(String(255))
     email = Column(String(255))
     team_id = Column(Integer)
     experience_points = Column(Integer)
