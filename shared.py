@@ -1275,7 +1275,7 @@ def complete_quest(squire_id: int, quest_id: int) -> tuple[bool, list[str]]:
         # 4) Upsert SquireQuestStatus to 'completed'
         status = (
             db.query(SquireQuestStatus)
-              .filter_by(squire_id=squire_id, quest_id=quest_id)
+              .filter_by(squire_id=squire_id, quest_id=quest_id).first()
               .one_or_none()
         )
         if status:
