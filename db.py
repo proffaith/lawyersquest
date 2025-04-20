@@ -14,8 +14,6 @@ if not bypass_proxy:
 #    username, password = user_pass.split(':')
 #    host, port = host_port.split(':')
 
-    print(f"[QG INIT] Proxy: {host}:{port}, user={username}")
-
     socks.set_default_proxy(
         socks.SOCKS5,
         host,
@@ -38,7 +36,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 resolved = socket.getaddrinfo(os.getenv('DB_HOST'), 3306)
-print(f"[DEBUG] Resolved {os.getenv('DB_HOST')} to: {resolved}")
 
 def connect():
     # Just connect directly now — socket is already patched
