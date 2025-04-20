@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lawyer's Quest</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+
+
+</head>
+<body>
+  <script>
+document.addEventListener('DOMContentLoaded', function () {
+  const itemData = {{ item_info | tojson }};
+  const teamGold = {{ team.gold }};
+  const itemSelect = document.getElementById('item');
+  const bitcoinInput = document.getElementById('bitcoin');
+
+  function updateRepairLimit() {
+    const selectedId = parseInt(itemSelect.value);
+    const selectedItem = itemData.find(i => i.id === selectedId);
+    if (!selectedItem) return;
+
+    const usesLeft = selectedItem.max_uses - selectedItem.uses_remaining;
+    const maxSpendable = Math.min(usesLeft, teamGold);
+
+    bitcoinInput.max = maxSpendable;
+    bitcoinInput.placeholder = `Up to ${maxSpendable} gold`;
+    bitcoinInput.value = "";
+  }
+
+  itemSelect.addEventListener('change', updateRepairLimit);
+  updateRepairLimit();  // Run once on load
+});
+</script>
+
+<h2>🔨 A Wandering Trader 🔨</h2>
+
+<table>
+  <tr>
+    <td><img src="/static/wandering_trader.jpeg" width=150 height=150>
+    </td>
+    <td><p>You encounter a Wandering Trader with some wares for sale. You have <b>{{ team.gold }} ₿.</b> Would you like to buy something?</p>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flashes">
+            {% for category, message in messages %}
+              <b> <class="flash {{ category }}">{{ message }}</b><br>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <form method="POST">
+        <table>
+        {% for item in items %}
+          <tr><td><input type="radio" name="item_id" value="{{ item.id }}" required></td>
+            <td><strong>{{ item.item_name }}</strong> - {{ item.price }} gold</td>
+            <td><em>{{ item.description }}</em></td>
+            <td>Uses: {{ item.uses }}</td>
+          </tr>
+        {% endfor %}
+        <tr><td colspan="4"><button type="submit">Buy Selected Item</button></td></tr>
+      </form>
+    </table>
+</td>
+</tr>
+<tr><td colspan="2">
+<p><a href="{{ url_for('map_view') }}">Decline and move on</a></p>
+</td></tr>
+</table>
+<footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
+  <p>
+    <a href="{{ url_for('terms') }}">Privacy & Terms of Use</a> |
+    <a href="{{ url_for('getting_started') }}">Getting Started</a> |
+    <a href="https://youtu.be/DTIb4VuoziA">Video Walkthrough</a> |
+    <a href="{{ url_for('logout') }}">Log Out</a> |
+    © 2025, Tim Faith <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank">CC BY-SA 4.0</a> |
+    ver 0.3
+  </p>
+</footer>
+</body>
+</html>

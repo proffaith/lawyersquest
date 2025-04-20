@@ -1,16 +1,18 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
+from flask import Flask, render_template, request, redirect, url_for, session as flask_session, jsonify, flash
 import pymysql
 import random
 import logging
 import socks
 import socket
 from urllib.parse import urlparse
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func, and_
 from sqlalchemy.pool import QueuePool
 import os
 import re
 import requests
 from dotenv import load_dotenv
+from datetime import datetime
+from collections import defaultdict
 
 # Configure logging based on environment
 def setup_logging():
@@ -68,8 +70,6 @@ from shared import generate_word_length_hint
 from shared import update_riddle_hints
 from init import insert_treasure_chests
 from shared import display_travel_map
-from shared import display_hall_of_fame
-from init import generate_terrain_features
 from init import generate_terrain_features_dynamic
 from shared import check_for_treasure_at_location
 from shared import calculate_hit_chance
@@ -89,50 +89,12 @@ from shared import iswordcounthint
 from shared import iswordlengthhint
 from shared import flee_safely
 from shared import calc_flee_safely
-#from flask_socketio import SocketIO, emit, join_room
+
+from db import Squire, Course, Team, engine, db_session, Team, TravelHistory, Quest, SquireQuestion, SquireRiddleProgress, Riddle, Enemy, Inventory, WizardItem, Job, MapFeature, MultipleChoiceQuestion, TrueFalseQuestion, ShopItem, SquireQuestStatus, TeamMessage, TreasureChest, XpThreshold
 
 # Load environment variables at the start of the application
 load_dotenv()
-
-#this is intended to pool connections to the proxy for MySQL and reduce the number of connections initiated
-
-fixie_url = os.getenv("QUOTA_GUARD_HOST")
 recaptcha = os.getenv("RECAPTCHA_SECRET_KEY")
-
-parsed = urlparse(f"https://{fixie_url}")
-proxy_host = parsed.hostname
-proxy_port = parsed.port
-proxy_user = parsed.username
-proxy_pass = parsed.password
-
-#print(f"{fixie_url}")
-socks.set_default_proxy(
-    socks.SOCKS5,
-    proxy_host,
-    proxy_port,
-    True,
-    proxy_user,
-    proxy_pass
-)
-socket.socket = socks.socksocket  # Monkey patch
-
-# Build DB URI for SQLAlchemy
-DB_URI = f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
-
-# Create engine with connection pool
-engine = create_engine(
-    DB_URI,
-    connect_args={
-        "ssl": {"ssl": {}}  # Minimal SSL context; Azure may require it
-    },
-    poolclass=QueuePool,
-    pool_size=5,         # Adjust as needed
-    max_overflow=10,     # Extra connections if pool is full
-    pool_timeout=30,     # Seconds to wait for connection
-    pool_recycle=1800    # Recycle connections every 30 min
-)
-
-#"cursorclass": pymysql.cursors.DictCursor,
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
@@ -142,20 +104,27 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your_secret_key')  # For session
 def get_db_connection():
 
     try:
-        conn = engine.raw_connection()
+        conn = db_session()
         return conn
 
     except Exception as e:
         logging.error(f"Database connection error: {str(e)}")
         raise
 
-def add_team_message(team_id, message, db):
-    cursor = db.cursor(pymysql.cursors.DictCursor)
-    cursor.execute(
-        "INSERT INTO team_messages (team_id, message) VALUES (%s, %s)",
-        (team_id, message)
-    )
-    db.commit()
+def add_team_message(team_id: int, message: str) -> TeamMessage:
+    """
+    Persist a new team message and flush it to the database.
+    Returns the newly created TeamMessage instance.
+    """
+    db = db_session()
+    try:
+        tm = TeamMessage(team_id=team_id, message=message)
+        db.add(tm)
+        db.commit()        # you can also session.flush() if you want bulk commits later
+        db.refresh(tm)     # ensure tm.id and created_at are populated
+        return tm
+    finally:
+        db.close()
 
 def calculate_feature_counts(level, quest_id, base_trees=75, base_mountains=50):
     # Example formula: scale trees and mountains with level and quest
@@ -180,45 +149,37 @@ if __name__ == '__main__':
 def home():
     return render_template("index.html")
 
-#@socketio.on('join')
-#def handle_join(data):
-#    join_room(f"team_{data['team_id']}")
-
-#def broadcast_team_message(team_id, message):
-#    socketio.emit('team_message', {'message': message}, room=f"team_{team_id}")
-
 @app.route("/team_messages/<int:team_id>")
 def get_team_messages(team_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    session = db_session()
+    since = request.args.get("since")
 
-    since = request.args.get("since", None)  # Timestamp of last check
-
+    query = session.query(TeamMessage).filter(TeamMessage.team_id == team_id)
 
     if since:
         try:
-            clean_since = since.split('.')[0].replace('T', ' ')
-            #print(f"{clean_since}")
-            query = """
-                SELECT message, created_at FROM team_messages
-                WHERE team_id = %s AND created_at > %s
-                ORDER BY created_at ASC
-            """
-            cursor.execute(query, (team_id, clean_since))
-        except Exception as e:
-            logging.debug("Timestamp parsing error:", e)
-            return jsonify([ ])
-
+            # Expect ISO8601 like "2025-04-19T12:34:56"
+            ts = datetime.fromisoformat(since)
+            query = query.filter(TeamMessage.created_at > ts) \
+                         .order_by(TeamMessage.created_at.asc())
+        except ValueError:
+            session.close()
+            return jsonify([])
     else:
-        query = """
-        SELECT id, message, created_at FROM team_messages
-        WHERE team_id = %s ORDER BY created_at DESC
-        LIMIT 1
-    """
-        cursor.execute(query, (team_id, ))
+        query = query.order_by(TeamMessage.created_at.desc()) \
+                     .limit(1)
 
-    rows = cursor.fetchall()
-    return jsonify(rows)
+    msgs = query.all()
+    session.close()
+
+    return jsonify([
+        {
+            "id":          m.id,
+            "message":     m.message,
+            "created_at":  m.created_at.isoformat()
+        }
+        for m in msgs
+    ])
 
 @app.route("/terms")
 def terms():
@@ -232,44 +193,44 @@ def logout():
 def getting_started():
     return render_template('getting_started.html')
 
-@app.route('/npc', methods=['GET'])
-def npc():
-    """Handles NPC encounters and displays hints."""
-    npc_message = session.pop("npc_message", "The trader has no hints for you.")
-    logging.debug(f"NPC Page Loaded - Message: {npc_message}")  # Debugging
-    return render_template("npc.html", npc_message=npc_message)
-
 @app.route('/select_course/<int:course_id>', methods=['GET'])
 def select_course(course_id):
     """Sets the selected course and redirects to quest selection."""
 
     session["course_id"] = course_id
 
-    #print(f"🚀 DEBUG: Selected course_id set in session → {session.get('course_id', 'NOT SET')}")
+    #logging.debug(f"🚀 DEBUG: Selected course_id set in session → {session.get('course_id', 'NOT SET')}")
     return redirect(url_for('quest_select'))  # ✅ Refresh quest selection page
 
 
 # 🔑 Login (Enter Squire ID)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        squire = request.form['squire_id']
-        conn = get_db_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        username = request.form['squire_id']
+        db = db_session()
+        try:
+            # Load the squire by name
+            squire = db.query(Squire) \
+                       .filter_by(squire_name=username) \
+                       .one_or_none()
 
-        cursor.execute("SELECT id, squire_name, team_id FROM squires WHERE squire_name = %s", (squire,))
-        squire = cursor.fetchone()
+            if squire:
+                # Store in flask session
+                flask_session['squire_id']   = squire.id
+                flask_session['squire_name'] = squire.squire_name
+                flask_session['team_id']     = squire.team_id
 
-        if squire:
-            session['squire_id'] = squire['id']
-            session['squire_name'] = squire['squire_name']
-            session['team_id'] = squire['team_id']
+                # Refactored helper should accept the ORM session
+                update_riddle_hints()
 
+                return redirect(url_for('quest_select'))
 
-            update_riddle_hints(conn)
+        finally:
+            db.close()
 
-            return redirect(url_for("quest_select"))  # ✅ Redirect
-
+    # GET or failed login falls through here
     return render_template('index.html')
 
 @app.route("/register", methods=["GET", "POST"])
@@ -281,14 +242,14 @@ def register_squire():
         captcha_response = request.form.get("g-recaptcha-response")
         team_id = int(request.form["team_id"])
 
-        #print("🧪 CAPTCHA token received:", captcha_response)
+        #logging.debug("🧪 CAPTCHA token received:", captcha_response)
 
         # Email format check
         if not is_valid_email(email):
             flash("Invalid email format.")
             return redirect(url_for("register_squire"))
 
-        #print("🌱 FORM DATA:", squire_name, real_name, email, team_id)
+        #logging.debug("🌱 FORM DATA:", squire_name, real_name, email, team_id)
 
         # Validate inputs
         if not squire_name or not real_name or not email or not team_id:
@@ -303,201 +264,224 @@ def register_squire():
         })
         result = response.json()
 
-        #print("📬 CAPTCHA API response:", response.json())
+        #logging.debug("📬 CAPTCHA API response:", response.json())
 
         # After CAPTCHA result:
-        #print("✅ CAPTCHA result:", result)
+        #logging.debug("✅ CAPTCHA result:", result)
 
         if not result.get("success"):
             flash("CAPTCHA verification failed.")
             return redirect(url_for("register_squire"))
 
         try:
-            # ✅ Add squire to DB
-            conn = get_db_connection()
-            cursor = conn.cursor(pymysql.cursors.DictCursor)
-
-            cursor.execute("""
-                SELECT
-                    SUM(squire_name = %s) as name_taken,
-                    SUM(email = %s) as email_taken
-                FROM squires
-            """, (squire_name, email))
-
-            result = cursor.fetchone()
-            if result["name_taken"]:
+            # 1) Check for duplicate name/email
+            name_taken = db.query(Squire).filter(Squire.squire_name == squire_name).count()
+            if name_taken:
                 flash("Squire name already registered. Click the login link to login with it.")
                 return redirect(url_for("register_squire"))
 
-
-            elif result["email_taken"]:
+            email_taken = db.query(Squire).filter(Squire.email == email).count()
+            if email_taken:
                 flash("Your email is already registered. You can login or request an email to recover your squire name.")
                 return redirect(url_for("register_squire"))
 
-            else:
-                cursor.execute("""
-                    INSERT INTO squires (squire_name, real_name, email, team_id, experience_points, level, x_coordinate, y_coordinate, work_sessions)
-                    VALUES (%s, %s, %s, %s, 0, 1, 0, 0, 0)
-                """, (squire_name, real_name, email, team_id))
-                conn.commit()
+            # 2) Create the new Squire
+            new_squire = Squire(
+                squire_name       = squire_name,
+                real_name         = real_name,
+                email             = email,
+                team_id           = team_id,
+                experience_points = 0,
+                level             = 1,
+                x_coordinate      = 0,
+                y_coordinate      = 0,
+                work_sessions     = 0
+            )
+            db.add(new_squire)
+            db.commit()
+            db.refresh(new_squire)  # now new_squire.id is available
 
-                squire_id = cursor.lastrowid
+            # 3) Give the starter pizza
+            starter_pizza = Inventory(
+                squire_id       = new_squire.id,
+                item_name       = "🍕 Large Pizza",
+                description     = "A starter pizza for your journey.",
+                uses_remaining  = 16,
+                item_type       = "food"
+            )
+            db.add(starter_pizza)
+            db.commit()
 
-                cursor.execute("""
-                    INSERT INTO inventory (squire_id, item_name, description, uses_remaining, item_type) VALUES (
-                    %s, %s, %s, %s, %s
-                    )
-                """, (squire_id, "🍕 Large Pizza", "A starter pizza for your journey.", 16, "food"))
-                conn.commit()
-
-                cursor.close()
-
-                flash("🎉 Welcome to the realm, noble squire!")
-                return redirect(url_for("login"))  # Or map page, depending on your flow
+            flash("🎉 Welcome to the realm, noble squire!")
+            return redirect(url_for("login"))
 
         except Exception as e:
+            db.rollback()
+            logging.warning("❌ DB Error: %s", e)
             flash("🔥 Something went wrong. Please try again.")
-            logging.warning("❌ DB Error:", e)
             return redirect(url_for("register_squire"))
 
     else:
-        # Fetch teams to display in dropdown
-        conn = get_db_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        cursor.execute("SELECT id, team_name FROM teams")
-        teams = cursor.fetchall()
-        cursor.close()
-
+        teams = db.query(Team.id, Team.team_name).all()
         return render_template("register.html", teams=teams)
 
 @app.route('/start_quest', methods=['POST'])
 def start_quest():
     """Assigns a selected quest to the player."""
-    squire_id = session.get("squire_id")
-
+    squire_id = flask_session.get("squire_id")
     if not squire_id:
-        return jsonify({"success": False, "message": "Session expired. Please log in again."}), 400
+        return jsonify(success=False, message="Session expired. Please log in again."), 400
 
-    data = request.get_json()
+    data = request.get_json() or {}
     quest_id = data.get("quest_id")
-
     if not quest_id:
-        return jsonify({"success": False, "message": "Invalid quest selection."}), 400
+        return jsonify(success=False, message="Invalid quest selection."), 400
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    db = db_session()
+    try:
+        # 1) Create the SquireQuestStatus
+        sqs = SquireQuestStatus(
+            squire_id=squire_id,
+            quest_id=quest_id,
+            status='active'
+        )
+        db.add(sqs)
+        db.commit()
+        db.refresh(sqs)  # now sqs.id is set
+        squire_quest_id = sqs.id
 
-    # ✅ Update the player's active quest
-    cursor.execute("""
-        INSERT INTO squire_quest_status (squire_id, quest_id, status)
-        VALUES (%s, %s, 'active')
-    """, (squire_id, quest_id,))
-    conn.commit()
+        # 2) Fetch the squire's level
+        squire = db.query(Squire).get(squire_id)
+        level = squire.level
 
-    squire_quest_id = cursor.lastrowid
+        # 3) Generate terrain features
+        treesize, mountainsize = calculate_feature_counts(level, quest_id)
+        # Note: adapt these helpers to accept the ORM session and new IDs
+        generate_terrain_features_dynamic(
+            db, squire_id=squire_id,
+            squire_quest_id=squire_quest_id,
+            num_forest_clusters=5, cluster_size=10, max_forests=treesize,
+            num_mountain_ranges=3, mountain_range_length=9, max_mountains=mountainsize
+        )
 
-    cursor.execute("""
-        SELECT level from squires where id = %s
-    """, (squire_id,))
-    l = cursor.fetchone()
-    level = l["level"]
+        # 4) Persist treasure chests and fresh hints
+        msg = insert_treasure_chests(
+            quest_id=quest_id,
+            squire_quest_id=squire_quest_id
+        )
 
-    treesize, mountainsize = calculate_feature_counts(level,quest_id)
+        # 5) Store in session and respond
+        flask_session["quest_id"]         = quest_id
+        flask_session["squire_quest_id"]  = squire_quest_id
+        msg += f"\n🛡️ You have started Quest {quest_id}!"
 
-    generate_terrain_features_dynamic(conn, squire_id, squire_quest_id,5,10,treesize,3,9,mountainsize)
+        return jsonify(success=True, message=msg)
 
-    # ✅ Store quest ID in session
-    session["quest_id"] = quest_id
-    session["squire_quest_id"] = squire_quest_id
-    message = insert_treasure_chests(conn, quest_id, squire_quest_id)
-    message += update_riddle_hints(conn)
-    message += f"\n🛡️ You have started Quest {quest_id}!"
+    except Exception as e:
+        db.rollback()
+        logging.warning(f"start quest route error {e}")
+        flask_session.pop("quest_id", None)
+        flask_session.pop("squire_quest_id", None)
+        return jsonify(success=False, message="Failed to start quest."), 500
 
-    return jsonify({"success": True, "message": message })
-
+    finally:
+        db.close()
 
 @app.route('/quest_select', methods=['GET'])
 def quest_select():
     """Displays available quests for the player to choose from."""
-    squire_id = session.get("squire_id")
-
+    squire_id = flask_session.get("squire_id")
     if not squire_id:
         return redirect(url_for("login"))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    db = db_session()
+    try:
+        # ✅ Fetch all available courses
+        courses = db.query(Course).all()
 
+        # Choose course_id from query or session
+        course_id = request.args.get("course_id")
+        if course_id:
+            flask_session['course_id'] = int(course_id)
+        else:
+            course_id = flask_session.get("course_id")
 
+        quests = []
+        if course_id:
+            cid = int(course_id)
+            # Subquery: quests already completed by this squire
+            completed_qids = (
+                db.query(SquireQuestStatus.quest_id)
+                  .filter_by(squire_id=squire_id, status='completed')
+                  .distinct()
+                  .subquery()
+            )
 
-    # ✅ Fetch all available courses
-    cursor.execute("SELECT id, course_name, description FROM courses")
-    courses = cursor.fetchall()  # Returns a list of dictionaries [{id: 1, course_name: "Business Law"}, ...]
+            # Fetch one active, not-yet-completed quest for this course
+            quests = (
+                db.query(Quest)
+                  .filter(
+                      Quest.course_id == cid,
+                      Quest.status == 'active',
+                      ~Quest.id.in_(completed_qids)
+                  )
+                  .limit(1)
+                  .all()
+            )
 
-    # Look for the course_id in the query parameters first
-    course_id = request.args.get("course_id")
-    if course_id:
-        session['course_id'] = course_id  # Optionally store it in the session for later use
-    else:
-        # Optionally, use the session value if present
-        course_id = session.get("course_id")
+        # ✅ Retrieve quest completion message (if any)
+        quest_message = flask_session.get("quest_message", [])
+        logging.debug(f"DEBUG: Quest Message in Session → {quest_message}")
+        flask_session.pop("quest_message", None)
 
-    quests = []
-    if course_id:
-        # Fetch quests related to the selected course
-        cursor.execute("""
-            SELECT id, quest_name, description FROM quests WHERE
-                id not in (
-                    select distinct quest_id from squire_quest_status
-                    where status = 'completed' and squire_id = %s
-                )
-                AND status = 'active' AND course_id = %s LIMIT 1
-        """, (squire_id, course_id,))
-        quests = cursor.fetchall()
-
-    # ✅ Retrieve quest completion message (if any)
-    # ✅ Debug session message before rendering
-    # Retrieve quest completion message (if any)
-    quest_message = session.get("quest_message", [])
-    #print("Jinja received:", quest_message)
-    logging.debug(f"DEBUG: Quest Message in Session → {quest_message}")
-
-    session.pop("quest_message", None)
-
-    return render_template("quest_select.html", quests=quests, quest_message=quest_message, courses=courses, selected_course_id=course_id)
-
+        return render_template(
+            "quest_select.html",
+            courses=courses,
+            selected_course_id=course_id,
+            quests=quests,
+            quest_message=quest_message
+        )
+    finally:
+        db.close()
 
 # 🗺️ Game Map View (Main Game Hub)
 @app.route('/map', methods=['GET'])
 def map_view():
-    squire_id = session.get("squire_id")
-    quest_id = session.get("quest_id")
-    team_id = session.get('team_id')
+    squire_id = flask_session.get("squire_id")
+    quest_id = flask_session.get("quest_id")
+    team_id = flask_session.get('team_id')
+
+    db=db_session()
 
     if not squire_id:
         return redirect(url_for("login"))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-
      # ✅ Fetch inventory
-    inventory = get_inventory(squire_id, conn)
+    inventory = get_inventory(squire_id)
 
     try:
-        #game_map = display_travel_map(squire_id, quest_id, conn)
-        game_map = get_viewport_map(squire_id, quest_id, conn,20)
-        xp, gold = get_squire_stats(squire_id, conn)
-        hunger = get_hunger_bar(squire_id, conn)
+        #game_map = display_travel_map(squire_id, quest_id)
+        game_map = get_viewport_map(squire_id, quest_id,20)
+        xp, gold = get_squire_stats(squire_id)
+        hunger = get_hunger_bar(squire_id)
 
-        answered_riddles, total_riddles, progress_percentage = check_quest_progress(squire_id, quest_id, conn)
-        progress_bar = display_progress_bar(progress_percentage)
+        logging.debug("I am on the map just navigating like a navigator does.")
 
-        cursor.execute("SELECT x_coordinate, y_coordinate, level FROM squires WHERE id = %s", (squire_id,))
-        position = cursor.fetchone()
-        x = position["x_coordinate"]
-        y = position["y_coordinate"]
-        level = position["level"]
+        answered_riddles, total_riddles, progress_percentage = check_quest_progress(squire_id, quest_id)
 
-        message = session.pop('message', None)  # Retrieve and clear messages after displaying
+        progress_bar = display_progress_bar(float(progress_percentage))
+
+        x, y, level = (
+            db.query(
+                Squire.x_coordinate,
+                Squire.y_coordinate,
+                Squire.level
+            )
+            .filter(Squire.id == squire_id)
+            .one()
+        )
+
+        message = flask_session.pop('message', None)  # Retrieve and clear messages after displaying
 
         return render_template(
             "map.html",
@@ -517,60 +501,184 @@ def map_view():
         logging.error(f"⚠️ Map rendering failed: {str(e)}")
         return jsonify({"error": "Failed to load the map."}), 500
 
+#NPC interactions
+@app.route('/npc', methods=['GET'])
+def npc():
+    """Handles Wandering Trader encounters and displays hints."""
+    npc_message = flask_session.pop("npc_message", "The trader has no hints for you.")
+    return render_template("npc.html", npc_message=npc_message)
+
+@app.route('/blacksmith', methods=['GET', 'POST'])
+def blacksmith():
+    squire_id = flask_session['squire_id']
+    db = db_session()
+    # load squire and inventory items that need repair:
+    squire = db.query(Squire).get(squire_id)
+    team = db.query(Team).get(squire.team_id)  # or use a relationship if defined
+    level = squire.level
+
+    max_uses = level * 4
+
+    broken_items = (
+        db.query(Inventory)
+        .filter(
+            Inventory.squire_id == squire_id,
+            Inventory.item_type == "gear",
+            ~Inventory.description.ilike("%magical%"),
+            Inventory.uses_remaining < max_uses
+        )
+        .all()
+    )
+
+    # In your route (after defining broken_items)
+    item_info = [
+        {
+            "id": item.id,
+            "name": item.item_name,
+            "uses_remaining": item.uses_remaining,
+            "max_uses": max_uses  # or item-specific if using a property
+        }
+        for item in broken_items
+    ]
+
+
+    if request.method == 'POST':
+        item_id   = int(request.form['item_id'])
+        pay_amount= int(request.form['bitcoin'])
+        item = db.query(Inventory).get(item_id)
+
+        # sanity checks
+        if pay_amount <= 0 or pay_amount > team.gold:
+            flash("Invalid payment amount.", "error")
+            return redirect(url_for('blacksmith'))
+
+        # e.g. 1 bitcoin = 1 use repaired
+        repaired_uses = pay_amount
+        item.uses_remaining = min(50, item.uses_remaining + repaired_uses)
+        team.gold -= pay_amount
+
+        db.commit()
+        flash(f"Your {item.item_name} regained {repaired_uses} uses!", "success")
+        return redirect(url_for('map_view'))
+
+    return render_template('blacksmith.html',
+                           squire=squire,
+                           team=team,
+                           broken_items=broken_items,
+                           item_info=item_info)
+
+@app.route('/wandering_trader', methods=['GET', 'POST'])
+def wandering_trader():
+    squire_id = flask_session.get('squire_id')
+    db = db_session()
+    squire = db.query(Squire).get(squire_id)
+    team = db.query(Team).get(squire.team_id)
+
+    if request.method == 'POST':
+        item_id = int(request.form['item_id'])
+        shop_item = db.query(ShopItem).get(item_id)
+
+        if shop_item.price > team.gold:
+            flash("You can't afford that!", "error")
+            return redirect(url_for('wandering_trader'))
+
+        team.gold -= shop_item.price
+        db.add(Inventory(
+            squire_id = squire.id,
+            item_name = shop_item.item_name,
+            description = shop_item.description,
+            uses_remaining = shop_item.uses,
+            item_type = shop_item.item_type
+        ))
+        db.commit()
+        flash(f"You bought {shop_item.item_name} for {shop_item.price} bits!", "success")
+        return redirect(url_for('map_view'))
+
+    trader_items = (
+    db.query(ShopItem)
+        .filter(
+            ShopItem.available_to_trader == True,
+            ShopItem.min_level <= squire.level  # Only show items at or below the squire's level
+        )
+        .order_by(func.rand())
+        .limit(3)
+        .all()
+    )
+
+    item_info = [
+        {
+            "id": item.id,
+            "name": item.item_name,
+            "price": item.price,
+            "description": item.description,
+            "uses": item.uses,
+            "item_type": item.item_type
+        }
+        for item in trader_items
+    ]
+
+    return render_template("wandering_trader.html",
+                           squire=squire,
+                           team=team,
+                           items=trader_items,
+                           item_info=item_info)
+
 
 # 🚶 Game Actions (Movement, Shop, Town, Combat)
 # mod for AJAX
 @app.route('/ajax_move', methods=['POST'])
 def ajax_move():
-    squire_id = session.get("squire_id")
-    quest_id = session.get("quest_id")
-    squire_quest_id = session.get("squire_quest_id")
+    squire_id = flask_session.get("squire_id")
+    quest_id = flask_session.get("quest_id")
+    squire_quest_id = flask_session.get("squire_quest_id")
+    db=db_session()
 
     if not squire_id:
         return jsonify({"error": "Session expired. Please log in again."}), 400
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-
     direction = request.json.get("direction")  # Get movement direction from AJAX request
 
-    cursor.execute("SELECT x_coordinate, y_coordinate FROM squires WHERE id = %s", (squire_id,))
-    position = cursor.fetchone()
+    x, y, level = (
+        db.query(
+            Squire.x_coordinate,
+            Squire.y_coordinate,
+            Squire.level
+        )
+        .filter(Squire.id == squire_id)
+        .one()
+    )
 
-    if not position:
-        return jsonify({"error": "Player position not found in database."}), 500
-
-    x = position["x_coordinate"]
-    y = position["y_coordinate"]
-
-    p = calculate_enemy_encounter_probability(squire_id, quest_id, x,y, conn, squire_quest_id)
+    p = calculate_enemy_encounter_probability(squire_id, quest_id, x,y,  squire_quest_id)
     logging.debug(f"Combat Probability: {p}")
 
 
-    if check_quest_completion(squire_id, quest_id, conn) == True:
-        session["quest_completed"] = True  # Store completion state
-        if complete_quest(squire_id, quest_id, conn) == True:
-            # need to set up for the next so player can choose a new one here
+    if check_quest_completion(squire_id, quest_id):
+        flask_session["quest_completed"] = True
+        completed, messages = complete_quest(squire_id, quest_id)
+
+        if completed:
+            for msg in messages:
+                flash(msg, "success")  # or use "quest" if you're styling categories
+
             return jsonify({"redirect": url_for("quest_select")})
-    else:
-        session.pop("quest_completed", None)  # Ensure it's removed
+
 
     event = None
     message = None
 
     # **Check if movement is valid (including food requirement)**
     if direction in ["N", "S", "E", "W"]:
-        result, food_message = consume_food(squire_id, conn)
+        result, food_message = consume_food(squire_id)
         if not result:
             # If no food available, return the message immediately (or handle it as needed)
             return jsonify({"message": food_message})
         # Otherwise, include the food message in your response
         else:
-            x, y, tm = update_player_position(squire_id, direction, conn)
+            x, y, tm = update_player_position(squire_id, direction)
             message = f"{food_message} \n {tm}"
 
     elif direction == "V":
-        x,y,tm = update_player_position(squire_id, direction, conn)
+        x,y,tm = update_player_position(squire_id, direction)
         visit_town()
         message = "🏰 You arrive in Bitown."
         return jsonify({"redirect": url_for("visit_town")})
@@ -583,7 +691,7 @@ def ajax_move():
     if quest_id == 14 and x == 40 and y == 40:
         logging.debug("🏰 Boss fight triggered! Player reached (40,40) during quest 14.")
         # Optionally call a function to set up boss fight state:
-        #initiate_boss_fight(squire_id, quest_id, conn)  # define this function as needed
+        #initiate_boss_fight(squire_id, quest_id)  # define this function as needed
         event = "q14bossfight"
 
         return jsonify({
@@ -593,55 +701,99 @@ def ajax_move():
         })
 
     if x == 0 and y ==0:
-        x,y,tm = update_player_position(squire_id, direction, conn)
+        x,y,tm = update_player_position(squire_id, direction)
         visit_town()
         message = "🏰 You arrive in Bitown."
         return jsonify({"redirect": url_for("visit_town")})
 
     # ✅ Generate Updated Map
-    #game_map = display_travel_map(squire_id, quest_id, conn)
-    game_map = get_viewport_map(squire_id, quest_id, conn, 20)
+    #game_map = display_travel_map(squire_id, quest_id)
+    game_map = get_viewport_map(squire_id, quest_id,  20)
 
     if not game_map:
         logging.error("❌ ERROR: display_travel_map() returned None!")
         return jsonify({"error": "Failed to load the updated map."}), 500
 
-
     # **🎁 Treasure Check**
-    chest = check_for_treasure_at_location(squire_id, x, y, conn, quest_id, squire_quest_id)
+    chest = check_for_treasure_at_location(squire_id, x, y,  quest_id, squire_quest_id)
     if chest:
-        session["current_treasure"] = chest  # Store chest in session
+        logging.debug(f"Found a treasure chest at {x},{y}.")
+        flask_session["current_treasure_id"] = chest.id  # Store chest in session
         event = "treasure"
+    else:
 
-    # **🏞️ NPC Encounter (5% chance)**
-    elif random.random() < 0.02:
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        cursor.execute("""
-            SELECT tc.x_coordinate, tc.y_coordinate
-            FROM treasure_chests tc
-            JOIN riddles r ON tc.riddle_id = r.id
-            LEFT JOIN squire_riddle_progress srp
-            ON r.id = srp.riddle_id AND srp.squire_id = %s
-            WHERE srp.riddle_id IS NULL and r.quest_id = %s and tc.is_opened = 0 AND tc.squire_quest_id = %s
-            ORDER BY RAND() LIMIT 1""", (squire_id, quest_id, squire_quest_id))
-        coords = cursor.fetchone()
+        # Step 1: Build a list of eligible events
+        eligible_events = []
 
-        if coords:
-            session['npc_message'] = f"🌿 A wandering trader appears: 'There's a chest at ({coords['x_coordinate']},{coords['y_coordinate']}). I tried to open it but couldn't figure out the riddle. Good luck!'"
-            session.modified = True  # Ensure session updates properly
-            logging.debug(f"NPC Message Set: {session['npc_message']}")  # Debugging
+        # 🏞️ NPC Encounter
+        if random.random() < 0.02:
+            eligible_events.append("npc")
 
-        event = "npc"
+        if random.random() < 0.02:
+            eligible_events.append("npc_trader")
 
-    # **🧙‍♂️ Riddle Encounter (5% chance)**
-    elif random.random() < 0.03:
+        # 🧙‍♂️ Riddle Encounter
+        if random.random() < 0.03:
+            eligible_events.append("riddle")
 
-        event = "riddle"
+        # ⚔️ Combat
+        if random.random() < p:
+            eligible_events.append("enemy")
 
-    # **⚔️ Combat Encounter **
-    elif random.random() < p:
+        if random.random() < 0.03 and level > 3:
+            eligible_events.append("blacksmith")
 
-        event = "enemy"
+        if eligible_events:
+            event = random.choice(eligible_events)
+
+
+        if event == "npc":
+            coords = (
+                db.query(
+                    TreasureChest.x_coordinate,
+                    TreasureChest.y_coordinate
+                )
+                .join(
+                    Riddle,
+                    TreasureChest.riddle_id == Riddle.id
+                )
+                .outerjoin(
+                    SquireRiddleProgress,
+                    and_(
+                        SquireRiddleProgress.riddle_id == Riddle.id,
+                        SquireRiddleProgress.squire_id   == squire_id
+                    )
+                )
+                .filter(
+                    SquireRiddleProgress.riddle_id  == None,           # not yet answered
+                    Riddle.quest_id                  == quest_id,
+                    TreasureChest.is_opened          == False,
+                    TreasureChest.squire_quest_id    == squire_quest_id
+                )
+                .order_by(func.rand())  # MySQL’s RAND()
+                .limit(1)
+                .first()
+            )
+
+            if coords:
+                chest_x, chest_y = coords
+                flask_session['npc_message'] = f"🌿 A wandering trader appears: 'There's a chest at ({chest_x},{chest_y}). I tried to open it but couldn't figure out the riddle. Good luck!'"
+                flask_session.modified = True  # Ensure session updates properly
+                logging.debug(f"NPC Message Set: {flask_session['npc_message']}")  # Debugging
+
+            event = "npc"
+
+        elif event == "riddle":
+            pass  # Your riddle logic
+
+        elif event == "enemy":
+            pass  # Your combat setup logic
+
+        elif event == "blacksmith":
+            return jsonify({"redirect": url_for("blacksmith")})
+
+        elif event == "npc_trader":
+            return jsonify({"redirect": url_for("wandering_trader")})
 
     # **Build JSON Response**
     response_data = {
@@ -651,34 +803,33 @@ def ajax_move():
         "event": event  # Pass event type
     }
 
-    cursor.close()
     return jsonify(response_data)
 
 @app.route('/ajax_status', methods=['GET'])
 def ajax_status():
-    squire_id = session.get("squire_id")
-    quest_id = session.get("quest_id")
+    squire_id = flask_session.get("squire_id")
+    quest_id = flask_session.get("quest_id")
+    db = db_session()
 
     if not squire_id:
         return jsonify({"error": "Not logged in"}), 403
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-    cursor.execute("SELECT x_coordinate, y_coordinate FROM squires WHERE id = %s", (squire_id,))
-    position = cursor.fetchone()
+    x, y, level = (
+        db.query(
+            Squire.x_coordinate,
+            Squire.y_coordinate,
+            Squire.level
+        )
+        .filter(Squire.id == squire_id)
+        .one()
+    )
 
-    if not position:
-        return jsonify({"error": "Player position not found in database."}), 500
+    inventory = get_inventory(squire_id)
+    hunger = get_hunger_bar(squire_id)
+    xp, gold = get_squire_stats(squire_id)
 
-    x = position["x_coordinate"]
-    y = position["y_coordinate"]
-
-    inventory = get_inventory(squire_id, conn)
-    hunger = get_hunger_bar(squire_id, conn)
-    xp, gold = get_squire_stats(squire_id, conn)
-
-    answered_riddles, total_riddles, progress_percentage = check_quest_progress(squire_id, quest_id, conn)
-    progress_bar = display_progress_bar(progress_percentage)
+    answered_riddles, total_riddles, progress_percentage = check_quest_progress(squire_id, quest_id)
+    progress_bar = display_progress_bar(float(progress_percentage))
 
     return jsonify({
         "hunger": hunger,
@@ -692,13 +843,13 @@ def ajax_status():
 @app.route('/inventory', methods=['GET'])
 def inventory():
     """Displays the player's inventory on a separate page."""
-    squire_id = session.get("squire_id")
+    squire_id = flask_session.get("squire_id")
 
     if not squire_id:
         return redirect(url_for("login"))
 
     conn = get_db_connection()
-    inventory = get_inventory(squire_id, conn)  # Fetch inventory items
+    inventory = get_inventory(squire_id)  # Fetch inventory items
 
     return render_template("inventory.html", inventory=inventory)
 
@@ -722,267 +873,371 @@ def chance_image_filter(chance):
 @app.route('/handle_true_false_question', methods=['POST'])
 def handle_true_false_question():
     """Allows the player to defeat the enemy by answering a True/False question."""
-    squire_id = session.get("squire_id")
-    quest_id = session.get("quest_id")
-    enemy = session.get("enemy", {})  # Retrieve enemy details from session
-    has_weapon = enemy.get("has_weapon", False)  # Get whether the player has the required weapon
-    in_forest = session.get("in_forest", False)  # Optional setting, set based on game logic
+    squire_id = flask_session.get("squire_id")
+    quest_id  = flask_session.get("quest_id")
+    enemy     = flask_session.get("enemy", {})
+    has_weapon= enemy.get("has_weapon", False)
 
-    if not squire_id or not quest_id or not enemy:
-        return jsonify({"success": False, "message": "Session expired. Please log in again."}), 400
+    if not all([squire_id, quest_id, enemy]):
+        return jsonify(success=False,
+                       message="Session expired. Please log in again."), 400
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    db = db_session()
+    try:
+        # 1) Fetch a random True/False question not yet seen twice
+        #    (assumes your SquireQuestion model has a times_encountered field)
+        tq = (
+            db.query(
+                TrueFalseQuestion.id,
+                TrueFalseQuestion.question,
+                TrueFalseQuestion.correct_answer
+            )
+            .outerjoin(
+                SquireQuestion,
+                and_(
+                    SquireQuestion.question_id == TrueFalseQuestion.id,
+                    SquireQuestion.squire_id  == squire_id
+                )
+            )
+            .filter(
+                TrueFalseQuestion.quest_id == quest_id,
+                # either never seen or seen fewer than 2 times
+                (SquireQuestion.times_encountered == None) |
+                (SquireQuestion.times_encountered < 2)
+            )
+            .order_by(func.rand())
+            .first()
+        )
 
-    # Fetch a random True/False question for this quest
-    cursor.execute("""
-        SELECT q.id, q.question, q.correct_answer
-        FROM true_false_questions q
-        LEFT JOIN squire_questions sq ON q.id = sq.question_id AND sq.squire_id = %s
-        WHERE q.quest_id = %s AND (sq.times_encountered IS NULL OR sq.times_encountered < 2)
-        ORDER BY RAND() LIMIT 1
-    """, (squire_id, quest_id))
+        # 2) No question available
+        if not tq:
+            if not has_weapon:
+                # force flee: lose XP and damage gear
+                degrade_gear(squire_id, "zip")
+                squire = db.query(Squire).get(squire_id)
+                squire.experience_points = max(0, squire.experience_points - 10)
+                db.commit()
 
-    question = cursor.fetchone()
+                flee_msg = (
+                    "🛑 The enemy forces you to flee because you are unarmed.\n"
+                    "❌ You lose 10 XP and your gear is damaged."
+                )
+                flask_session['message'] = flee_msg
 
-    if not question:
-        if not has_weapon:
-            degrade_gear(squire_id, "zip", conn)
-            cursor.execute("UPDATE squires SET experience_points = GREATEST(0, experience_points - 10) WHERE id = %s", (squire_id,))
-            conn.commit()
-            session['message'] =  "🛑 The enemy forces you to flee because you are unarmed.\n❌ You lose 10 XP and your gear is damaged."
-            return jsonify({
-                "success": False,
-                "message": "🛑 The enemy forces you to flee because you are unarmed.\n❌ You lose 10 XP and your gear is damaged.",
-                "flee": True
-            })
+                return jsonify(
+                    success=False,
+                    message=flee_msg,
+                    flee=True
+                )
 
-        return jsonify({
-            "success": False,
-            "message": "❌ No question available. You must fight!",
-            "redirect": url_for("ajax_handle_combat")
-        })
+            # armed but no question left
+            return jsonify(
+                success=False,
+                message="❌ No question available. You must fight!",
+                redirect=url_for("ajax_handle_combat")
+            )
 
-    # Get the player's answer from the AJAX request
-    user_answer = request.json.get("answer", "").strip().upper()
+        # 3) Validate answer
+        user_answer = request.json.get("answer", "").strip().upper()
+        if user_answer not in ("T", "F"):
+            return jsonify(
+                success=False,
+                message="Invalid answer. Please submit 'T' or 'F'."
+            ), 400
 
-    if user_answer not in ["T", "F"]:
-        return jsonify({"success": False, "message": "Invalid answer. Please submit 'T' or 'F'."}), 400
+        correct_bool = bool(tq.correct_answer)
+        is_correct = (user_answer == "T" and correct_bool) or \
+                     (user_answer == "F" and not correct_bool)
 
-    is_correct = (user_answer == "T" and question["correct_answer"]) or (user_answer == "F" and not question["correct_answer"])
+        # 4) Handle correct
+        if is_correct:
+            xp_gain   = enemy['xp_reward']
+            gold_gain = enemy['gold_reward']
+            update_squire_progress(db, squire_id, xp_gain, gold_gain)
 
-    if is_correct:
-        update_squire_progress(squire_id, conn, enemy["xp_reward"], enemy["gold_reward"])
-        session['message'] = f"✅ Correct! The enemy is defeated! You gain {enemy['xp_reward']} XP and {enemy['gold_reward']} bits."
-        session['success'] = True
+            win_msg = (
+                f"✅ Correct! The enemy is defeated! "
+                f"You gain {xp_gain} XP and {gold_gain} bits."
+            )
+            flask_session['message'] = win_msg
 
-        toast = f"{session['squire_name']} defeated {enemy['name']} and gained {enemy['xp_reward']} XP and {enemy['gold_reward']} bits."
-        add_team_message(session['team_id'],toast,conn)
+            # Broadcast to team
+            toast = (
+                f"{flask_session['squire_name']} defeated "
+                f"{enemy['name']} and gained {xp_gain} XP "
+                f"and {gold_gain} bits."
+            )
+            add_team_message(flask_session['team_id'], toast)
 
-        session.pop("success",None)
+            db.commit()
 
-        return jsonify({
-            "success": True,
-            "message": f"✅ Correct! The enemy is defeated! You gain {enemy['xp_reward']} XP and {enemy['gold_reward']} bits.",
-            "xp_reward": enemy["xp_reward"],
-            "gold_reward": enemy["gold_reward"],
-            "defeated": True
-        })
+            return jsonify(
+                success=True,
+                message=win_msg,
+                xp_reward=xp_gain,
+                gold_reward=gold_gain,
+                defeated=True
+            )
 
-    else:
+        # 5) Handle incorrect
         if has_weapon:
+            # still armed, can retry/fight
+            return jsonify(
+                success=False,
+                message="❌ Wrong answer! En Garde!",
+                redirect=url_for("ajax_handle_combat")
+            )
 
+        # unarmed & wrong: forced to flee
+        degrade_gear(squire_id, "zip")
+        squire = db.query(Squire).get(squire_id)
+        squire.experience_points = max(0, squire.experience_points - 10)
+        db.commit()
 
-            return jsonify({
-                "success": False,
-                "message": "❌ Wrong answer! En Garde!",
-                "redirect": url_for("ajax_handle_combat")
-            })
+        flee_msg = (
+            "🛑 The enemy forces you to flee by your wrong answer.\n"
+            "❌ You lose 10 XP and your gear is damaged."
+        )
+        flask_session['message'] = flee_msg
 
-        # Player loses and is forced to flee
-        degrade_gear(squire_id, "zip", conn)
-        cursor.execute("UPDATE squires SET experience_points = GREATEST(0, experience_points - 10) WHERE id = %s", (squire_id,))
-        conn.commit()
+        return jsonify(
+            success=False,
+            message=flee_msg,
+            flee=True
+        )
 
-        session['message'] = "🛑 The enemy forces you to flee by your wrong answer.\n❌ You lose 10 XP and your gear is damaged."
-        session['success'] = False
-        session.pop("success",None)
-
-        return jsonify({
-            "success": False,
-            "message": "🛑 The enemy forces you to flee by your wrong answer.\n❌ You lose 10 XP and your gear is damaged.",
-            "flee": True
-        })
+    finally:
+        db.close()
 
 @app.route('/answer_question', methods=['GET'])
 def answer_question():
     """Displays a True/False question before the player submits an answer."""
-    squire_id = session.get("squire_id")
-    quest_id = session.get("quest_id")
+    squire_id = flask_session.get("squire_id")
+    quest_id  = flask_session.get("quest_id")
+    if not (squire_id and quest_id):
+        return redirect(url_for('login'))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    db = db_session()
+    try:
+        # 1) Total questions in this quest
+        total_qs = (
+            db.query(TrueFalseQuestion)
+              .filter(TrueFalseQuestion.quest_id == quest_id)
+              .count()
+        )
 
-    # Fetch a random question
-    cursor.execute("""
-        SELECT id, question, correct_answer
-FROM true_false_questions
-WHERE quest_id = %s
-  AND (
-    -- If the player has answered all questions correctly, allow all questions:
-    ((SELECT COUNT(*) FROM squire_questions
-       WHERE squire_id = %s
-         AND question_type = 'true_false'
-         AND question_id IN (SELECT id FROM true_false_questions WHERE quest_id = %s)
-     ) = (SELECT COUNT(*) FROM true_false_questions WHERE quest_id = %s))
-    -- Otherwise, only allow questions not already answered correctly:
-    OR id NOT IN (SELECT question_id FROM squire_questions WHERE squire_id = %s AND question_type = 'true_false')
-  )
-ORDER BY RAND()
-LIMIT 1;
+        # 2) Which question_ids has this squire already encountered?
+        answered_rows = (
+            db.query(SquireQuestion.question_id)
+              .filter(
+                  SquireQuestion.squire_id   == squire_id,
+                  SquireQuestion.question_type == 'true_false'
+              )
+              # only consider those tied to this quest
+              .join(TrueFalseQuestion,
+                    SquireQuestion.question_id == TrueFalseQuestion.id)
+              .filter(TrueFalseQuestion.quest_id == quest_id)
+              .all()
+        )
+        answered_ids = {qid for (qid,) in answered_rows}
+        answered_count = len(answered_ids)
 
-    """, (quest_id,squire_id,quest_id,quest_id,squire_id))
+        # 3) Build the base query
+        q = (
+            db.query(
+                TrueFalseQuestion.id,
+                TrueFalseQuestion.question,
+                TrueFalseQuestion.correct_answer
+            )
+            .filter(TrueFalseQuestion.quest_id == quest_id)
+        )
 
-    question = cursor.fetchone()
+        # 4) If not yet answered all, exclude those already seen
+        if answered_count < total_qs:
+            q = q.filter(~TrueFalseQuestion.id.in_(answered_ids))
 
-    if not question:
-        session["battle_summary"] = "No question available. You must fight!"
-        return redirect(url_for("ajax_handle_combat"))
+        # 5) Grab a random one
+        question_row = q.order_by(func.rand()).first()
 
-    logging.debug(f"Question Text for T/F combat alt {question["question"]}")
-    # Store question in session for answer validation
-    session["current_question"] = {
-        "id": question["id"],
-        "text": question["question"]
-    }
+        # 6) No question left?
+        if not question_row:
+            flask_session["battle_summary"] = "No question available. You must fight!"
+            return redirect(url_for("ajax_handle_combat"))
 
-    return render_template("answer_question.html", question=question)
+        # 7) Store for validation and render
+        flask_session["current_question"] = {
+            "id":   question_row.id,
+            "text": question_row.question
+        }
+        return render_template(
+            "answer_question.html",
+            question={
+                "id":   question_row.id,
+                "question": question_row.question,
+                # note: template probably doesn’t need correct_answer
+            }
+        )
+    finally:
+        db.close()
 
 @app.route('/check_true_false_question', methods=['POST'])
 def check_true_false_question():
     """Validates the player's True/False answer."""
-    squire_id = session.get("squire_id")
-    question_id = request.form.get("question_id")
-    user_answer = request.form.get("answer")
-    enemy = session.get("enemy", {})  # Retrieve enemy details from session
-    session.pop("success",None)
+    squire_id    = flask_session.get("squire_id")
+    question_id  = request.form.get("question_id")
+    user_answer  = request.form.get("answer", "").strip().upper()
+    enemy        = flask_session.get("enemy", {})
+    pending_job  = flask_session.pop("pending_job", None)
+    flask_session.pop("success", None)
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-
-    enemy = session.get("enemy", {})
-
-    # Get correct answer from DB
-    cursor.execute("SELECT correct_answer FROM true_false_questions WHERE id = %s", (question_id,))
-    question = cursor.fetchone()
-
-    if not question:
-        session["battle_summary"] = "Error: Question not found."
+    if not (squire_id and question_id):
+        flask_session["battle_summary"] = "Error: Missing session or question."
         return redirect(url_for("combat_results"))
 
-    correct_answer = 1 if question["correct_answer"] else 0  # ✅ Ensure DB value is an integer
-    user_answer_int = 1 if user_answer == "T" else 0  # ✅ Convert "T" → 1, "F" → 0
+    db = db_session()
+    try:
+        # 1) Load question
+        q = db.query(TrueFalseQuestion).get(int(question_id))
+        if not q:
+            flask_session["battle_summary"] = "Error: Question not found."
+            return redirect(url_for("combat_results"))
 
-    logging.debug(f"Check TF: {squire_id}, {question_id}, {question_id}, {user_answer}, {correct_answer}, {user_answer_int}")
-    c= int(correct_answer)
-    u= int(user_answer_int)
+        correct_int = 1 if q.correct_answer else 0
+        user_int    = 1 if user_answer == "T" else 0
 
-    if c == u:
-        # ✅ Store the correct answer for the player
-        cursor.execute("""
-            INSERT INTO squire_questions (squire_id, question_id, question_type, answered_correctly)
-            VALUES (%s, %s, 'true_false', TRUE)
-            ON DUPLICATE KEY UPDATE answered_correctly = TRUE
-        """, (squire_id, question_id))
-        conn.commit()
+        logging.debug(f"TF Check: squire={squire_id}, qid={question_id}, "
+                      f"user={user_int}, correct={correct_int}")
 
+        # 2) Record as answered correctly if matches
+        if user_int == correct_int:
+            sq = (
+                db.query(SquireQuestion)
+                  .filter_by(
+                      squire_id=squire_id,
+                      question_id=q.id,
+                      question_type='true_false'
+                  )
+                  .one_or_none()
+            )
+            if not sq:
+                sq = SquireQuestion(
+                    squire_id=squire_id,
+                    question_id=q.id,
+                    question_type='true_false',
+                    answered_correctly=True
+                )
+                db.add(sq)
+            else:
+                sq.answered_correctly = True
+            db.commit()
 
+            # 3a) Pending job payout
+            if pending_job:
+                squire = db.query(Squire).get(squire_id)
+                level  = squire.level
+                payout = random.randint(
+                    pending_job["min_payout"],
+                    pending_job["max_payout"]
+                ) * level
 
-        # Check if this was for a job
-        pending_job = session.pop("pending_job", None)
-        if pending_job:
-            level = cursor.execute("SELECT level FROM squires WHERE id = %s", (squire_id,))
-            level = cursor.fetchone()['level']
-            payout = random.randint(pending_job["min_payout"], pending_job["max_payout"]) * level
+                # Pay team
+                team = db.query(Team).get(squire.team_id)
+                team.gold += payout
+                # Increment work sessions
+                squire.work_sessions += 1
 
-            # Pay player
-            cursor.execute("""
-                UPDATE teams
-                SET gold = gold + %s
-                WHERE id = (SELECT team_id FROM squires WHERE id = %s)
-            """, (payout, squire_id))
+                db.commit()
 
-            # Increment work_sessions
-            cursor.execute("""
-                UPDATE squires
-                SET work_sessions = work_sessions + 1
-                WHERE id = %s
-            """, (squire_id,))
+                msg = (f"✅ You completed '{pending_job['job_name']}' "
+                       f"and earned 💰 {payout} bits!")
+                flask_session["job_message"] = msg
 
-            conn.commit()
-            session["job_message"] = f"✅ You completed '{pending_job['job_name']}' and earned 💰 {payout} bits!"
-            toast = f"{session['squire_name']} completed '{pending_job['job_name']}' and earned 💰 {payout} bits."
-            add_team_message(session['team_id'],toast,conn)
+                toast = (f"{flask_session['squire_name']} completed "
+                         f"'{pending_job['job_name']}' and earned 💰 {payout} bits.")
+                add_team_message(squire.team_id, toast)
 
-            return redirect(url_for("visit_town"))
+                return redirect(url_for("visit_town"))
 
-        xp_reward = enemy.get("xp_reward", 0)
-        gold_reward = enemy.get("gold_reward", 0)
-        update_squire_progress(squire_id, conn, xp_reward, gold_reward)
+            # 3b) Combat reward
+            xp_gain   = enemy.get("xp_reward", 0)
+            gold_gain = enemy.get("gold_reward", 0)
+            update_squire_progress(squire_id, xp_gain, gold_gain)
 
-        toast = f"{session['squire_name']} defeated {enemy['name']} and gained {enemy['xp_reward']} XP and {enemy['gold_reward']} bits."
-        add_team_message(session['team_id'],toast,conn)
+            toast = (
+                f"{flask_session['squire_name']} defeated "
+                f"{enemy.get('name')} and gained "
+                f"{xp_gain} XP and {gold_gain} bits."
+            )
+            add_team_message(flask_session['team_id'], toast)
+            db.commit()
 
-        session["combat_result"] = f"✅ Correct! You have defeated the enemy and earned {xp_reward} XP and {gold_reward} bits."
-        session["success"] = True
-    else:
-        # Fail scenario for job or enemy
-        if session.get("pending_job"):
-            session.pop("pending_job", None)
-            session["job_message"] = "❌ Incorrect! You failed the task and earned nothing."
-            return redirect(url_for("visit_town"))
+            flask_session["combat_result"] = (
+                f"✅ Correct! You have defeated the enemy "
+                f"and earned {xp_gain} XP and {gold_gain} bits."
+            )
+            flask_session["success"] = True
 
-        degrade_gear(squire_id, enemy["weakness"], conn)
-        cursor.execute("UPDATE squires SET experience_points = GREATEST(0, experience_points - %s) WHERE id = %s", (enemy["xp_reward"],squire_id,))
-        conn.commit()
+        else:
+            # 4) Incorrect answer handling
+            if pending_job:
+                flask_session["job_message"] = (
+                    "❌ Incorrect! You failed the task and earned nothing."
+                )
+                return redirect(url_for("visit_town"))
 
-        session["combat_result"] = f"❌ Incorrect! You are defeated by {enemy['name']} and lose some experience points!"
-        session["success"] = False
+            # Damage gear and penalize XP
+            degrade_gear(squire_id, enemy.get("weakness"))
+            squire = db.query(Squire).get(squire_id)
+            squire.experience_points = max(
+                0,
+                squire.experience_points - enemy.get("xp_reward", 0)
+            )
+            db.commit()
 
+            flask_session["combat_result"] = (
+                f"❌ Incorrect! You are defeated by "
+                f"{enemy.get('name')} and lose some experience points!"
+            )
+            flask_session["success"] = False
 
-    return render_template(
-        "combat_results.html",
-        success=session.pop("success", None),
-        combat_result=session.pop("combat_result", "")
-    )
+        # 5) Show results
+        return render_template(
+            "combat_results.html",
+            success=flask_session.pop("success", None),
+            combat_result=flask_session.pop("combat_result", "")
+        )
+    finally:
+        db.close()
 
 
 # ⚔️ Combat
 @app.route('/combat', methods=['GET', 'POST'])
 def combat():
     """Displays combat screen where player chooses to fight or flee."""
-    enemy = session.get('enemy')
-    squire_id = session.get("squire_id")
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    enemy = flask_session.get('enemy')
+    squire_id = flask_session.get("squire_id")
+    db=db_session()
 
     if not enemy:
         logging.debug("No enemy found in session, redirecting to map.")
         return redirect(url_for('map_view'))  # No enemy data? Go back to map.
 
-    # Fetch player's level and max hunger as before
-    cursor.execute("SELECT level, x_coordinate, y_coordinate FROM squires WHERE id = %s", (squire_id,))
-    squire = cursor.fetchone()
-    level = squire["level"]
-    x, y = squire["x_coordinate"], squire["y_coordinate"]
-
+    x, y, level = (
+        db.query(
+            Squire.x_coordinate,
+            Squire.y_coordinate,
+            Squire.level
+        )
+        .filter(Squire.id == squire_id)
+        .one()
+    )
 
     #return necessary initial values for combat
-    update_work_for_combat(squire_id,conn)
-    max_hunger, food = get_player_max_hunger(squire_id, conn)
-    base_hit_chance = calculate_hit_chance(squire_id, level, conn)
-    hit_chance = int(min(base_hit_chance + combat_mods(squire_id, enemy["name"], level, conn), 95))
-    player_max_hunger = min(max_hunger + hunger_mods(squire_id, conn), 8)
+    update_work_for_combat(squire_id)
+    max_hunger, food = get_player_max_hunger(squire_id)
+    base_hit_chance = calculate_hit_chance(squire_id, level)
+    hit_chance = int(min(base_hit_chance + combat_mods(squire_id, enemy["name"], level), 95))
+    player_max_hunger = min(max_hunger + hunger_mods(squire_id), 8)
 
 
     mod_for_distance = abs(x * y)
@@ -997,160 +1252,175 @@ def combat():
     # initialize session variables for battle
     player_current_hunger = 0
     enemy_current_hunger = 0
-    battle_log = session.get("battle_log", [])
+    battle_log = flask_session.get("battle_log", [])
 
     # Save updated values in session
-    session["player_current_hunger"] = player_current_hunger
-    session["enemy_current_hunger"] = enemy_current_hunger
-    session["player_max_hunger"] = player_max_hunger
-    session["mod_enemy_max_hunger"] = mod_enemy_max_hunger
-    session["hit_chance"] = hit_chance
-    session["mod_for_distance"] = mod_for_distance
-    session["safe_chances"] = safe_chances
+    flask_session["player_current_hunger"] = player_current_hunger
+    flask_session["enemy_current_hunger"] = enemy_current_hunger
+    flask_session["player_max_hunger"] = player_max_hunger
+    flask_session["mod_enemy_max_hunger"] = mod_enemy_max_hunger
+    flask_session["hit_chance"] = hit_chance
+    flask_session["mod_for_distance"] = mod_for_distance
+    flask_session["safe_chances"] = safe_chances
 
     return render_template('combat.html', enemy=enemy)
 
-@app.route('/encounter_enemy', methods=['Get'])
+@app.route('/encounter_enemy', methods=['GET'])
 def encounter_enemy():
     """Handles an enemy encounter with a choice between knowledge and combat."""
-    squire_id = session.get("squire_id")
-    quest_id = session.get("quest_id")
-
+    squire_id = flask_session.get("squire_id")
     if not squire_id:
         return redirect(url_for("login"))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    db = db_session()
+    try:
+        # 1) Get squire position and level
+        x, y, level = (
+            db.query(
+                Squire.x_coordinate,
+                Squire.y_coordinate,
+                Squire.level
+            )
+            .filter(Squire.id == squire_id)
+            .one()
+        )
 
-    # Fetch player's position
-    cursor.execute("SELECT x_coordinate, y_coordinate, level FROM squires WHERE id = %s", (squire_id,))
-    position = cursor.fetchone()
-    x, y = position["x_coordinate"], position["y_coordinate"]
-    level = position["level"]
+        # 2) Determine terrain
+        in_forest = (
+            db.query(func.count(MapFeature.id))
+              .filter(
+                  MapFeature.x_coordinate == x,
+                  MapFeature.y_coordinate == y,
+                  MapFeature.terrain_type  == 'forest'
+              )
+              .scalar() > 0
+        )
+        in_mountain = (
+            db.query(func.count(MapFeature.id))
+              .filter(
+                  MapFeature.x_coordinate == x,
+                  MapFeature.y_coordinate == y,
+                  MapFeature.terrain_type  == 'mountain'
+              )
+              .scalar() > 0
+        )
 
-    # Check if the player is in a forest
-    cursor.execute("SELECT COUNT(*) as in_forest FROM map_features WHERE x_coordinate = %s AND y_coordinate = %s AND terrain_type = 'forest'", (x, y))
-    in_forest = cursor.fetchone()["in_forest"]
+        # 3) Pick a random non‑boss enemy appropriate to level
+        enemy = (
+            db.query(Enemy)
+              .filter(
+                  Enemy.is_boss   == False,
+                  Enemy.min_level <= level
+              )
+              .order_by(func.rand())
+              .first()
+        )
 
-    cursor.execute("SELECT COUNT(*) as in_mountain FROM map_features WHERE x_coordinate = %s AND y_coordinate = %s AND terrain_type = 'mountain'", (x, y))
-    in_mountain = cursor.fetchone()["in_mountain"]
+        if enemy:
+            # 4) Check for required weapon in inventory
+            has_weapon = (
+                db.query(func.count(Inventory.id))
+                  .filter(
+                      Inventory.squire_id == squire_id,
+                      Inventory.item_name   == enemy.weakness
+                  )
+                  .scalar() > 0
+            )
 
-    # Fetch a random enemy
-    cursor.execute("SELECT id, enemy_name, description, weakness, gold_reward, xp_reward, hunger_level, max_hunger,static_image FROM enemies where is_boss = 0 and min_level <= %s ORDER BY RAND() LIMIT 1", (level,))
-    enemy = cursor.fetchone()
+            # 5) Store JSON‑safe enemy data in session
+            flask_session['enemy'] = {
+                "id":           enemy.id,
+                "name":         enemy.enemy_name,
+                "description":  enemy.description,
+                "weakness":     enemy.weakness,
+                "gold_reward":  enemy.gold_reward,
+                "xp_reward":    enemy.xp_reward,
+                "max_hunger":   enemy.max_hunger,
+                "in_forest":    in_forest,
+                "in_mountain":  in_mountain,
+                "has_weapon":   has_weapon,
+                "static_image": enemy.static_image
+            }
 
-    if enemy:
-        fight_with = enemy["weakness"]
+        return redirect(url_for('combat'))
 
-        cursor.execute("SELECT count(*) as has_weapon FROM inventory WHERE squire_id = %s AND item_name = %s", (squire_id, fight_with))
-        weapon = cursor.fetchone()["has_weapon"]
+    finally:
+        db.close()
 
-        if weapon > 0:
-            has_weapon = True
-
-        # ✅ Ensure `session['enemy']` is JSON-serializable
-        session['enemy'] = {
-            "max_hunger": int(enemy["max_hunger"]),
-            "id": int(enemy["id"]),  # Ensure it's an integer
-            "name": str(enemy["enemy_name"]),
-            "description": str(enemy["description"]),
-            "weakness": str(enemy["weakness"]),
-            "gold_reward": int(enemy["gold_reward"]),
-            "xp_reward": int(enemy["xp_reward"]),
-            "in_forest": bool(in_forest),  # Convert to True/False
-            "in_mountain": bool(in_mountain),
-            "has_weapon": bool(weapon),
-            "static_image": str(enemy["static_image"])
-        }
-
-
-        event = "enemy"
-        logging.debug(f"Storing in session: {session.get('enemy')}")
-
-
-    return redirect(url_for('combat'))
-
-@app.route('/encounter_boss', methods=['Get'])
+@app.route('/encounter_boss', methods=['GET'])
 def encounter_boss():
-    squire_id = session.get("squire_id")
-    quest_id = session.get("quest_id")
-
+    squire_id = flask_session.get("squire_id")
     if not squire_id:
         return redirect(url_for("login"))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    db = db_session()
+    try:
+        # 1) Fetch squire’s position & level
+        x, y, level = (
+            db.query(
+                Squire.x_coordinate,
+                Squire.y_coordinate,
+                Squire.level
+            )
+            .filter(Squire.id == squire_id)
+            .one()
+        )
 
-    # Fetch player's position
-    cursor.execute("SELECT x_coordinate, y_coordinate, level FROM squires WHERE id = %s", (squire_id,))
-    position = cursor.fetchone()
-    x, y = position["x_coordinate"], position["y_coordinate"]
-    level = position["level"]
+        # 2) Fetch the boss by name pattern
+        boss = (
+            db.query(Enemy)
+              .filter(Enemy.enemy_name.ilike("%Lexiconis%"))
+              .first()
+        )
 
-    # Fetch a random enemy
-    cursor.execute("SELECT id, enemy_name, description, weakness, gold_reward, xp_reward, hunger_level, max_hunger FROM enemies where enemy_name like %s",('%%Lexiconis%%',))
-    boss = cursor.fetchone()
+        if boss:
+            # 3) Store JSON‑safe boss data in session
+            flask_session['boss'] = {
+                "id":           boss.id,
+                "name":         boss.enemy_name,
+                "description":  boss.description,
+                "weakness":     boss.weakness,
+                "gold_reward":  boss.gold_reward,
+                "xp_reward":    boss.xp_reward,
+                "max_hunger":   boss.max_hunger
+            }
 
-    logging.debug(f"Encounter_boss {x}, {y}: {level}")
+        return redirect(url_for('boss_combat'))
 
-    if boss:
-        # ✅ Ensure `session['enemy']` is JSON-serializable
-        session['boss'] = {
-            "max_hunger": int(boss["max_hunger"]),
-            "id": int(boss["id"]),  # Ensure it's an integer
-            "name": str(boss["enemy_name"]),
-            "description": str(boss["description"]),
-            "weakness": str(boss["weakness"]),
-            "gold_reward": int(boss["gold_reward"]),
-            "xp_reward": int(boss["xp_reward"])
-        }
-
-
-        event = "boss"
-        logging.debug(f"Storing in session: {session.get('boss')}")
-
-
-    return redirect(url_for('boss_combat'))
+    finally:
+        db.close()
 
 @app.route('/boss_combat', methods=['GET', 'POST'])
 def boss_combat():
     """Displays combat screen where player chooses to fight or flee."""
-    boss = session.get('boss')
-    squire_id = session.get("squire_id")
-    quest_id = session.get("quest_id")
-
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-
-    logging.debug("in /boss_combat route.")
+    boss = flask_session.get('boss')
+    squire_id = flask_session.get("squire_id")
+    quest_id = flask_session.get("quest_id")
 
     if not boss:
         logging.debug("Guess the boss is out to lunch: redirecting to map.")
         return redirect(url_for('map_view'))  # No enemy data? Go back to map.
 
+    x, y, level = (
+        db.query(
+            Squire.x_coordinate,
+            Squire.y_coordinate,
+            Squire.level
+        )
+        .filter(Squire.id == squire_id)
+        .one()
+    )
 
-    # Fetch player's position
-    cursor.execute("SELECT x_coordinate, y_coordinate, level FROM squires WHERE id = %s", (squire_id,))
-    position = cursor.fetchone()
-    x, y = position["x_coordinate"], position["y_coordinate"]
-    level = position["level"]
-
-    max_hunger, food = get_player_max_hunger(squire_id, conn)
-    player_max_hunger = min(max_hunger + hunger_mods(squire_id, conn), 8)
+    max_hunger, food = get_player_max_hunger(squire_id)
+    player_max_hunger = min(max_hunger + hunger_mods(squire_id), 8)
     boss_max_hunger = boss["max_hunger"]
 
-
     # initialize session variables for battle
-    if session.get("player_current_hunger") is None:
+    if flask_session.get("player_current_hunger") is None:
         session["player_current_hunger"] = 0
-    if session.get("boss_current_hunger") is None:
+    if flask_session.get("boss_current_hunger") is None:
         session["boss_current_hunger"] = 0
-#    if session["battle_log"] is None:
-#        battle_log = session.get("battle_log", [])
 
-    # Save updated values in session
-    #session["player_current_hunger"] = player_current_hunger
-    #session["boss_current_hunger"] = boss_current_hunger
     session["player_max_hunger"] = int(player_max_hunger)
     session["boss_max_hunger"] = int(boss_max_hunger)
 
@@ -1159,21 +1429,19 @@ def boss_combat():
 @app.route('/ajax_handle_boss_combat', methods=['POST', 'GET'])
 def ajax_handle_boss_combat():
     """Handles combat via AJAX by updating hunger levels and returning JSON."""
-    boss = session.get("boss")
-    squire_id = session.get("squire_id")
+    boss = flask_session.get("boss")
+    squire_id = flask_session.get("squire_id")
 
     if not boss or not squire_id:
         logging.error("Missing boss or squire_id in session")
         return jsonify({"redirect": url_for("map_view")})
 
     try:
-        player_current_hunger = session.get("player_current_hunger", 0)
-        boss_current_hunger = session.get("boss_current_hunger", 0)
-        player_max_hunger = session.get("player_max_hunger", 0)
-        boss_max_hunger = session.get("boss_max_hunger", 0)
+        player_current_hunger = flask_session.get("player_current_hunger", 0)
+        boss_current_hunger = flask_session.get("boss_current_hunger", 0)
+        player_max_hunger = flask_session.get("player_max_hunger", 0)
+        boss_max_hunger = flask_session.get("boss_max_hunger", 0)
 
-        conn = get_db_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
         logging.debug(f"Boss Status: {boss_current_hunger} / {boss_max_hunger} Player Status {player_current_hunger} / {player_max_hunger}")
 
@@ -1184,11 +1452,10 @@ def ajax_handle_boss_combat():
             if flee_safely(boss_max_hunger, player_max_hunger, 0) == False:
                 session["combat_result"] = "🏃 You managed to escape safely!"
             else:
-                degrade_gear(squire_id, boss["weakness"], conn)
+                degrade_gear(squire_id, boss["weakness"])
                 session["combat_result"] = "🏃 You managed to escape but your armor was damaged during the retreat."
             # Clear session combat variables
             cleanup_session()
-            cursor.close()
             return jsonify({"redirect": url_for("combat_results")})
 
         else: #answer questions
@@ -1202,165 +1469,198 @@ def ajax_handle_boss_combat():
 #present questions
 @app.route('/answer_MC_question', methods=['GET'])
 def answer_MC_question():
-    boss = session.get('boss')
-    squire_id = session.get("squire_id")
-    quest_id = session.get("quest_id")
+    """Displays a random multiple‐choice question for boss combat."""
+    boss       = flask_session.get('boss')
+    squire_id  = flask_session.get("squire_id")
+    quest_id   = flask_session.get("quest_id")
 
-    player_current_hunger = session["player_current_hunger"]
-    boss_current_hunger = session["boss_current_hunger"]
+    if not (boss and squire_id and quest_id):
+        return redirect(url_for("login"))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    # pull in hunger if needed elsewhere
+    player_current_hunger = flask_session.get("player_current_hunger")
+    boss_current_hunger   = flask_session.get("boss_current_hunger")
 
-    # Fetch a random question -- edit this to be the multiple choice pool from unit 1
-    cursor.execute("""
-        SELECT id, question_text, optionA, optionB, optionC, optionD, correctanswer
-FROM multiple_choice_questions
-WHERE quest_id < %s and id not in (select question_id from squire_questions where question_type = 'multiple_choice' and squire_id = %s)
-ORDER BY RAND()
-LIMIT 1;
+    db = db_session()
+    try:
+        # 1) Find which MC questions this squire has already seen
+        answered_rows = (
+            db.query(SquireQuestion.question_id)
+              .filter(
+                  SquireQuestion.squire_id    == squire_id,
+                  SquireQuestion.question_type == 'multiple_choice'
+              )
+              .all()
+        )
+        answered_ids = {qid for (qid,) in answered_rows}
 
-    """, (quest_id,squire_id,))
+        # 2) Fetch a random MCQ with quest_id < current and not yet seen
+        mcq = (
+            db.query(MultipleChoiceQuestion)
+              .filter(
+                  MultipleChoiceQuestion.quest_id < quest_id,
+                  ~MultipleChoiceQuestion.id.in_(answered_ids)
+              )
+              .order_by(func.rand())
+              .first()
+        )
 
-    question = cursor.fetchone()
+        if not mcq:
+            flask_session["battle_summary"] = "No question available. You must flee!"
+            return redirect(url_for("ajax_handle_boss_combat"))
 
-    if not question:
-        session["battle_summary"] = "No question available. You must flee!"
-        return redirect(url_for("ajax_handle_boss_combat"))
+        # 3) Store for validation in session
+        flask_session["current_question"] = {
+            "id":            mcq.id,
+            "text":          mcq.question_text,
+            "optionA":       mcq.optionA,
+            "optionB":       mcq.optionB,
+            "optionC":       mcq.optionC,
+            "optionD":       mcq.optionD,
+            "correctAnswer": mcq.correctAnswer
+        }
 
-    logging.debug(f"Question Text for M/C combat alt {question["question_text"]}")
-    # Store question in session for answer validation
-    session["current_question"] = {
-        "id": question["id"],
-        "text": question["question_text"],
-        "optionA": question["optionA"],
-        "optionB": question["optionB"],
-        "optionC": question["optionC"],
-        "optionD": question["optionD"],
-        "correctanswer": question["correctanswer"]
-    }
+        return render_template('boss_combat.html', boss=boss)
 
-    return render_template('boss_combat.html', boss=boss)
+    finally:
+        db.close()
 
 
 #then need a route to check if the question was answered correctly so that that can be recorded as either
 #increasing the player's hunger or the enemy's hunger
 @app.route('/check_MC_question', methods=['POST'])
 def check_MC_question():
-    boss = session.get('boss')
-    player_current_hunger = session["player_current_hunger"]
-    boss_current_hunger = session["boss_current_hunger"]
+    """Validates the player's multiple-choice answer for boss combat."""
+    boss               = flask_session.get('boss', {})
+    squire_id          = flask_session.get('squire_id')
+    question_id        = request.form.get("question_id", type=int)
+    user_answer        = request.form.get("selected_option")
+    player_hunger      = flask_session.get("player_current_hunger", 0)
+    boss_hunger        = flask_session.get("boss_current_hunger", 0)
+    player_max_hunger  = flask_session.get("player_max_hunger", 0)
+    boss_max_hunger    = flask_session.get("boss_max_hunger", 0)
 
-    """Validates the player's MC answer."""
-    squire_id = session.get("squire_id")
-    question_id = request.form.get("question_id")
-    user_answer = request.form.get("selected_option")
-    enemy_message = None
-    player_message = None
+    logging.debug(f"Check_MC_question qid/user_answer {question_id}/{user_answer}")
+    db = db_session()
+    try:
+        # 1) Load the MC question
+        mcq = db.query(MultipleChoiceQuestion).get(question_id)
+        if not mcq:
+            flask_session["battle_summary"] = "Error: Question not found."
+            return redirect(url_for("combat_results"))
 
-    logging.debug(f"Check_MC_question qid / user_answer {question_id} / {user_answer}")
-    logging.debug(f"Check_MC_question pch / pmh {player_current_hunger} / {session['player_max_hunger']}")
+        # 2) Determine correctness
+        correct = (user_answer == mcq.correctAnswer)
 
+        # 3) Record attempt if correct
+        if correct:
+            # Upsert SquireQuestion
+            sq = (
+                db.query(SquireQuestion)
+                  .filter_by(
+                      squire_id=squire_id,
+                      question_id=mcq.id,
+                      question_type='multiple_choice'
+                  )
+                  .one_or_none()
+            )
+            if not sq:
+                sq = SquireQuestion(
+                    squire_id=squire_id,
+                    question_id=mcq.id,
+                    question_type='multiple_choice',
+                    answered_correctly=True
+                )
+                db.add(sq)
+            else:
+                sq.answered_correctly = True
+            db.commit()
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+            # 4a) Increase boss hunger
+            boss_hunger += 1
+            flask_session["boss_current_hunger"] = boss_hunger
+            flask_session["question_id"] = None
+            enemy_message = f"💥 Good Answer! {boss.get('name')} is getting hungrier."
+            flask_session["enemy_message"] = enemy_message
 
-    enemy = session.get("enemy", {})
+        else:
+            # 4b) Player hunger
+            player_hunger += 1
+            flask_session["player_current_hunger"] = player_hunger
+            flask_session["question_id"] = None
+            player_message = "❌ Not good, Squire! You are getting hungrier."
+            flask_session["player_message"] = player_message
 
-    # Get correct answer from DB
-    cursor.execute("SELECT correctanswer FROM multiple_choice_questions WHERE id = %s", (question_id,))
-    question = cursor.fetchone()
+        # 5) Check victory: boss too hungry
+        if boss_hunger >= boss_max_hunger:
+            flask_session["boss_defeated"] = True
+            xp = boss.get("xp_reward", 0)
+            gold = boss.get("gold_reward", 0)
+            update_squire_progress(db, squire_id, xp, gold)
 
-    if not question:
-        session["battle_summary"] = "Error: Question not found."
-        return redirect(url_for("combat_results"))
+            result = (
+                f"🍕 The {boss.get('name')} is too hungry to continue! "
+                f"They run off to eat a pizza.\nYou gain {xp} XP and {gold} bits."
+            )
+            flask_session["combat_result"] = result
 
-    if user_answer == question["correctanswer"]:
+            # Clean up combat state
+            for key in ("boss", "player_current_hunger", "boss_current_hunger"):
+                flask_session.pop(key, None)
 
-        cursor.execute("""
-            INSERT INTO squire_questions (squire_id, question_id, question_type, answered_correctly)
-            VALUES (%s, %s, 'multiple_choice', TRUE)
-            ON DUPLICATE KEY UPDATE answered_correctly = TRUE
-        """, (squire_id, question_id))
-        conn.commit()
+            toast = (
+                f"{flask_session['squire_name']} defeated {boss.get('name')} "
+                f"and gained {xp} XP and {gold} bits."
+            )
+            add_team_message(flask_session['team_id'], toast)
+            db.commit()
+            return redirect(url_for("combat_results"))
 
+        # 6) Check defeat: player too hungry
+        if player_hunger >= player_max_hunger:
+            degrade_gear(squire_id, boss.get("weakness"))
+            squire = db.query(Squire).get(squire_id)
+            squire.experience_points = max(0, squire.experience_points - 100)
+            db.commit()
 
+            flask_session["combat_result"] = (
+                "🛑 You are too hungry to continue fighting! "
+                "The enemy forces you to flee.\n❌ You lose 100 XP."
+            )
+            for key in ("boss", "player_current_hunger", "boss_current_hunger"):
+                flask_session.pop(key, None)
+            return redirect(url_for("combat_results"))
 
-        session["boss_current_hunger"] = boss_current_hunger + 1
-        session["question_id"] = None
-        enemy_message = f"💥 Good Answer! {boss['name']} is getting hungrier."
-    else:
-        logging.debug("Boss Hit Player")
-        player_message = f"❌ Not good, Squire! You are getting hungrier."
+        # 7) Continue boss combat
+        return redirect(url_for("boss_combat"))
 
-        session["player_current_hunger"] = player_current_hunger + 1
-        session["question_id"] = None
-
-    session.pop("current_question", None)
-
-    # Now check win/lose conditions immediately.
-    if boss_current_hunger >= int(session["boss_max_hunger"]):
-        # Player wins: boss is too hungry!
-        session["boss_defeated"] = True
-        xp = boss["xp_reward"]
-        bitcoin = boss["gold_reward"]
-        update_squire_progress(squire_id, conn, xp, bitcoin)
-        session["combat_result"] = f"🍕 The {boss['name']} is too hungry to continue! They run off to eat a pizza.\nYou gain {xp} XP and {bitcoin} bits."
-        # Clear combat variables
-        session.pop("boss", None)
-        session.pop("player_current_hunger", None)
-        session.pop("boss_current_hunger", None)
-
-        toast = f"{session['squire_name']} defeated {boss['name']} and gained {boss['xp_reward']} XP and {boss['gold_reward']} bits."
-        add_team_message(session['team_id'],toast,conn)
-
-        return redirect(url_for("combat_results"))
-
-    if player_current_hunger >= int(session["player_max_hunger"]):
-        # Player loses: too hungry!
-        degrade_gear(squire_id, boss.get("weakness"), conn)
-        cursor.execute("UPDATE squires SET experience_points = GREATEST(0, experience_points - 100) WHERE id = %s", (squire_id,))
-        conn.commit()
-        session["combat_result"] = "🛑 You are too hungry to continue fighting! The enemy forces you to flee.\n❌ You lose 100 XP."
-        # Clear combat variables
-        session.pop("boss", None)
-        session.pop("player_current_hunger", None)
-        session.pop("boss_current_hunger", None)
-        return redirect(url_for("combat_results"))
-
-    if enemy_message:
-        session["enemy_message"] = enemy_message
-    else:
-        session["player_message"] = player_message
-
-    return redirect(url_for("boss_combat"))
+    finally:
+        db.close()
 
 @app.route('/ajax_handle_combat', methods=['POST'])
 def ajax_handle_combat():
     """Handles combat via AJAX by updating hunger levels and returning JSON."""
-    enemy = session.get("enemy")
-    squire_id = session.get("squire_id")
-    player_current_hunger = session["player_current_hunger"]
-    enemy_current_hunger = session["enemy_current_hunger"]
-    player_max_hunger = session["player_max_hunger"]
-    mod_enemy_max_hunger = session["mod_enemy_max_hunger"]
-    hit_chance = session["hit_chance"]
-    mod_for_distance = session["mod_for_distance"]
-    session.pop("success",None)
+    enemy = flask_session.get("enemy")
+    squire_id = flask_session.get("squire_id")
+    player_current_hunger = flask_session["player_current_hunger"]
+    enemy_current_hunger = flask_session["enemy_current_hunger"]
+    player_max_hunger = flask_session["player_max_hunger"]
+    mod_enemy_max_hunger = flask_session["mod_enemy_max_hunger"]
+    hit_chance = flask_session["hit_chance"]
+    mod_for_distance = flask_session["mod_for_distance"]
+    flask_session.pop("success",None)
 
-
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    db=db_session()
 
     if not enemy:
         return jsonify({"redirect": url_for("map_view")})
 
     # Initialize combat if not already active
-    if "combat_active" not in session or not session["combat_active"]:
-        session["player_current_hunger"] = 0
-        session["enemy_current_hunger"] = 0
-        session["battle_log"] = []
-        session["combat_active"] = True
+    if "combat_active" not in flask_session or not flask_session["combat_active"]:
+        flask_session["player_current_hunger"] = 0
+        flask_session["enemy_current_hunger"] = 0
+        flask_session["battle_log"] = []
+        flask_session["combat_active"] = True
 
     # route based on the button pushed by the user
     action = request.form.get("action")
@@ -1368,30 +1668,28 @@ def ajax_handle_combat():
     if action == "flee":
 
         if flee_safely(mod_enemy_max_hunger,player_max_hunger, hit_chance) == False:
-            session["combat_result"] = "🏃 You managed to escape safely!"
-            session["success"] = True
+            flask_session["combat_result"] = "🏃 You managed to escape safely!"
+            flask_session["success"] = True
         else:
-            degrade_gear(squire_id, enemy["weakness"], conn)
-            session["combat_result"] = "🏃 You managed to escape but your armor was damaged during the retreat."
-            session["success"] = False
+            degrade_gear(squire_id, enemy["weakness"])
+            flask_session["combat_result"] = "🏃 You managed to escape but your armor was damaged during the retreat."
+            flask_session["success"] = False
         # Clear session combat variables
-        session.pop("enemy", None)
-        session.pop("player_current_hunger", None)
-        session.pop("enemy_current_hunger", None)
-        session.pop("combat_active", None)
-        session.pop("battle_log", None)
-        session.pop("success",None)
-        cursor.close()
+        flask_session.pop("enemy", None)
+        flask_session.pop("player_current_hunger", None)
+        flask_session.pop("enemy_current_hunger", None)
+        flask_session.pop("combat_active", None)
+        flask_session.pop("battle_log", None)
+        flask_session.pop("success",None)
         return jsonify({"redirect": url_for("combat_results")})
     elif action == "question":
         #re-route player to answer a question
         # Clear session combat variables
-        session.pop("enemy", None)
-        session.pop("player_current_hunger", None)
-        session.pop("enemy_current_hunger", None)
-        session.pop("combat_active", None)
-        session.pop("battle_log", None)
-        cursor.close()
+        flask_session.pop("enemy", None)
+        flask_session.pop("player_current_hunger", None)
+        flask_session.pop("enemy_current_hunger", None)
+        flask_session.pop("combat_active", None)
+        flask_session.pop("battle_log", None)
         return jsonify({"redirect": url_for("answer_question")})
 
     else:
@@ -1407,26 +1705,30 @@ def ajax_handle_combat():
 
     # Check for combat end conditions
         # result if player lost
-        if player_current_hunger >= player_max_hunger:
-            degrade_gear(squire_id, enemy["weakness"], conn)
-            cursor.execute("UPDATE squires SET experience_points = GREATEST(0, experience_points - %s) WHERE id = %s", (enemy["xp_reward"],squire_id,))
-            conn.commit()
+        if int(player_current_hunger) >= int(player_max_hunger):
+            degrade_gear(squire_id, enemy["weakness"])
+
+            # load the Squire
+            squire = db.query(Squire).get(squire_id)
+            # subtract XP but never go below zero
+            squire.experience_points = max(0, squire.experience_points - enemy["xp_reward"])
+            db.commit()
+
             outcome = f"🛑 You are too hungry to continue fighting! The enemy forces you to flee and damages your gear.\n❌ You lose some XP."
-            session["combat_result"] = outcome
-            session["success"] = False
+            flask_session["combat_result"] = outcome
+            flask_session["success"] = False
 
             # Clear session variables
-            session.pop("enemy", None)
-            session.pop("player_current_hunger", None)
-            session.pop("enemy_current_hunger", None)
-            session.pop("combat_active", None)
-            session.pop("battle_log", None)
+            flask_session.pop("enemy", None)
+            flask_session.pop("player_current_hunger", None)
+            flask_session.pop("enemy_current_hunger", None)
+            flask_session.pop("combat_active", None)
+            flask_session.pop("battle_log", None)
 
-            cursor.close()
             return jsonify({"redirect": url_for("combat_results")})
 
         # result if player won
-        if enemy_current_hunger >= mod_enemy_max_hunger:
+        if int(enemy_current_hunger) >= int(mod_enemy_max_hunger):
             xp = enemy["xp_reward"]
             bitcoin = enemy["gold_reward"]
             # Apply additional modifiers based on location
@@ -1445,38 +1747,38 @@ def ajax_handle_combat():
                 xp += 25 if not enemy.get("in_forest") else 55
                 bitcoin += 100
 
-            update_squire_progress(squire_id, conn, xp, bitcoin)
-            degrade_gear(squire_id, enemy["weakness"], conn)
+            update_squire_progress(squire_id,  xp, bitcoin)
+            degrade_gear(squire_id, enemy["weakness"])
             outcome = f"🍕 The {enemy['name']} is too hungry to continue! They run off to eat a pizza.\nYou gain {xp} XP and {bitcoin} bits."
-            session["combat_result"] = outcome
+            flask_session["combat_result"] = outcome
 
             # ✅ Reset combat flag and work sessions after combat
-            session["forced_combat"] = False
-            session["success"] = True
-            cursor.execute("UPDATE squires SET work_sessions = 0 WHERE id = %s", (squire_id,))
-            conn.commit()
+            flask_session["forced_combat"] = False
+            flask_session["success"] = True
+            db.query(Squire) \
+              .filter(Squire.id == squire_id) \
+              .update({ Squire.work_sessions: 0 }, synchronize_session='fetch')
+            db.commit()
 
-            toast = f"{session['squire_name']} defeated {enemy['name']} and gained {xp} XP and {bitcoin} bits."
-            add_team_message(session['team_id'],toast,conn)
+            toast = f"{flask_session['squire_name']} defeated {enemy['name']} and gained {xp} XP and {bitcoin} bits."
+            add_team_message(flask_session['team_id'],toast)
 
             # Clear combat session variables
-            session.pop("enemy", None)
-            session.pop("player_current_hunger", None)
-            session.pop("enemy_current_hunger", None)
-            session.pop("combat_active", None)
-            session.pop("battle_log", None)
+            flask_session.pop("enemy", None)
+            flask_session.pop("player_current_hunger", None)
+            flask_session.pop("enemy_current_hunger", None)
+            flask_session.pop("combat_active", None)
+            flask_session.pop("battle_log", None)
 
-            cursor.close()
 
             return jsonify({"redirect": url_for("combat_results")})
 
 
     # Save updated values in session
-    session["player_current_hunger"] = player_current_hunger
-    session["enemy_current_hunger"] = enemy_current_hunger
-    session["battle_log"] = battle_log
+    flask_session["player_current_hunger"] = player_current_hunger
+    flask_session["enemy_current_hunger"] = enemy_current_hunger
+    flask_session["battle_log"] = battle_log
 
-    cursor.close()
     # Return updated combat data as JSON
     return jsonify({
         "player_current_hunger": player_current_hunger,
@@ -1492,177 +1794,206 @@ def ajax_handle_combat():
 def combat_results():
     return render_template(
         "combat_results.html",
-        success=session.pop("success", None),
-        combat_result=session.pop("combat_result", "")
+        success=flask_session.pop("success", None),
+        combat_result=flask_session.pop("combat_result", "")
     )
 #Town Routes here
 
 @app.route('/town', methods=['GET'])
 def visit_town():
     """Displays the town menu with options to shop, work, or leave."""
-    squire_id = session.get("squire_id")
-    job_message = session.get("job_message")
+    squire_id   = flask_session.get("squire_id")
+    job_message = flask_session.get("job_message")
+
     if not squire_id:
         return redirect(url_for("login"))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    db = db_session()
+    try:
+        # Fetch the squire’s level via ORM
+        squire = db.query(Squire).get(squire_id)
+        level  = squire.level
+    finally:
+        db.close()
 
-    # Fetch town-related stats
-    cursor.execute("SELECT level FROM squires WHERE id = %s", (squire_id,))
-    squire_data = cursor.fetchone()
-    level = squire_data["level"]
-
-    return render_template("town.html", level=level, job_message=job_message)
+    return render_template(
+        "town.html",
+        level=level,
+        job_message=job_message
+    )
 
 # 🏪 Shop
 @app.route('/shop', methods=['GET'])
 def shop():
     """Displays the shop where players can buy items."""
-    squire_id = session.get("squire_id")
+    squire_id = flask_session.get("squire_id")
     if not squire_id:
         return redirect(url_for("login"))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    db = db_session()
+    try:
+        # 1) Get squire level
+        squire = db.query(Squire).get(squire_id)
+        level  = squire.level
 
-    cursor.execute("SELECT level from squires where id = %s",(squire_id,))
-    level = cursor.fetchone()['level']
+        # 2) Fetch available shop items
+        items = (
+            db.query(ShopItem)
+              .filter(ShopItem.min_level <= level)
+              .all()
+        )
 
-    # Fetch available shop items
-    cursor.execute("SELECT id, item_name, price, uses FROM shop_items where min_level <= %s",(level,))
-    items = cursor.fetchall()
+        grouped_items = defaultdict(list)
+        for item in items:
+            grouped_items[item.item_type].append(item)
 
-    # Fetch player's current balance
-    cursor.execute("select gold from teams where id in (select team_id from squires where id = %s);", (squire_id,))
-    player_gold = cursor.fetchone()["gold"]
+        # 3) Fetch player's team gold balance
+        team = db.query(Team).get(squire.team_id)
+        player_gold = team.gold
 
-    session["player_gold"] = player_gold
+        # 4) Store in session if needed
+        flask_session["player_gold"] = player_gold
 
-    return render_template("shop.html", items=items, player_gold=player_gold)
+    finally:
+        db.close()
+
+    return render_template(
+        "shop.html",
+        grouped_items=grouped_items,
+        player_gold=player_gold
+    )
 
 @app.route('/buy_item', methods=['POST'])
 def buy_item():
+    """Handle purchasing an item via ORM instead of raw SQL."""
+    data = request.get_json() or {}
+    item_id = data.get("item_id")
+    squire_id = flask_session.get("squire_id")
+
+    if not item_id or not squire_id:
+        return jsonify(success=False, message="Invalid request"), 400
+
+    db = db_session()
     try:
-        data = request.get_json()  # Explicitly parse JSON data
-        item_id = data.get("item_id")
-
-        if not item_id:
-            return jsonify({"success": False, "message": "Invalid item ID received"}), 400
-
-        conn = get_db_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-
-        # Fetch the item details
-        cursor.execute("SELECT id, item_name, description, price, item_type, uses FROM shop_items WHERE id = %s", (item_id,))
-        item = cursor.fetchone()
-
+        # 1) Load the shop item
+        item = db.query(ShopItem).get(item_id)
         if not item:
-            return jsonify({"success": False, "message": "Item not found"}), 404
+            return jsonify(success=False, message="Item not found"), 404
 
-        # Fetch player's gold balance
-        squire_id = session.get("squire_id")
-        cursor.execute("SELECT gold FROM teams WHERE id IN (SELECT team_id FROM squires WHERE id = %s)", (squire_id,))
-        player = cursor.fetchone()
+        # 2) Load the squire and their team
+        squire = db.query(Squire).get(squire_id)
+        if not squire:
+            return jsonify(success=False, message="Player not found"), 404
 
-        if not player:
-            return jsonify({"success": False, "message": "Player not found"}), 404
+        team = db.query(Team).get(squire.team_id)
+        if not team:
+            return jsonify(success=False, message="Team not found"), 404
 
-        player_gold = player["gold"]
+        # 3) Check gold balance
+        if team.gold < item.price:
+            return jsonify(success=False, message="Not enough gold to buy this item!"), 400
 
-        if player_gold < item["price"]:
-            return jsonify({"success": False, "message": "Not enough gold to buy this item!"})
+        # 4) Deduct gold and add to inventory
+        team.gold -= item.price
+        new_inv = Inventory(
+            squire_id       = squire_id,
+            item_name       = item.item_name,
+            description     = item.description,
+            uses_remaining  = item.uses,
+            item_type       = item.item_type
+        )
+        db.add(new_inv)
+        db.commit()
 
-        # Deduct gold and add the item to inventory
-        cursor.execute("UPDATE teams SET gold = gold - %s WHERE id IN (SELECT team_id FROM squires WHERE id = %s)", (item["price"], squire_id))
-        cursor.execute("INSERT INTO inventory (squire_id, item_name, uses_remaining, item_type, description) VALUES (%s, %s, %s, %s, %s)",
-                       (squire_id, item["item_name"], item["uses"], item["item_type"], item["description"]))
-
-        conn.commit()
-        cursor.close()
-
-        # Return updated gold balance
-        return jsonify({
-            "success": True,
-            "message": f"You bought {item['item_name']}!",
-            "new_gold": player_gold - item["price"]
-        })
+        # 5) Return updated balance
+        return jsonify(
+            success=True,
+            message=f"You bought {item.item_name}!",
+            new_gold=team.gold
+        )
 
     except Exception as e:
-        #print(f"Error: {str(e)}")  # Log error in console
-        return jsonify({"success": False, "message": "Something went wrong!"}), 500
+        db.rollback()
+        return jsonify(success=False, message="Something went wrong!"), 500
+
+    finally:
+        db.close()
 
 @app.route('/town_work', methods=['GET', 'POST'])
 def town_work():
     """Allows players to take on jobs to earn gold."""
-    squire_id = session.get("squire_id")
+    squire_id = flask_session.get("squire_id")
     if not squire_id:
         return redirect(url_for("login"))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    MAX_WORK_SESSIONS = 3
 
-    cursor.execute("SELECT level from squires where id = %s",(squire_id,))
-    level = cursor.fetchone()['level']
+    db = db_session()
+    try:
+        # 1) Load squire
+        squire = db.query(Squire).get(squire_id)
+        level  = squire.level
+        work_sessions = squire.work_sessions
 
-    # ✅ Check if combat is required
-    if session.get("forced_combat"):
-        session["job_message"] = "You must face the dangers beyond town before working again!"
-        return redirect(url_for("visit_town"))
+        # 2) Enforce forced combat if too many work sessions
+        if flask_session.get("forced_combat"):
+            flask_session["job_message"] = (
+                "You must face the dangers beyond town before working again!"
+            )
+            return redirect(url_for("visit_town"))
 
+        if work_sessions >= MAX_WORK_SESSIONS:
+            flask_session["forced_combat"] = True
+            flask_session["job_message"] = (
+                "You must face the dangers beyond town before working again!"
+            )
+            return redirect(url_for("visit_town"))
 
-    # ✅ Get current work sessions for the player
-    cursor.execute("SELECT work_sessions FROM squires WHERE id = %s", (squire_id,))
-    result = cursor.fetchone()
-    work_sessions = result["work_sessions"] if result else 0
+        # 3) Handle job selection (POST)
+        if request.method == 'POST':
+            job_id = request.form.get("job_id", type=int)
+            job = db.query(Job).get(job_id)
+            if not job:
+                flask_session["job_message"] = "❌ Invalid job selection!"
+                return redirect(url_for("town_work"))
 
-    max_work_sessions = 3  # ✅ Limit on how many times a player can work before facing a monster
+            payout = random.randint(job.min_payout, job.max_payout) * level
+            flask_session["pending_job"] = {
+                "job_id":     job.id,
+                "job_name":   job.job_name,
+                "min_payout": job.min_payout,
+                "max_payout": job.max_payout,
+                "level":      level
+            }
+            return redirect(url_for("answer_question"))
 
-    if work_sessions >= max_work_sessions:
-        session["forced_combat"] = True  # ✅ Store in session that combat is required
-        session["job_message"] = "You must face the dangers beyond town before working again!"
-        return redirect(url_for("visit_town"))
+        # 4) GET: fetch all jobs
+        jobs = db.query(Job).all()
+        return render_template(
+            "town_work.html",
+            jobs=jobs
+        )
 
-    if request.method == 'POST':
-        job_id = request.form.get("job_id")
-
-        # Fetch job details
-        cursor.execute("SELECT job_name, min_payout, max_payout FROM jobs WHERE id = %s", (job_id,))
-        job = cursor.fetchone()
-
-        if not job:
-            session["message"] = "❌ Invalid job selection!"
-            return redirect(url_for("town_work"))
-
-        # Generate payout within the range
-        payout = random.randint(job["min_payout"], job["max_payout"]) * level
-
-        # ✅ Save job info to session before answering question
-        session["pending_job"] = {
-            "job_id": job_id,
-            "job_name": job["job_name"],
-            "min_payout": job["min_payout"],
-            "max_payout": job["max_payout"]
-        }
-
-        return redirect(url_for("answer_question"))
-
-    # Fetch available jobs
-    cursor.execute("SELECT id, job_name, description, min_payout, max_payout FROM jobs")
-    jobs = cursor.fetchall()
-
-    return render_template("town_work.html", jobs=jobs)
+    finally:
+        db.close()
 
 @app.route('/hall_of_fame', methods=['GET'])
 def hall_of_fame():
     """Displays the Hall of Fame leaderboard."""
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    db = db_session()
+    try:
+        # Fetch top 10 players by experience_points
+        leaders = (
+            db.query(Squire)
+              .order_by(Squire.experience_points.desc())
+              .limit(10)
+              .all()
+        )
+    finally:
+        db.close()
 
-    # Fetch top 5 players by XP
-    cursor.execute("SELECT squire_name, experience_points FROM squires ORDER BY experience_points DESC LIMIT 10")
-    leaders = cursor.fetchall()
-
+    # You can pass ORM objects directly to Jinja:
+    # in the template: {{ leader.squire_name }} & {{ leader.experience_points }}
     return render_template("hall_of_fame.html", leaders=leaders)
 
 
@@ -1670,251 +2001,348 @@ def hall_of_fame():
 
 @app.route('/riddle_encounter', methods=['GET'])
 def riddle_encounter():
-    """Fetches a random riddle and displays it in the HTML page."""
-    squire_id = session.get("squire_id")
-    quest_id = session.get("quest_id")
-
+    """Fetches a random unanswered riddle via ORM and displays it."""
+    squire_id = flask_session.get("squire_id")
+    quest_id  = flask_session.get("quest_id")
     if not squire_id:
         return redirect(url_for("login"))
 
+    db = db_session()
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        # 1) Query one random Riddle not yet in SquireRiddleProgress for this squire
+        r = (
+            db.query(Riddle)
+              .outerjoin(
+                  SquireRiddleProgress,
+                  and_(
+                      SquireRiddleProgress.riddle_id == Riddle.id,
+                      SquireRiddleProgress.squire_id  == squire_id
+                  )
+              )
+              .filter(
+                  SquireRiddleProgress.riddle_id == None,
+                  Riddle.quest_id               == quest_id
+              )
+              .order_by(func.rand())
+              .first()
+        )
 
-        # Fetch a random unanswered riddle
-        cursor.execute("""
-            SELECT r.id, r.riddle_text, r.answer, r.hint, r.word_length_hint, r.word_count
-            FROM riddles r
-            LEFT JOIN squire_riddle_progress srp
-            ON r.id = srp.riddle_id AND srp.squire_id = %s
-            WHERE srp.riddle_id IS NULL AND r.quest_id = %s
-            ORDER BY RAND() LIMIT 1""",
-            (squire_id, quest_id))
+        if not r:
+            flask_session["riddle_message"] = "You've solved all riddles for this quest!"
+            return redirect(url_for("map_view"))
 
-        riddle = cursor.fetchone()
+        # 2) Determine which hints to show
+        show_hint         = ishint(db, squire_id)
+        show_word_length  = iswordlengthhint(db, squire_id)
+        show_word_count   = iswordcounthint(db, squire_id)
 
-        if not riddle:
-            session["riddle_message"] = "You've solved all riddles for this quest!"
-            return redirect(url_for("map_view"))  # No more riddles, return to map
-
-        #determine what hints the player will receive based on the items that they have in their inventory
-        show_hint = ishint(squire_id, conn)
-        show_word_length = iswordlengthhint(squire_id, conn)
-        show_word_count = iswordcounthint(squire_id, conn)
-
-        # Store riddle in session to verify answer later
-        session["current_riddle"] = {
-            "id": riddle["id"],
-            "text": riddle["riddle_text"],
-            "answer": riddle["answer"],
-            "hint": riddle["hint"],
-            "word_length_hint": riddle["word_length_hint"],
-            "word_count": riddle["word_count"],
-            "show_hint": show_hint,
+        # 3) Store current riddle in session for later validation
+        flask_session["current_riddle"] = {
+            "id":               r.id,
+            "text":             r.riddle_text,
+            "answer":           r.answer,
+            "hint":             r.hint,
+            "word_length_hint": r.word_length_hint,
+            "word_count":       r.word_count,
+            "show_hint":        show_hint,
             "show_word_length": show_word_length,
-            "show_word_count": show_word_count
+            "show_word_count":  show_word_count
         }
 
-        return render_template("riddle.html", riddle=riddle, show_hint=show_hint, show_word_count=show_word_count, show_word_length=show_word_length)
+        # 4) Render the riddle page
+        return render_template(
+            "riddle.html",
+            riddle=r,
+            show_hint=show_hint,
+            show_word_length=show_word_length,
+            show_word_count=show_word_count
+        )
     except Exception as e:
-        logging.error(f"Error in riddle_encounter: {str(e)}")
+        logging.error(f"Error in riddle_encounter: {e}")
         return redirect(url_for("map_view"))
     finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
+        db.close()
 
 @app.route('/check_riddle', methods=['POST'])
 def check_riddle():
-    """Checks if the answer to the riddle is correct."""
-    squire_id = session.get("squire_id")
-    quest_id = session.get("quest_id")
+    """Checks if the answer to the riddle is correct, using ORM."""
+    squire_id    = flask_session.get("squire_id")
+    quest_id     = flask_session.get("quest_id")
+    current      = flask_session.get("current_riddle")
 
-    logging.debug(f"Session contents: {session}")
-    logging.debug(f"Current riddle in session: {session.get('current_riddle')}")
+    logging.debug(f"Session contents: {flask_session}")
+    logging.debug(f"Current riddle in session: {current}")
 
-    if not squire_id or "current_riddle" not in session:
-        logging.error(f"No active riddle found. Squire ID: {squire_id}, Session: {session}")
-        return jsonify({"success": False, "message": "❌ No active riddle found!"})
+    if not squire_id or not current:
+        logging.error(f"No active riddle found. Squire ID: {squire_id}, Session: {flask_session}")
+        return jsonify(success=False, message="❌ No active riddle found!")
 
+    user_answer    = request.form.get("answer", "").strip().lower()
+    correct_answer = current["answer"].strip().lower()
+
+    db = db_session()
     try:
-        user_answer = request.form.get("answer", "").strip().lower()
-        correct_answer = session["current_riddle"]["answer"].strip().lower()
-
-        logging.debug(f"User answer: {user_answer}, Correct answer: {correct_answer}")
-
-        conn = get_db_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-
         if user_answer == correct_answer:
-            riddle_id = session["current_riddle"]["id"]
+            riddle_id = current["id"]
 
-            # Mark riddle as solved
-            cursor.execute(
-                "INSERT INTO squire_riddle_progress (squire_id, riddle_id, quest_id) VALUES (%s, %s, %s)",
-                (squire_id, riddle_id, quest_id))
-            conn.commit()
+            # 1) Record in squire_riddle_progress
+            progress = SquireRiddleProgress(
+                squire_id=squire_id,
+                riddle_id=riddle_id,
+                quest_id=quest_id,
+                answered_correctly=True
+            )
+            db.add(progress)
 
-            cursor.execute("""
-                INSERT INTO squire_questions (squire_id, question_id, question_type, answered_correctly)
-                VALUES (%s, %s, 'riddle', TRUE)
-                ON DUPLICATE KEY UPDATE answered_correctly = TRUE
-            """, (squire_id, riddle_id))
-            conn.commit()
+            # 2) Upsert in squire_questions
+            sq = (
+                db.query(SquireQuestion)
+                  .filter_by(
+                      squire_id=squire_id,
+                      question_id=riddle_id,
+                      question_type='riddle'
+                  )
+                  .one_or_none()
+            )
+            if not sq:
+                sq = SquireQuestion(
+                    squire_id=squire_id,
+                    question_id=riddle_id,
+                    question_type='riddle',
+                    answered_correctly=True
+                )
+                db.add(sq)
+            else:
+                sq.answered_correctly = True
 
-            special_item = calculate_riddle_reward(conn, riddle_id, squire_id)
+            db.commit()
 
-            toast = f"{session['squire_name']} solved a riddle and received {special_item}."
-            add_team_message(session['team_id'],toast,conn)
+            # 3) Calculate and award the special item
+            special_item = calculate_riddle_reward(squire_id, riddle_id)
 
-            session.pop("current_riddle", None)  # Remove riddle from session
-            return jsonify({"success": True, "message": f"🎉 Correct! The wizard nods in approval and grants you {special_item}"})
+            # 4) Notify the team
+            toast = f"{flask_session['squire_name']} solved a riddle and received {special_item}."
+            add_team_message(flask_session['team_id'], toast)
+            db.commit()
+
+            flask_session.pop("current_riddle", None)
+            return jsonify(
+                success=True,
+                message=f"🎉 Correct! The wizard nods in approval and grants you {special_item}"
+            )
         else:
-            return jsonify({"success": False, "message": "❌ Incorrect! Try again."})
+            return jsonify(success=False, message="❌ Incorrect! Try again.")
     except Exception as e:
-        logging.error(f"Error in check_riddle: {str(e)}")
-        return jsonify({"success": False, "message": "❌ An error occurred while checking your answer."})
+        db.rollback()
+        logging.error(f"Error in check_riddle: {e}")
+        return jsonify(success=False, message="❌ An error occurred while checking your answer.")
     finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
+        db.close()
 
 @app.route('/treasure_encounter', methods=['GET'])
 def treasure_encounter():
     """Handles the treasure chest encounter and displays the riddle."""
-    squire_id = session.get("squire_id")
-    quest_id = session.get("quest_id")
+    squire_id = flask_session.get("squire_id")
+    if not squire_id:
+        return redirect(url_for("login"))
 
-    if "current_treasure" not in session:
-        session["treasure_message"] = "No treasure found at this location."
+    # Ensure we have a chest selected
+    if "current_treasure_id" not in flask_session:
+        flask_session["treasure_message"] = "No treasure found at this location."
         return redirect(url_for("map_view"))
 
-    chest = session["current_treasure"]  # Retrieve stored treasure chest
+    chest_id = flask_session["current_treasure_id"]
+    db = db_session()
+    try:
+        # 1) Load the unopened chest by ID
+        chest = (
+            db.query(TreasureChest)
+              .filter(
+                  TreasureChest.id == chest_id,
+                  TreasureChest.is_opened == False
+              )
+              .one_or_none()
+        )
+        if not chest:
+            flask_session["treasure_message"] = "No unopened treasure chests remain."
+            return redirect(url_for("map_view"))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+        # 2) Load its riddle
+        riddle = db.query(Riddle).get(chest.riddle_id)
+        if not riddle:
+            flask_session["treasure_message"] = "No riddle found for this chest."
+            return redirect(url_for("map_view"))
 
-    # Fetch the unopened treasure chest using session data
-    cursor.execute("""
-        SELECT id, riddle_id, gold_reward, xp_reward, food_reward, special_item
-        FROM treasure_chests
-        WHERE id = %s AND is_opened = FALSE
-    """, (chest["id"],))
-    chest_data = cursor.fetchone()
+        # 3) Determine whether to show hint
+        show_hint    = ishint(db, squire_id)
+        return_hint  = riddle.hint if show_hint else None
 
-    if not chest_data:
-        session["treasure_message"] = "No unopened treasure chests remain."
-        return redirect(url_for("map_view"))
+        # 4) Update session with full treasure + riddle details
+        flask_session["current_treasure"] = {
+            "id":               chest.id,
+            "riddle_id":        chest.riddle_id,
+            "gold_reward":      chest.gold_reward,
+            "xp_reward":        chest.xp_reward,
+            "food_reward":      chest.food_reward,
+            "special_item":     chest.special_item,
+            "riddle_text":      riddle.riddle_text,
+            "answer":           riddle.answer,
+            "hint":             return_hint,
+            "difficulty":       riddle.difficulty
+        }
 
-    # Fetch the riddle linked to this chest
-    cursor.execute("""
-        SELECT riddle_text, answer, hint, word_length_hint, word_count, quest_id, difficulty
-        FROM riddles WHERE id = %s
-    """, (chest["riddle_id"],))
-    riddle = cursor.fetchone()
-
-    show_hint = ishint(squire_id,conn)
-    if show_hint == True:
-        return_hint = riddle["hint"]
-    else:
-        return_hint = None
-
-    if not riddle:
-        session["treasure_message"] = "No riddle found for this chest."
-        return redirect(url_for("map_view"))
-
-    # Update the session with full treasure details
-    session["current_treasure"] = {
-        "id": chest_data["id"],
-        "riddle_id": chest_data["riddle_id"],
-        "gold_reward": chest_data["gold_reward"],
-        "xp_reward": chest_data["xp_reward"],
-        "food_reward": chest_data["food_reward"],
-        "special_item": chest_data["special_item"],
-        "riddle_text": riddle["riddle_text"],
-        "answer": riddle["answer"],
-        "hint": return_hint,
-        "difficulty": riddle["difficulty"]
-    }
-
-    return render_template("treasure.html", chest=session["current_treasure"], response={})
+        # 5) Render it
+        return render_template(
+            "treasure.html",
+            chest=flask_session["current_treasure"],
+            response={}
+        )
+    finally:
+        db.close()
 
 
 @app.route('/check_treasure', methods=['POST'])
 def check_treasure():
-    """Checks if the answer to the treasure riddle is correct."""
-    squire_id = session.get("squire_id")
-    quest_id = session.get("quest_id")
+    """Checks if the answer to the treasure riddle is correct, using ORM."""
+    squire_id = flask_session.get("squire_id")
+    quest_id  = flask_session.get("quest_id")
+    chest_id   = flask_session.get("current_treasure_id")
 
-    if not squire_id or "current_treasure" not in session:
-        return jsonify({"success": False, "message": "❌ No active chest found!"})
+    if not squire_id or not chest_id:
+        return jsonify(success=False, message="❌ No active chest found!")
 
-    user_answer = request.form.get("answer").strip().lower()
-    chest = session["current_treasure"]
+    db = db_session()
+    chest = db.query(TreasureChest).get(chest_id)
+    riddle = db.query(Riddle).get(chest.riddle_id)
+    user_answer    = request.form.get("answer", "").strip().lower()
 
-    correct_answer = chest["answer"].strip().lower()
+    logging.debug(f"{chest} {riddle} {user_answer}")
 
-    conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-
-    if user_answer == correct_answer:
-        # Reward the player
-
-        cursor.execute("""
-            INSERT INTO squire_questions (squire_id, question_id, question_type, answered_correctly)
-            VALUES (%s, %s, 'riddle', TRUE)
-            ON DUPLICATE KEY UPDATE answered_correctly = TRUE
-        """, (squire_id, chest["riddle_id"]))
-        conn.commit()
-
-        gold = chest["gold_reward"]
-        xp = chest["xp_reward"]
-        food = chest["food_reward"]
-        special_item = chest["special_item"]
-        reward_messages = []
-        toast_messages = []
-
-        if gold > 0:
-            reward_messages.append(f"💰 You found {gold} bitcoin!")
-            toast_messages.append(f"{gold} bitcoin")
-            cursor.execute("UPDATE teams SET gold = gold + %s WHERE id = (SELECT team_id FROM squires WHERE id = %s)", (gold, squire_id))
-
-        if xp > 0:
-            reward_messages.append(f"🎖️ You gained {xp} XP!")
-            toast_messages.append(f" / {xp} XP")
-            cursor.execute("UPDATE squires SET experience_points = experience_points + %s WHERE id = %s", (xp, squire_id))
-
-        if food > 0:
-            reward_messages.append(f"🍖 You found {food} special food items!")
-            toast_messages.append(f" / magic food")
-            cursor.execute("INSERT INTO inventory (squire_id, item_name, description, uses_remaining, item_type) VALUES (%s, 'Magic Pizza', 'Restores hunger', 15, 'food')", (squire_id,))
-
-        if special_item:
-            # Adjust item uses based on difficulty
-            uses_remain = {"Easy": 10, "Medium": 25, "Hard": 50}.get(chest["difficulty"], 10)
-            reward_messages.append(f"🛡️ You discovered a rare item: {special_item}!")
-            toast_messages.append(f" / {special_item}")
+    current = {
+        "id": chest.id,
+        "riddle_id": riddle.id,
+        "gold_reward": chest.gold_reward,
+        "xp_reward": chest.xp_reward,
+        "food_reward": chest.food_reward,
+        "special_item": chest.special_item,
+        "riddle_text": riddle.riddle_text,
+        "answer": riddle.answer,
+        "hint": riddle.hint,
+        "difficulty": riddle.difficulty
+    }
 
 
-            cursor.execute("INSERT INTO inventory (squire_id, item_name, description, uses_remaining, item_type) VALUES (%s, %s, 'A special item that affects gameplay', %s, 'gear')",
-                           (squire_id, special_item, uses_remain))
+    correct_answer = current["answer"].strip().lower()
+    logging.debug(f"{correct_answer}")
 
-        # Mark the chest as opened
-        cursor.execute("UPDATE treasure_chests SET is_opened = TRUE WHERE id = %s", (chest["id"],))
-        cursor.execute("INSERT INTO squire_riddle_progress (squire_id, riddle_id, quest_id, answered_correctly) VALUES (%s, %s, %s, 1)",
-                       (squire_id, chest["riddle_id"], quest_id,))
-        toast_str = ", ".join(toast_messages)
 
-        toast = f"{session['squire_name']} solved a riddle and received {toast_str}."
-        add_team_message(session['team_id'],toast,conn)
+    try:
+        if user_answer == correct_answer:
+            chest_id     = current["id"]
+            riddle_id    = current["riddle_id"]
+            gold_reward  = current.get("gold_reward", 0)
+            xp_reward    = current.get("xp_reward", 0)
+            food_reward  = current.get("food_reward", 0)
+            special_item = current.get("special_item")
+            difficulty   = current.get("difficulty", "Easy")
 
-        conn.commit()
-        cursor.close()
+            # 1) Record progress: riddle + question
+            db.add(SquireRiddleProgress(
+                squire_id          = squire_id,
+                riddle_id          = riddle_id,
+                quest_id           = quest_id,
+                answered_correctly = True
+            ))
+            sq = (
+                db.query(SquireQuestion)
+                  .filter_by(
+                      squire_id=squire_id,
+                      question_id=riddle_id,
+                      question_type='riddle'
+                  )
+                  .one_or_none()
+            )
+            if not sq:
+                db.add(SquireQuestion(
+                    squire_id          = squire_id,
+                    question_id        = riddle_id,
+                    question_type      = 'riddle',
+                    answered_correctly = True
+                ))
+            else:
+                sq.answered_correctly = True
 
-        session.pop("current_treasure", None)  # Remove from session
-        return jsonify({"success": True, "message": "✅ Correct! The chest unlocks! " + " ".join(reward_messages)})
+            # 2) Award gold
+            team = db.query(Team).get(db.query(Squire).get(squire_id).team_id)
+            if gold_reward:
+                team.gold += gold_reward
 
-    else:
-        return jsonify({"success": False, "message": "❌ Incorrect! The chest remains locked. Try again later."})
+            # 3) Award XP
+            squire = db.query(Squire).get(squire_id)
+            if xp_reward:
+                squire.experience_points += xp_reward
+
+            # 4) Award food
+            if food_reward:
+                db.add(Inventory(
+                    squire_id       = squire_id,
+                    item_name       = "Magic Pizza",
+                    description     = "Restores hunger",
+                    uses_remaining  = food_reward,
+                    item_type       = "food"
+                ))
+
+            # 5) Award special item
+            if special_item:
+                uses_map = {"Easy": 10, "Medium": 25, "Hard": 50}
+                uses_remain = uses_map.get(difficulty, 10)
+                db.add(Inventory(
+                    squire_id       = squire_id,
+                    item_name       = special_item,
+                    description     = "A special item that affects gameplay",
+                    uses_remaining  = uses_remain,
+                    item_type       = "gear"
+                ))
+
+            # 6) Mark chest opened
+            chest = db.query(TreasureChest).get(chest_id)
+            chest.is_opened = True
+
+            # 7) Commit all changes
+            db.commit()
+
+            # 8) Notify the team
+            toast_parts = []
+            if gold_reward:  toast_parts.append(f"{gold_reward} bitcoin")
+            if xp_reward:    toast_parts.append(f"{xp_reward} XP")
+            if food_reward:  toast_parts.append(f"{food_reward} food")
+            if special_item: toast_parts.append(special_item)
+            toast = (
+                f"{flask_session['squire_name']} solved a riddle "
+                f"and received {', '.join(toast_parts)}."
+            )
+            add_team_message(flask_session['team_id'], toast)
+            db.commit()
+
+            flask_session.pop("current_treasure", None)
+            reward_msgs = []
+            if gold_reward:  reward_msgs.append(f"💰 You found {gold_reward} bitcoin!")
+            if xp_reward:    reward_msgs.append(f"🎖️ You gained {xp_reward} XP!")
+            if food_reward:  reward_msgs.append(f"🍖 You found {food_reward} special food items!")
+            if special_item: reward_msgs.append(f"🛡️ You discovered a rare item: {special_item}!")
+
+            return jsonify(
+                success=True,
+                message="✅ Correct! The chest unlocks! " + " ".join(reward_msgs)
+            )
+        else:
+            return jsonify(
+                success=False,
+                message="❌ Incorrect! The chest remains locked. Try again later."
+            )
+    except Exception as e:
+        db.rollback()
+        logging.debug(f"Treasure Evaluation error {e}")
+        return jsonify(success=False, message="❌ An error occurred."), 500
+    finally:
+        db.close()

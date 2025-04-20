@@ -8,18 +8,17 @@
 <body>
     <h1>🏰 Welcome, Squire!</h1>
 
-    {% if quest_message %}
-        <div id="quest-message">
-            <h3>📜 Quest Completion Log:</h3>
-            {% for msg in quest_message %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="quest-message">
+      <h3>📜 Quest Completion Log:</h3>
+      {% for category, message in messages %}
+        <p class="flash {{ category }}">{{ message }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
-                <p style="border-left: 4px solid #4CAF50; padding-left: 10px;">{{ msg }}</p>
-            {% endfor %}
-        </div>
-
-      {% else %}
-          <p> Carry on with the quest you were working to complete, Squire</p>
-      {% endif %}
 
       <h2>Select Your Course</h2>
     <!-- Replacing list of links with a form and dropdown -->

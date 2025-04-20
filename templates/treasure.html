@@ -12,13 +12,14 @@
           <img src="/static/closed_treasure.jpeg" id="chestImage" height="150" width="150">
         </p>
 
-        <table><tr><td>🔒 The chest is locked... Solve the riddle to open it!</td></tr>
-        <tr><td><strong>📜 Riddle:</strong> {{ chest.riddle_text }}</td></tr>
+        <table>
+          <tr><td>🔒 The chest is locked... Solve the riddle to open it!</td></tr>
+          <tr><td><strong>📜 Riddle:</strong> {{ chest.riddle_text }}</td></tr>
 
         {% if chest.hint %}
-            <tr><td>💡 Clue: {{ chest.hint }}</td></tr></table>
+            <tr><td>💡 Clue: {{ chest.hint }}</td></tr>
         {% endif %}
-
+            <tr><td>
         <input type="text" id="riddle-answer" placeholder="Your answer...">
         <button class="submit-btn" onclick="submitAnswer()">Unlock Chest</button>
 
@@ -27,6 +28,7 @@
         <form action="{{ url_for('map_view') }}">
             <button type="submit">Return to Map</button>
         </form>
+      </tr></td></table>
     </div>
 
     <script>
