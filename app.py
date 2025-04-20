@@ -242,6 +242,8 @@ def register_squire():
         captcha_response = request.form.get("g-recaptcha-response")
         team_id = int(request.form["team_id"])
 
+        db=db_session()
+
         #logging.debug("🧪 CAPTCHA token received:", captcha_response)
 
         # Email format check
