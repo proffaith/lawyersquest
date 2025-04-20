@@ -1276,7 +1276,7 @@ def complete_quest(squire_id: int, quest_id: int) -> tuple[bool, list[str]]:
         status = (
             db.query(SquireQuestStatus)
               .filter_by(squire_id=squire_id, quest_id=quest_id).first()
-              .one_or_none()
+              
         )
         if status:
             status.status = 'completed'
