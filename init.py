@@ -2,7 +2,7 @@ import random
 import pymysql
 import logging
 from db import Squire, Course, Team, engine, db_session, Team, TravelHistory, Quest, SquireQuestion, SquireRiddleProgress, Riddle, Enemy, Inventory, WizardItem, Job, MapFeature, MultipleChoiceQuestion, TrueFalseQuestion, ShopItem, SquireQuestStatus, TeamMessage, TreasureChest, XpThreshold
-from sqlalchemy import not_
+from sqlalchemy import not_, select
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
