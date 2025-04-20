@@ -235,6 +235,9 @@ def login():
 
 @app.route("/register", methods=["GET", "POST"])
 def register_squire():
+
+    db=db_session()
+
     if request.method == "POST":
         squire_name = request.form["squire_name"]
         real_name = request.form["real_name"]
@@ -242,7 +245,7 @@ def register_squire():
         captcha_response = request.form.get("g-recaptcha-response")
         team_id = int(request.form["team_id"])
 
-        db=db_session()
+
 
         #logging.debug("🧪 CAPTCHA token received:", captcha_response)
 
