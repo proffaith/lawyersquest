@@ -1164,6 +1164,7 @@ def check_true_false_question():
                 return redirect(url_for("visit_town"))
 
             # 3b) Combat reward
+            flask_session["forced_combat"] = False
             xp_gain   = enemy.get("xp_reward", 0)
             gold_gain = enemy.get("gold_reward", 0)
             update_squire_progress(squire_id, xp_gain, gold_gain)
