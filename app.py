@@ -13,6 +13,10 @@ import requests
 from dotenv import load_dotenv
 from datetime import datetime
 from collections import defaultdict
+import uuid
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
 
 # Configure logging based on environment
 def setup_logging():
@@ -139,6 +143,28 @@ def calculate_feature_counts(level, quest_id, base_trees=75, base_mountains=50):
 def is_valid_email(email):
     return re.match(r"[^@]+@[^@]+\.[^@]+", email)
 
+def send_verification_email(squire_email, squire_name, token):
+    try:
+        confirm_url = f"https://proffaith.com/verify?token={token}"
+        message = Mail(
+            from_email='tim@faithatlaw.com',
+            to_emails=squire_email,
+            subject='🛡️ Confirm your registration for Lawyer’s Quest',
+            html_content=f"""
+            <p>Hail, noble {squire_name}!</p>
+            <p>Thank you for registering for <strong>Lawyer’s Quest</strong>.</p>
+            <p>Before you may embark on your legal adventure, you must confirm your email address.</p>
+            <p><a href="{confirm_url}">Click here to verify your account</a></p>
+            <hr>
+            <p>If you did not register for the game, please ignore this message.</p>
+            """
+        )
+        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        sg.send(message)
+    except Exception as e:
+        logging.error(f"SendGrid email error: {e}")
+
+
 if __name__ == '__main__':
     app.run(port=5050)
 
@@ -237,6 +263,7 @@ def login():
 def register_squire():
 
     db=db_session()
+    unique = str(uuid.uuid4())
 
     if request.method == "POST":
         squire_name = request.form["squire_name"]
@@ -244,7 +271,10 @@ def register_squire():
         email = request.form["email"]
         captcha_response = request.form.get("g-recaptcha-response")
         team_id = int(request.form["team_id"])
+        consent = request.form["tos_agree"]
 
+        if consent == "on":
+            consent_to_TOS = True
 
 
         #logging.debug("🧪 CAPTCHA token received:", captcha_response)
@@ -257,7 +287,7 @@ def register_squire():
         #logging.debug("🌱 FORM DATA:", squire_name, real_name, email, team_id)
 
         # Validate inputs
-        if not squire_name or not real_name or not email or not team_id:
+        if not squire_name or not real_name or not email or not team_id or consent_to_TOS != True:
             flash("🚫 Please fill out all required fields.")
             return redirect(url_for("register_squire"))
 
@@ -300,7 +330,9 @@ def register_squire():
                 level             = 1,
                 x_coordinate      = 0,
                 y_coordinate      = 0,
-                work_sessions     = 0
+                work_sessions     = 0,
+                uuid            = unique,
+                consent_to_TOS    = consent_to_TOS
             )
             db.add(new_squire)
             db.commit()
@@ -317,6 +349,10 @@ def register_squire():
             db.add(starter_pizza)
             db.commit()
 
+            # 4) Send a Verification Email
+            send_verification_email(email, squire_name, unique)
+
+
             flash("🎉 Welcome to the realm, noble squire!")
             return redirect(url_for("login"))
 
@@ -329,6 +365,58 @@ def register_squire():
     else:
         teams = db.query(Team.id, Team.team_name).all()
         return render_template("register.html", teams=teams)
+
+@app.route("/verify")
+def verify_squire():
+    db = db_session()
+    token = request.args.get("token")
+
+    if not token:
+        flash("Missing verification token.")
+        return redirect(url_for("login"))
+
+    squire = db.query(Squire).filter_by(uuid=token).first()
+    if not squire:
+        flash("Invalid or expired token.")
+        return redirect(url_for("login"))
+
+    squire.verified_email = True
+    db.commit()
+    flash("✅ Your squire has been verified. You may now log in.")
+    return redirect(url_for("login"))
+
+@app.route("/resend-verification", methods=["POST"])
+def resend_verification():
+    db = db_session()
+    uuid_token = request.form.get("uuid")
+
+    if not uuid_token:
+        flash("No token provided.")
+        return redirect(url_for("login"))
+
+    try:
+        squire = db.query(Squire).filter_by(uuid=uuid_token).first()
+        if not squire:
+            flash("Invalid token. Please register again.")
+            return redirect(url_for("login"))
+
+        if squire.verified_email:
+            flash("You are already verified. Feel free to login with your noble Squire name.")
+            return redirect(url_for("login"))
+
+        send_verification_email(squire.email, squire.squire_name, squire.uuid)
+        flash("📬 A new verification email has been sent!")
+        return redirect(url_for("login"))
+
+    except Exception as e:
+        logging.warning(f"resend verification error: {e}")
+        flash("Could not send verification email. Contact the System Admin to help you.")
+        return redirect(url_for("login"))
+
+    finally:
+        db.close()
+
+
 
 @app.route('/start_quest', methods=['POST'])
 def start_quest():
@@ -344,6 +432,10 @@ def start_quest():
 
     db = db_session()
     try:
+        squire = db.query(Squire).get(squire_id)
+        if not squire.verified_email:
+            return jsonify(success=False, message="⚠️ You must verify your email before starting quests. Check your inbox or spam folder for the confirmation link."), 403
+
         # 1) Create the SquireQuestStatus
         sqs = SquireQuestStatus(
             squire_id=squire_id,
@@ -401,6 +493,13 @@ def quest_select():
 
     db = db_session()
     try:
+        squire = db.query(Squire).get(squire_id)
+        if not squire or not squire.verified_email:
+            uuid_token = squire.uuid  # store this BEFORE clearing session
+            flask_session.clear()
+            flash("⚠️ You must verify your email before selecting a quest. Check your inbox or click below to resend.")
+            return redirect(url_for("login", resend_ready="true", uuid=uuid_token))
+
         # ✅ Fetch all available courses
         courses = db.query(Course).all()
 

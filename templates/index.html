@@ -10,14 +10,23 @@
     <h1>⚔️ Welcome, Squire!</h1>
 
     {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      <ul class="flashes">
-        {% for message in messages %}
-          <li style="color: red;">{{ message }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-  {% endwith %}
+      {% if messages %}
+        <div class="alert alert-warning">
+          {{ messages[0] }}
+          {% if request.args.get("resend_ready") %}
+          <form action="/resend-verification" method="post">
+            <input type="hidden" name="uuid" value="{{ request.args.get('uuid') }}">
+            <button type="submit" class="btn btn-sm btn-primary mt-2">
+              Resend Verification Email
+            </button>
+          </form>
+        {% endif %}
+
+
+        </div>
+      {% endif %}
+    {% endwith %}
+
 
     <form action="/login" method="POST">
         <label>Enter your Squire ID:</label>

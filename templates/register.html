@@ -37,7 +37,12 @@
           {% for team in teams %}
             <option value="{{ team.id }}">{{ team.team_name }}</option>
           {% endfor %}
-        </select>
+        </select><br>
+
+        <label>Consent:</label>
+        <input type="checkbox" name="tos_agree" required> I agree to the <a href="/terms" target="_blank">Terms of Service</a>
+        and consent to receive email communications.
+
       </td>
       <td style="vertical-align: top;">
         <div class="g-recaptcha" data-sitekey="6Lc8eh0rAAAAAJvBfj7nFI_9zpersbTZ0X5U0Odw"></div>
