@@ -247,6 +247,7 @@ def login():
                 flask_session['squire_id']   = squire.id
                 flask_session['squire_name'] = squire.squire_name
                 flask_session['team_id']     = squire.team_id
+                flask_session['level']       = squire.level
 
                 # Refactored helper should accept the ORM session
                 update_riddle_hints()
@@ -363,7 +364,7 @@ def register_squire():
             return redirect(url_for("register_squire"))
 
     else:
-        teams = db.query(Team.id, Team.team_name).all()
+        teams = db.query(Team.id, Team.team_name, Team.reputation).all()
         return render_template("register.html", teams=teams)
 
 @app.route("/verify")
@@ -422,6 +423,8 @@ def resend_verification():
 def start_quest():
     """Assigns a selected quest to the player."""
     squire_id = flask_session.get("squire_id")
+    level = flask_session.get("level")
+
     if not squire_id:
         return jsonify(success=False, message="Session expired. Please log in again."), 400
 
@@ -464,7 +467,8 @@ def start_quest():
         # 4) Persist treasure chests and fresh hints
         msg = insert_treasure_chests(
             quest_id=quest_id,
-            squire_quest_id=squire_quest_id
+            squire_quest_id=squire_quest_id,
+            level=level
         )
 
         # 5) Store in session and respond
@@ -981,6 +985,7 @@ def handle_true_false_question():
     quest_id  = flask_session.get("quest_id")
     enemy     = flask_session.get("enemy", {})
     has_weapon= enemy.get("has_weapon", False)
+    win_msg = []
 
     if not all([squire_id, quest_id, enemy]):
         return jsonify(success=False,
@@ -1057,9 +1062,9 @@ def handle_true_false_question():
         if is_correct:
             xp_gain   = enemy['xp_reward']
             gold_gain = enemy['gold_reward']
-            update_squire_progress(db, squire_id, xp_gain, gold_gain)
+            win_msg.append(update_squire_progress(db, squire_id, xp_gain, gold_gain))
 
-            win_msg = (
+            win_msg.append (
                 f"✅ Correct! The enemy is defeated! "
                 f"You gain {xp_gain} XP and {gold_gain} bits."
             )
@@ -1193,6 +1198,7 @@ def check_true_false_question():
     enemy        = flask_session.get("enemy", {})
     pending_job  = flask_session.pop("pending_job", None)
     flask_session.pop("success", None)
+    toast =[]
 
     if not (squire_id and question_id):
         flask_session["battle_summary"] = "Error: Missing session or question."
@@ -1256,7 +1262,7 @@ def check_true_false_question():
                        f"and earned 💰 {payout} bits!")
                 flask_session["job_message"] = msg
 
-                toast = (f"{flask_session['squire_name']} completed "
+                toast.append (f"{flask_session['squire_name']} completed "
                          f"'{pending_job['job_name']}' and earned 💰 {payout} bits.")
                 add_team_message(squire.team_id, toast)
 
@@ -1266,14 +1272,15 @@ def check_true_false_question():
             flask_session["forced_combat"] = False
             xp_gain   = enemy.get("xp_reward", 0)
             gold_gain = enemy.get("gold_reward", 0)
-            update_squire_progress(squire_id, xp_gain, gold_gain)
+            toast.append(update_squire_progress(squire_id, xp_gain, gold_gain))
 
-            toast = (
+            toast.append (
                 f"{flask_session['squire_name']} defeated "
                 f"{enemy.get('name')} and gained "
                 f"{xp_gain} XP and {gold_gain} bits."
             )
-            add_team_message(flask_session['team_id'], toast)
+            message = " ".join([str(m) for m in toast if m])
+            add_team_message(flask_session['team_id'], message)
             db.commit()
 
             flask_session["combat_result"] = (
@@ -1701,13 +1708,16 @@ def check_MC_question():
             flask_session["boss_defeated"] = True
             xp = boss.get("xp_reward", 0)
             gold = boss.get("gold_reward", 0)
-            update_squire_progress(db, squire_id, xp, gold)
+            result.append(update_squire_progress(db, squire_id, xp, gold))
 
-            result = (
+            result.append (
                 f"🍕 The {boss.get('name')} is too hungry to continue! "
                 f"They run off to eat a pizza.\nYou gain {xp} XP and {gold} bits."
             )
-            flask_session["combat_result"] = result
+
+            message = " ".join([str(m) for m in result if m])
+
+            flask_session["combat_result"] = message
 
             # Clean up combat state
             for key in ("boss", "player_current_hunger", "boss_current_hunger"):
@@ -1754,6 +1764,7 @@ def ajax_handle_combat():
     hit_chance = flask_session["hit_chance"]
     mod_for_distance = flask_session["mod_for_distance"]
     flask_session.pop("success",None)
+    outcome=[]
 
     db=db_session()
 
@@ -1852,10 +1863,12 @@ def ajax_handle_combat():
                 xp += 25 if not enemy.get("in_forest") else 55
                 bitcoin += 100
 
-            update_squire_progress(squire_id,  xp, bitcoin)
+            outcome.append(update_squire_progress(squire_id,  xp, bitcoin))
             degrade_gear(squire_id, enemy["weakness"])
-            outcome = f"🍕 The {enemy['name']} is too hungry to continue! They run off to eat a pizza.\nYou gain {xp} XP and {bitcoin} bits."
-            flask_session["combat_result"] = outcome
+            outcome.append(f"🍕 The {enemy['name']} is too hungry to continue! They run off to eat a pizza.\nYou gain {xp} XP and {bitcoin} bits.")
+
+            message = " ".join([str(m) for m in outcome if m])
+            flask_session["combat_result"] = message
 
             # ✅ Reset combat flag and work sessions after combat
             flask_session["forced_combat"] = False
@@ -2028,6 +2041,8 @@ def buy_item():
 def town_work():
     """Allows players to take on jobs to earn gold."""
     squire_id = flask_session.get("squire_id")
+    level = flask_session.get("level")
+
     if not squire_id:
         return redirect(url_for("login"))
 
@@ -2074,6 +2089,11 @@ def town_work():
 
         # 4) GET: fetch all jobs
         jobs = db.query(Job).all()
+
+        for job in jobs:
+            job.scaled_min = job.min_payout * level
+            job.scaled_max = job.max_payout * level
+
         return render_template(
             "town_work.html",
             jobs=jobs
@@ -2101,6 +2121,24 @@ def hall_of_fame():
     # in the template: {{ leader.squire_name }} & {{ leader.experience_points }}
     return render_template("hall_of_fame.html", leaders=leaders)
 
+@app.route('/team_fame', methods=['GET'])
+def team_fame():
+    """Displays the Hall of Fame leaderboard for Teams Based on Reputation."""
+    db = db_session()
+    try:
+        # Fetch top 10 players by experience_points
+        leaders = (
+            db.query(Team)
+              .order_by(Team.reputation.desc())
+              .limit(10)
+              .all()
+        )
+    finally:
+        db.close()
+
+    # You can pass ORM objects directly to Jinja:
+    # in the template: {{ leader.squire_name }} & {{ leader.experience_points }}
+    return render_template("team_hall.html", leaders=leaders)
 
 ## riddles and treasure encounters here
 
@@ -2381,6 +2419,7 @@ def check_treasure():
             team = db.query(Team).get(db.query(Squire).get(squire_id).team_id)
             if gold_reward:
                 team.gold += gold_reward
+                team.reputation += 2
 
             # 3) Award XP
             squire = db.query(Squire).get(squire_id)

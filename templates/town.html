@@ -17,6 +17,7 @@
     #shop-btn { top: 26%; left: 18%; }
     #town-office-btn { top: 55%; left: 52%; }
     #hall-of-fame-btn { top: 20%; left: 70%; }
+    #team-fame-btn { top: 40%; left: 75%; }
     #exit-btn { top: 82%; left: 46%; }
     </style>
     <script>
@@ -53,6 +54,10 @@ function workInTown() {
         <button class="map-button" id="hall-of-fame-btn" type="submit">🏆 Visit the Hall of Fame</button>
     </form>
 
+    <form action="{{ url_for('team_fame') }}">
+        <button class="map-button" id="team-fame-btn" type="submit">🏆 Teams Hall</button>
+    </form>
+
     <form action="{{ url_for('map_view') }}">
         <button class="map-button" id="exit-btn" type="submit">🚶 Leave Town</button>
     </form>
@@ -63,7 +68,7 @@ function workInTown() {
     <a href="{{ url_for('getting_started') }}">Getting Started</a> |
     <a href="{{ url_for('logout') }}">Log Out</a> |
     © 2025, Tim Faith <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank">CC BY-SA 4.0</a> |
-    ver 0.3
+    ver 0.3.1
   </p>
 </footer>
 </body>

@@ -18,7 +18,7 @@
                     <tr>
                         <td><input type="radio" name="job_id" value="{{ job.id }}" required></td>
                         <td><strong>{{ job.job_name }}</strong>: {{ job.description }}</td>
-                        <td>(💰 Pays {{ job.min_payout }} - {{ job.max_payout }} Bits)</td>
+                        <td>(💰 Pays {{ job.scaled_min }} - {{ job.scaled_max }} Bits)</td>
                     </tr>
                 {% endfor %}
             </table>

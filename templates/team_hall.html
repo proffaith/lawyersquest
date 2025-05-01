@@ -1,29 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>⚔️ Combat Results</title>
+    <title>🏆 Hall of Fame</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
 
 </head>
 <body>
-    <h1>⚔️ Battle Results:</h1>
+    <h1>🏆 Hall of Fame</h1>
+    <p>The greatest squires of all time!</p>
 
-    <div class="log">
-        <table>
-          <tr><td>
-            {% if success %}
-            <img src="/static/happy_knight.jpeg" width=150 height=150>
-            {% else %}
-            <img src="/static/sad_knight.jpeg" width=150 height=150>
-            {% endif %}
-          </td></tr>
-          <tr><td>{{ combat_result|safe }}</td></tr>
-        </table>
-    </div>
+    <ul>
+        {% for team in leaders %}
+        <li>{{ team.team_name }} - 🎖 {{ team.reputation }} Rep Level</li>
+        {% endfor %}
+    </ul>
 
-    <form action="{{ url_for('map_view') }}">
-        <button type="submit">Return to Map</button>
+    <form action="{{ url_for('visit_town') }}">
+        <button type="submit">⬅ Return to Town</button>
     </form>
+
     <footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
       <p>
         <a href="{{ url_for('terms') }}">Privacy & Terms of Use</a> |

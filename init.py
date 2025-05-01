@@ -17,17 +17,40 @@ def generate_random_coordinates(difficulty):
     else:  # Hard
         return random.randint(-35, 35), random.randint(-35, 35)
 
-def generate_rewards(difficulty):
+def generate_rewards(difficulty,level):
     """Assigns rewards based on riddle difficulty."""
+
+    db = db_session()
+
+    medium_special = (
+        db.query(ShopItem.item_name)
+        .filter(ShopItem.item_type.ilike('gear'))
+        .filter(ShopItem.min_level <= level)
+        .all()
+    )
+    medium_special = [item[0] for item in medium_special]
+    print("Available medium special items:", medium_special)
+
+    hard_special = (
+        db.query(WizardItem.item_name)
+        .filter(WizardItem.min_level <= level)
+        .all()
+
+    )
+
+    hard_special = [item[0] for item in hard_special]
+
     if difficulty == "Easy":
         return random.randint(10, 20), random.randint(5, 15), random.randint(5, 10), None
     elif difficulty == "Medium":
-        return random.randint(25, 40), random.randint(15, 25), random.randint(10, 20), random.choice(["Small Shield", None])
+        special = random.choice(medium_special + [None]) if medium_special else None
+        return random.randint(25, 40), random.randint(15, 25), random.randint(10, 20), special
     else:  # Hard
-        return random.randint(50, 75), random.randint(30, 50), random.randint(15, 30), random.choice(["Ring of Protection", "Golden Amulet", None])
+        special = random.choice(hard_special + [None]) if hard_special else None
+        return random.randint(50, 75), random.randint(30, 50), random.randint(15, 30), special
 
 
-def insert_treasure_chests(quest_id: int, squire_quest_id: int) -> str:
+def insert_treasure_chests(quest_id: int, squire_quest_id: int, level: int) -> str:
     """
     Inserts a TreasureChest record for each Riddle in the given quest
     that doesn’t already have a chest for this squire_quest_id.
@@ -55,7 +78,7 @@ def insert_treasure_chests(quest_id: int, squire_quest_id: int) -> str:
         # 3) Insert chests for each missing riddle
         for riddle_id, difficulty in riddles:
             x, y = generate_random_coordinates(difficulty)
-            gold, xp, food, special_item = generate_rewards(difficulty)
+            gold, xp, food, special_item = generate_rewards(difficulty, level)
 
             chest = TreasureChest(
                 x_coordinate     = x,

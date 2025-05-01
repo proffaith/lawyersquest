@@ -35,7 +35,7 @@
         <label for="team_id">Team:</label>
         <select name="team_id" required>
           {% for team in teams %}
-            <option value="{{ team.id }}">{{ team.team_name }}</option>
+            <option value="{{ team.id }}">{{ team.team_name }} {{ team.reputation }} Rep. Level</option>
           {% endfor %}
         </select><br>
 

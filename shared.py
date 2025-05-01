@@ -474,6 +474,7 @@ def open_treasure_chest(squire_id: int, chest_id: int) -> str:
         team = db.query(Team).get(db.query(Squire).get(squire_id).team_id)
         if chest.gold_reward > 0:
             team.gold += chest.gold_reward
+            team.reputation += 2
             msgs.append(f"💰 You found {chest.gold_reward} bitcoin!")
 
         # 3) Award XP
@@ -984,6 +985,7 @@ def update_squire_progress(squire_id: int, xp_gain: int, gold_gain: int) -> list
         team = db.query(Team).get(squire.team_id)
         if team:
             team.gold = (team.gold or 0) + gold_gain
+            team.reputation += 1
 
         db.commit()
 
@@ -1276,7 +1278,7 @@ def complete_quest(squire_id: int, quest_id: int) -> tuple[bool, list[str]]:
         status = (
             db.query(SquireQuestStatus)
               .filter_by(squire_id=squire_id, quest_id=quest_id).first()
-              
+
         )
         if status:
             status.status = 'completed'
