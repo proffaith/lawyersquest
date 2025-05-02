@@ -746,15 +746,7 @@ def ajax_move():
 
     direction = request.json.get("direction")  # Get movement direction from AJAX request
 
-    x, y, level = (
-        db.query(
-            Squire.x_coordinate,
-            Squire.y_coordinate,
-            Squire.level
-        )
-        .filter(Squire.id == squire_id)
-        .one()
-    )
+    level = db.query(Squire.level).filter(Squire.id == squire_id).scalar()
 
     p = calculate_enemy_encounter_probability(squire_id, quest_id, x,y,  squire_quest_id)
     logging.debug(f"Combat Probability: {p}")
@@ -782,11 +774,11 @@ def ajax_move():
             return jsonify({"message": food_message})
         # Otherwise, include the food message in your response
         else:
-            x, y, tm = update_player_position(squire_id, direction)
+            x, y, tm = update_player_position(db, squire_id, direction)
             message = f"{food_message} \n {tm}"
 
     elif direction == "V":
-        x,y,tm = update_player_position(squire_id, direction)
+        x,y,tm = update_player_position(db, squire_id, direction)
         visit_town()
         message = "🏰 You arrive in Bitown."
         return jsonify({"redirect": url_for("visit_town")})
@@ -809,14 +801,14 @@ def ajax_move():
         })
 
     if x == 0 and y ==0:
-        x,y,tm = update_player_position(squire_id, direction)
+        x,y,tm = update_player_position(db, squire_id, direction)
         visit_town()
         message = "🏰 You arrive in Bitown."
         return jsonify({"redirect": url_for("visit_town")})
 
     # ✅ Generate Updated Map
     #game_map = display_travel_map(squire_id, quest_id)
-    game_map = get_viewport_map(squire_id, quest_id,  20)
+    game_map = get_viewport_map(db, squire_id, quest_id,  15)
 
     if not game_map:
         logging.error("❌ ERROR: display_travel_map() returned None!")

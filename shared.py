@@ -78,12 +78,11 @@ def can_enter_tile(db_session, squire_id, new_x, new_y):
     # Default: allow entry
     return True
 
-def update_player_position(squire_id: int, direction: str):
+def update_player_position(db, squire_id: int, direction: str):
     """
     Updates the player's coordinates based on movement direction,
     records travel history, and returns (new_x, new_y, message).
     """
-    db = db_session()
     try:
         # 1) Load current position
         squire = db.query(Squire).get(squire_id)
@@ -136,12 +135,11 @@ def update_player_position(squire_id: int, direction: str):
         db.close()
 
 
-def get_viewport_map(squire_id: int, quest_id: int, viewport_size: int = 15) -> str:
+def get_viewport_map(db, squire_id: int, quest_id: int, viewport_size: int = 15) -> str:
     """
     Builds a little HTML table (15×15 by default) around the player’s position,
     showing visited dots, terrain icons, and the player marker.
     """
-    db = db_session()
     try:
         # 1) All visited coords
         visited = {
