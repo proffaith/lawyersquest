@@ -196,8 +196,8 @@ def get_viewport_map(db, squire_id: int, quest_id: int, viewport_size: int = 15)
         )
         return "\n".join(out)
 
-    finally:
-        db.close()
+    except Exception as e:
+        print(f"viewport map {e}")
 
 def display_travel_map(squire_id: int, quest_id: int) -> str:
     """

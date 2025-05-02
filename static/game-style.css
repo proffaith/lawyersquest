@@ -22,6 +22,7 @@ h1, h2, h3 {
 /* Game Map Styles */
 .game-map {
     display: inline-block;
+    align: center;
     border: 5px solid #5c4033;
     background: #f4e1c6;
     padding: 10px;

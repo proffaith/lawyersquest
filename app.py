@@ -569,7 +569,7 @@ def map_view():
 
     try:
         #game_map = display_travel_map(squire_id, quest_id)
-        game_map = get_viewport_map(squire_id, quest_id,20)
+        game_map = get_viewport_map(db, squire_id, quest_id,15)
         xp, gold = get_squire_stats(squire_id)
         hunger = get_hunger_bar(squire_id)
 
@@ -748,8 +748,7 @@ def ajax_move():
 
     level = db.query(Squire.level).filter(Squire.id == squire_id).scalar()
 
-    p = calculate_enemy_encounter_probability(squire_id, quest_id, x,y,  squire_quest_id)
-    logging.debug(f"Combat Probability: {p}")
+
 
 
     if check_quest_completion(squire_id, quest_id):
@@ -775,6 +774,9 @@ def ajax_move():
         # Otherwise, include the food message in your response
         else:
             x, y, tm = update_player_position(db, squire_id, direction)
+            p = calculate_enemy_encounter_probability(squire_id, quest_id, x,y,  squire_quest_id)
+            logging.debug(f"Combat Probability: {p}")
+
             message = f"{food_message} \n {tm}"
 
     elif direction == "V":
