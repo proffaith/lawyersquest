@@ -6,8 +6,8 @@ import decimal
 import configparser
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from dotenv import load_dotenv
-from db import Squire, Course, Team, engine, db_session, Team, TravelHistory, Quest, SquireQuestion, SquireRiddleProgress, Riddle, Enemy, Inventory, WizardItem, Job, MapFeature, MultipleChoiceQuestion, TrueFalseQuestion, ShopItem, SquireQuestStatus, TeamMessage, TreasureChest, XpThreshold
-from sqlalchemy import or_, func, and_, asc, not_
+from db import Squire, Course, Team, engine, db_session, Team, TravelHistory, Quest, SquireQuestion, SquireRiddleProgress, Riddle, Enemy, Inventory, WizardItem, Job, MapFeature, MultipleChoiceQuestion, TrueFalseQuestion, ShopItem, SquireQuestStatus, TeamMessage, TreasureChest, XpThreshold, ChestHint
+from sqlalchemy import or_, func, and_, asc, not_, desc
 from sqlalchemy.dialects.mysql import insert
 from decimal import Decimal
 
@@ -141,6 +141,46 @@ def get_viewport_map(db, squire_id: int, quest_id: int, viewport_size: int = 15)
     showing visited dots, terrain icons, and the player marker.
     """
     try:
+        # ———————— find the linking row ————————
+        sqs = (
+            db.query(SquireQuestStatus)
+              .filter_by(squire_id=squire_id, quest_id=quest_id, status='active')
+              .order_by(desc(SquireQuestStatus.id))
+              .first()
+        )
+        if not sqs:
+            return "<p>⚠️ Error: No active quest status found for that player/quest.</p>"
+
+        # now we actually have the PK to filter treasure & hints
+        squire_quest_id = sqs.id
+
+        # 0) All treasure chests for this quest
+        chests = db.query(TreasureChest) \
+                   .filter_by(squire_quest_id=squire_quest_id) \
+                   .all()
+        chest_coords = {(c.x_coordinate, c.y_coordinate): c for c in chests}
+        # Of those, split out which are opened vs. just discovered
+        opened_coords = {coord for coord, c in chest_coords.items() if c.is_opened}
+
+        hints = db.query(ChestHint) \
+                  .filter_by(squire_quest_id=squire_quest_id) \
+                  .all()
+        hint_coords = {(h.chest_x, h.chest_y) for h in hints}
+
+        ICONS = {
+          'player': "📍",
+          'home':   "🏰",
+          'forest': "🌲", 'mountain': "🏔️", 'river': "🌊",
+          'visited': "•",
+          'unseen':  "⬜",
+          # treasure states:
+          'closed_chest': "🎁",
+          'opened_chest': "🗝️",
+          'hint_marker':  "❓",
+        }
+
+
+
         # 1) All visited coords
         visited = {
             (h.x_coordinate, h.y_coordinate)
@@ -178,6 +218,13 @@ def get_viewport_map(db, squire_id: int, quest_id: int, viewport_size: int = 15)
                     char = "🏰"
                 elif (cx, ry) == (40, 40):
                     char = "🏰"
+                # 3) Already opened chest?
+                elif (cx,ry) in opened_coords:
+                    char = ICONS['opened_chest']
+
+                # 4) Chest you’ve discovered (visited but not yet opened)
+                elif (cx,ry) in chest_coords and (cx,ry) in hint_coords:
+                    char = ICONS['closed_chest']
                 elif (cx, ry) in feature_map:
                     t = feature_map[(cx, ry)]
                     char = {"forest":"🌲","mountain":"🏔️","river":"🌊"}.get(t, "⬜")
@@ -192,7 +239,7 @@ def get_viewport_map(db, squire_id: int, quest_id: int, viewport_size: int = 15)
             out.append("</tr>")
         out.append("</table>")
         out.append(
-            """<p>📍=You | •=Visited | 🏰=Home | 🌲=Forest | 🏔️=Mountain | 🌊=River</p>"""
+            """<p>📍=You | •=Visited | 🏰=Home | 🌲=Forest | 🏔️=Mountain | 🌊=River | 🎁 Chest | 🗝️ Solved Chest</p>"""
         )
         return "\n".join(out)
 

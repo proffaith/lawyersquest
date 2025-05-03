@@ -352,6 +352,7 @@ class SquireQuestStatus(Base):
     squire     = relationship('Squire', back_populates='quest_statuses')
     quest      = relationship('Quest', back_populates='squire_statuses')
     treasure_chests = relationship('TreasureChest',back_populates='squire_quest',cascade='all, delete-orphan')
+    chest_hints = relationship('ChestHint', back_populates ='squire_quest', cascade='all, delete-orphan')
 
     __table_args__ = (
         UniqueConstraint('squire_id', 'quest_id', name='uq_squire_quest'),
@@ -404,6 +405,25 @@ class XpThreshold(Base):
 
     def __repr__(self):
         return f"<XpThreshold(level={self.level}, min_xp={self.min})>"
+
+class ChestHint(Base):
+    __tablename__ = 'chest_hints'
+
+    id               = Column(Integer, primary_key=True)
+    # ⚡ Only one squire_quest_id, and it must point at squire_quest_status.id
+    squire_quest_id  = Column(
+        Integer,
+        ForeignKey('squire_quest_status.id'),
+        nullable=False
+    )
+    chest_x          = Column(Integer, nullable=False)
+    chest_y          = Column(Integer, nullable=False)
+
+    squire_quest     = relationship(
+        'SquireQuestStatus',
+        back_populates='chest_hints'
+    )
+
 
 # ────────────── Initialize DB ──────────────
 
