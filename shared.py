@@ -633,7 +633,7 @@ def calculate_riddle_reward(squire_id: int, riddle_id: int) -> str:
 
 
 # battle of the beasties
-
+    
 def flee_safely(e,p, hit_chance):
 
     e = int(e)

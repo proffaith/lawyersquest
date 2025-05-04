@@ -297,6 +297,7 @@ class MultipleChoiceQuestion(Base):
     optionC        = Column(String(255))
     optionD        = Column(String(255))
     correctAnswer  = Column(String(1))
+    hint           = Column(Text)
     quest_id       = Column(Integer, ForeignKey('quests.id'))
 
     # relationship back to Quest
@@ -312,6 +313,7 @@ class TrueFalseQuestion(Base):
     id             = Column(Integer, primary_key=True)
     question       = Column(Text,    nullable=False)
     correct_answer = Column(Boolean, nullable=False)
+    hint           = Column(Text)
     quest_id       = Column(Integer, ForeignKey('quests.id'), nullable=False)
     enemy_id       = Column(Integer, ForeignKey('enemies.id'), default=1)
 

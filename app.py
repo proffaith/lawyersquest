@@ -171,6 +171,11 @@ if __name__ == '__main__':
 #socketio = SocketIO(app)
 
 # 🏠 Homepage (Start Game)
+
+@app.context_processor
+def inject_version():
+    return {"app_version": flask_session.get("ver", "0.3.3")}
+
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -248,6 +253,7 @@ def login():
                 flask_session['squire_name'] = squire.squire_name
                 flask_session['team_id']     = squire.team_id
                 flask_session['level']       = squire.level
+                flask_session['ver']         = "0.3.3"
 
                 # Refactored helper should accept the ORM session
                 update_riddle_hints()
@@ -1156,71 +1162,143 @@ def answer_question():
     """Displays a True/False question before the player submits an answer."""
     squire_id = flask_session.get("squire_id")
     quest_id  = flask_session.get("quest_id")
+    level = flask_session.get("level")
+    pending_job  = flask_session.get("pending_job")
+
     if not (squire_id and quest_id):
         return redirect(url_for('login'))
 
     db = db_session()
-    try:
-        # 1) Total questions in this quest
-        total_qs = (
-            db.query(TrueFalseQuestion)
-              .filter(TrueFalseQuestion.quest_id == quest_id)
-              .count()
-        )
 
-        # 2) Which question_ids has this squire already encountered?
-        answered_rows = (
+    if pending_job:
+        if pending_job["job_id"] > 2:
+            question_type = random.choice(["true_false", "multiple_choice"])
+        else:
+            question_type = "true_false"
+
+    else:
+        enemy = flask_session.get("enemy")
+        enemylevel = enemy["min_level"]
+
+        if level > 2 and enemylevel > 2:
+            question_type = random.choice(["true_false", "multiple_choice"])
+        else:
+            question_type = "true_false"
+
+    if question_type == "true_false":
+        try:
+            # 1) Total questions in this quest
+            total_qs = (
+                db.query(TrueFalseQuestion)
+                  .filter(TrueFalseQuestion.quest_id == quest_id)
+                  .count()
+            )
+
+            # 2) Which question_ids has this squire already encountered?
+            answered_rows = (
+                db.query(SquireQuestion.question_id)
+                  .filter(
+                      SquireQuestion.squire_id   == squire_id,
+                      SquireQuestion.question_type == 'true_false'
+                  )
+                  # only consider those tied to this quest
+                  .join(TrueFalseQuestion,
+                        SquireQuestion.question_id == TrueFalseQuestion.id)
+                  .filter(TrueFalseQuestion.quest_id == quest_id)
+                  .all()
+            )
+            answered_ids = {qid for (qid,) in answered_rows}
+            answered_count = len(answered_ids)
+
+            # 3) Build the base query
+            q = (
+                db.query(
+                    TrueFalseQuestion.id,
+                    TrueFalseQuestion.question,
+                    TrueFalseQuestion.correct_answer
+                )
+                .filter(TrueFalseQuestion.quest_id == quest_id)
+            )
+
+            # 4) If not yet answered all, exclude those already seen
+            if answered_count < total_qs:
+                q = q.filter(~TrueFalseQuestion.id.in_(answered_ids))
+
+            # 5) Grab a random one
+            question_row = q.order_by(func.rand()).first()
+
+            # 6) No question left?
+            if not question_row:
+                flask_session["battle_summary"] = "No question available. You must fight!"
+                return redirect(url_for("ajax_handle_combat"))
+
+            # 7) Store for validation and render
+            flask_session["current_question"] = {
+                "id":   question_row.id,
+                "text": question_row.question
+            }
+            return render_template(
+                "answer_question.html",
+                question={
+                    "id":   question_row.id,
+                    "question": question_row.question,
+                    # note: template probably doesn’t need correct_answer
+                }
+            )
+        finally:
+            db.close()
+
+    else:
+        # Grab answered multiple choice question IDs
+        mc_answered_rows = (
             db.query(SquireQuestion.question_id)
               .filter(
-                  SquireQuestion.squire_id   == squire_id,
-                  SquireQuestion.question_type == 'true_false'
+                  SquireQuestion.squire_id == squire_id,
+                  SquireQuestion.question_type == 'multiple_choice'
               )
-              # only consider those tied to this quest
-              .join(TrueFalseQuestion,
-                    SquireQuestion.question_id == TrueFalseQuestion.id)
-              .filter(TrueFalseQuestion.quest_id == quest_id)
+              .join(MultipleChoiceQuestion,
+                    SquireQuestion.question_id == MultipleChoiceQuestion.id)
+              .filter(MultipleChoiceQuestion.quest_id == quest_id)
               .all()
         )
-        answered_ids = {qid for (qid,) in answered_rows}
-        answered_count = len(answered_ids)
-
-        # 3) Build the base query
-        q = (
-            db.query(
-                TrueFalseQuestion.id,
-                TrueFalseQuestion.question,
-                TrueFalseQuestion.correct_answer
-            )
-            .filter(TrueFalseQuestion.quest_id == quest_id)
+        mc_answered_ids = {qid for (qid,) in mc_answered_rows}
+        mc_total_qs = (
+            db.query(MultipleChoiceQuestion)
+              .filter(MultipleChoiceQuestion.quest_id == quest_id)
+              .count()
         )
+        mc_q = (
+            db.query(
+                MultipleChoiceQuestion.id,
+                MultipleChoiceQuestion.question_text,
+                MultipleChoiceQuestion.optionA,
+                MultipleChoiceQuestion.optionB,
+                MultipleChoiceQuestion.optionC,
+                MultipleChoiceQuestion.optionD,
+                MultipleChoiceQuestion.correctAnswer
+            )
+            .filter(MultipleChoiceQuestion.quest_id == quest_id)
+        )
+        if len(mc_answered_ids) < mc_total_qs:
+            mc_q = mc_q.filter(~MultipleChoiceQuestion.id.in_(mc_answered_ids))
 
-        # 4) If not yet answered all, exclude those already seen
-        if answered_count < total_qs:
-            q = q.filter(~TrueFalseQuestion.id.in_(answered_ids))
-
-        # 5) Grab a random one
-        question_row = q.order_by(func.rand()).first()
-
-        # 6) No question left?
-        if not question_row:
+        mc_question = mc_q.order_by(func.rand()).first()
+        if not mc_question:
             flask_session["battle_summary"] = "No question available. You must fight!"
             return redirect(url_for("ajax_handle_combat"))
 
-        # 7) Store for validation and render
         flask_session["current_question"] = {
-            "id":   question_row.id,
-            "text": question_row.question
-        }
-        return render_template(
-            "answer_question.html",
-            question={
-                "id":   question_row.id,
-                "question": question_row.question,
-                # note: template probably doesn’t need correct_answer
+            "id": mc_question.id,
+            "text": mc_question.question_text,
+            "type": "multiple_choice",
+            "options": {
+                "A": mc_question.optionA,
+                "B": mc_question.optionB,
+                "C": mc_question.optionC,
+                "D": mc_question.optionD
             }
-        )
-    finally:
-        db.close()
+        }
+        return render_template("answer_question_mc.html", question=flask_session["current_question"])
 
 @app.route('/check_true_false_question', methods=['POST'])
 def check_true_false_question():
@@ -1324,9 +1402,15 @@ def check_true_false_question():
 
         else:
             # 4) Incorrect answer handling
+            if question_id:
+                question = db.query(TrueFalseQuestion).get(question_id)
+                hint = question.hint if question else None
+            else:
+                hint = None
+
             if pending_job:
                 flask_session["job_message"] = (
-                    "❌ Incorrect! You failed the task and earned nothing."
+                    f"❌ Incorrect! You failed the task and earned nothing but this hint: {hint}."
                 )
                 return redirect(url_for("visit_town"))
 
@@ -1341,7 +1425,8 @@ def check_true_false_question():
 
             flask_session["combat_result"] = (
                 f"❌ Incorrect! You are defeated by "
-                f"{enemy.get('name')} and lose some experience points!"
+                f"{enemy.get('name')} and lose some experience points! \n"
+                f"{hint}"
             )
             flask_session["success"] = False
 
@@ -1354,6 +1439,145 @@ def check_true_false_question():
     finally:
         db.close()
 
+@app.route('/check_MC_question_enemy', methods=['POST'])
+def check_MC_question_enemy():
+    """Validates the player's True/False answer."""
+    squire_id    = flask_session.get("squire_id")
+    question_id  = request.form.get("question_id")
+    user_answer  = request.form.get("answer", "").strip().upper()
+    enemy        = flask_session.get("enemy", {})
+    pending_job  = flask_session.pop("pending_job", None)
+    flask_session.pop("success", None)
+    toast =[]
+
+    if not (squire_id and question_id):
+        flask_session["battle_summary"] = "Error: Missing session or question."
+        return redirect(url_for("combat_results"))
+
+    db = db_session()
+
+    logging.debug(f"Check_MC_question qid/user_answer {question_id}/{user_answer}")
+
+    try:
+        # 1) Load the MC question
+        mcq = db.query(MultipleChoiceQuestion).get(question_id)
+        if not mcq:
+            flask_session["battle_summary"] = "Error: Question not found."
+            return redirect(url_for("combat_results"))
+
+        # 2) Determine correctness
+        correct = (user_answer == mcq.correctAnswer)
+
+        # 3) Record attempt if correct
+        if correct:
+            # Upsert SquireQuestion
+            sq = (
+                db.query(SquireQuestion)
+                  .filter_by(
+                      squire_id=squire_id,
+                      question_id=mcq.id,
+                      question_type='multiple_choice'
+                  )
+                  .one_or_none()
+            )
+            if not sq:
+                sq = SquireQuestion(
+                    squire_id=squire_id,
+                    question_id=mcq.id,
+                    question_type='multiple_choice',
+                    answered_correctly=True
+                )
+                db.add(sq)
+            else:
+                sq.answered_correctly = True
+            db.commit()
+
+            # 3a) Pending job payout
+            if pending_job:
+                squire = db.query(Squire).get(squire_id)
+                level  = squire.level
+                payout = random.randint(
+                    pending_job["min_payout"],
+                    pending_job["max_payout"]
+                ) * level
+
+                # Pay team
+                team = db.query(Team).get(squire.team_id)
+                team.gold += payout
+                # Increment work sessions
+                squire.work_sessions += 1
+
+                db.commit()
+
+                msg = (f"✅ You completed '{pending_job['job_name']}' "
+                       f"and earned 💰 {payout} bits!")
+                flask_session["job_message"] = msg
+
+                toast.append (f"{flask_session['squire_name']} completed "
+                         f"'{pending_job['job_name']}' and earned 💰 {payout} bits.")
+                add_team_message(squire.team_id, toast)
+
+                return redirect(url_for("visit_town"))
+
+            # 3b) Combat reward
+            flask_session["forced_combat"] = False
+            xp_gain   = enemy.get("xp_reward", 0)
+            gold_gain = enemy.get("gold_reward", 0)
+            toast.append(update_squire_progress(squire_id, xp_gain, gold_gain))
+
+            toast.append (
+                f"{flask_session['squire_name']} defeated "
+                f"{enemy.get('name')} and gained "
+                f"{xp_gain} XP and {gold_gain} bits."
+            )
+            message = " ".join([str(m) for m in toast if m])
+            add_team_message(flask_session['team_id'], message)
+            db.commit()
+
+            flask_session["combat_result"] = (
+                f"✅ Correct! You have defeated the enemy "
+                f"and earned {xp_gain} XP and {gold_gain} bits."
+            )
+            flask_session["success"] = True
+
+            return redirect(url_for("combat_results"))
+
+        else:
+            if question_id:
+                question = db.query(MultipleChoiceQuestion).get(question_id)
+                hint = question.hint if question else None
+            else:
+                hint = None
+
+            if pending_job:
+                flask_session["job_message"] = (
+                    f"❌ Incorrect! You failed the task and earned nothing except this hint: {hint}."
+                )
+                return redirect(url_for("visit_town"))
+
+            # Damage gear and penalize XP
+            degrade_gear(squire_id, enemy.get("weakness"))
+            squire = db.query(Squire).get(squire_id)
+            squire.experience_points = max(
+                0,
+                squire.experience_points - enemy.get("xp_reward", 0)
+            )
+            db.commit()
+
+            flask_session["combat_result"] = (
+                f"❌ Incorrect! You are defeated by "
+                f"{enemy.get('name')} and lose some experience points! \n"
+                f"{hint}"
+            )
+            flask_session["success"] = False
+
+        return render_template(
+            "combat_results.html",
+            success=flask_session.pop("success", None),
+            combat_result=flask_session.pop("combat_result", ""))
+
+    finally:
+        db.close()
 
 # ⚔️ Combat
 @app.route('/combat', methods=['GET', 'POST'])
@@ -1484,7 +1708,8 @@ def encounter_enemy():
                 "in_forest":    in_forest,
                 "in_mountain":  in_mountain,
                 "has_weapon":   has_weapon,
-                "static_image": enemy.static_image
+                "static_image": enemy.static_image,
+                "min_level": enemy.min_level
             }
 
         return redirect(url_for('combat'))
@@ -2118,6 +2343,7 @@ def town_work():
                 "max_payout": job.max_payout,
                 "level":      level
             }
+
             return redirect(url_for("answer_question"))
 
         # 4) GET: fetch all jobs
