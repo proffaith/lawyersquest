@@ -23,7 +23,7 @@
             <tr><td>Length of each word in this riddle: ( {{ session['current_riddle']['word_length_hint'] }} )</td></tr>
             {% endif %}
             <tr><td>
-                <form id="riddle-form" method="POST" action="{{ url_for('check_riddle') }}">
+                <form id="riddle-form" method="POST" action="{{ url_for('map.check_riddle') }}">
                     <input type="text" id="riddle-answer" name="answer" placeholder="Your answer..." required>
                     <button type="submit" class="submit-btn">Submit Answer</button>
                 </form>
@@ -42,7 +42,7 @@
             let userAnswer = $("#riddle-answer").val();
 
             $.ajax({
-                url: "{{ url_for('check_riddle') }}",
+                url: "{{ url_for('map.check_riddle') }}",
                 method: "POST",
                 data: {
                     answer: userAnswer

@@ -26,6 +26,9 @@
               const [x, y] = response.position;
               $("#position").text(`📍 Position: (${x}, ${y})`);
             }
+            if (response.level !== undefined) {
+              $("#player-level").text(`🔼 Level: ${response.level}`)
+            }
             if (response.message !== undefined) {
               $("#game-message")
                 .html((response.message || "").replace(/\n/g, "<br>"));
@@ -51,8 +54,8 @@
     <table><tr><td>
   <span id="xp-display">🎖️ XP: {{ xp }}</span>
   <span id="gold-display">💰 Bitcoin: {{ gold }}</span>
-</td><td>Quest {{quest_id}} <span id="progress-bar">Progress: {{progress_bar}}</span></td><td> 🔼 Level: {{ level }} </td><td><span id="position">{{ position }}</span></td></tr>
-    <tr><td><span id="hunger-bar">🍽️ Hunger: {{ hunger }}</span> </td><td colspan="3"><span id="game-message"></span><br>
+</td><td>Quest {{quest_id}} <span id="progress-bar">Progress: {{progress_bar}}</span></td><td id="player-level"> 🔼 Level: {{ level }} </td><td><span id="position">{{ position }}</span></td></tr>
+    <tr><td><span id="hunger-bar">🍽️ Hunger: {{ hunger }}</span> </td><td colspan="3"><span id="game-message">{{ game_message or '' }}</span><br>
     <span id="team-messages"></span></td></tr>
   </table>
 
@@ -90,7 +93,9 @@
                 const [x, y] = response.position;
                 $("#position").text(`📍 Position: (${x}, ${y})`);
             }
-
+            if (response.level !== undefined) {
+                $("#player-level").text(`🔼 Level: ${response.level}`);
+            }
             if (response.message) {
                 $("#game-message").html((response.message || "").replace(/\n/g, "<br>"));
             }

@@ -10,7 +10,7 @@
     function buyItem(itemId) {
 console.log("Attempting to buy item with ID:", itemId);  // Debugging log
 $.ajax({
-    url: "/buy_item",
+    url: "{{ url_for('town.buy_item') }}",
     type: "POST",
     contentType: "application/json",
     data: JSON.stringify({ item_id: itemId }),  // Ensure JSON format
@@ -70,7 +70,7 @@ $.ajax({
     {% endif %}
 
 
-    <form action="{{ url_for('visit_town') }}">
+    <form action="{{ url_for('town.visit_town') }}">
         <button type="submit">⬅ Return to Town</button>
     </form>
 

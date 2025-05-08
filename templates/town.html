@@ -22,13 +22,13 @@
     </style>
     <script>
 function workInTown() {
-    fetch("{{ url_for('town_work') }}", { method: "POST" })
+    fetch("{{ url_for('town.town_work') }}", { method: "POST" })
         .then(response => response.json()) // ✅ Ensure JSON is properly handled
         .then(data => {
             if (!data.success) {
                 alert(data.message);  // ✅ Show message instead of blank page
                 if (data.message.includes("face the dangers")) {
-                    window.location.href = "{{ url_for('encounter_enemy') }}"; // ✅ Redirect to combat
+                    window.location.href = "{{ url_for('combat.encounter_enemy') }}"; // ✅ Redirect to combat
                 }
             } else {
                 alert(data.message);  // ✅ Show success message
@@ -42,19 +42,19 @@ function workInTown() {
   <img src="{{ url_for('static', filename='bitTown.jpeg') }}" alt="BitTown Map">
 
 
-    <form action="{{ url_for('shop') }}">
+    <form action="{{ url_for('town.shop') }}">
         <button class="map-button" id="shop-btn" type="submit">🛒 Visit the Mall</button>
     </form>
 
-    <form action="{{ url_for('town_work') }}">
+    <form action="{{ url_for('town.town_work') }}">
         <button class="map-button" id="town-office-btn" type="submit">💼 Work at the Town Office (Earn Bits)</button>
     </form>
 
-    <form action="{{ url_for('hall_of_fame') }}">
+    <form action="{{ url_for('town.hall_of_fame') }}">
         <button class="map-button" id="hall-of-fame-btn" type="submit">🏆 Visit the Hall of Fame</button>
     </form>
 
-    <form action="{{ url_for('team_fame') }}">
+    <form action="{{ url_for('town.team_fame') }}">
         <button class="map-button" id="team-fame-btn" type="submit">🏆 Teams Hall</button>
     </form>
 

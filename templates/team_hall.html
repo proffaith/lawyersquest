@@ -7,7 +7,7 @@
 </head>
 <body>
     <h1>🏆 Hall of Fame</h1>
-    <p>The greatest squires of all time!</p>
+    <p>The greatest Teams of all time!</p>
 
     <ul>
         {% for team in leaders %}
@@ -15,7 +15,7 @@
         {% endfor %}
     </ul>
 
-    <form action="{{ url_for('visit_town') }}">
+    <form action="{{ url_for('town.visit_town') }}">
         <button type="submit">⬅ Return to Town</button>
     </form>
 
