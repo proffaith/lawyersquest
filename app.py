@@ -256,7 +256,7 @@ def login():
                 flask_session['squire_name'] = squire.squire_name
                 flask_session['team_id']     = squire.team_id
                 flask_session['level']       = squire.level
-                flask_session['ver']         = "0.3.3"
+                flask_session['ver']         = "0.3.4"
 
                 # Refactored helper should accept the ORM session
                 update_riddle_hints()
