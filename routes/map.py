@@ -263,16 +263,16 @@ def ajax_move():
                 elif event == "npc_trader":
                     return jsonify({"redirect": url_for("town.wandering_trader"), "message": message})
 
-            # **Build JSON Response**
-            response_data = {
-                "map": game_map,
-                "message": message,
-                "position": (x,y),
-                "event": event,
-                "level": level  # Pass event type
-            }
+        # **Build JSON Response**
+        response_data = {
+            "map": game_map,
+            "message": message,
+            "position": (x,y),
+            "event": event,
+            "level": level  # Pass event type
+        }
 
-            return jsonify(response_data)
+        return jsonify(response_data)
     except Exception as e:
         logging.exception("Error in /ajax_move: ")
         return jsonify({"error: Something Horrible Has Happened (to the sys admin)" })
