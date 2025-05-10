@@ -105,31 +105,6 @@ def ajax_move():
                         "position": (x,y),
                         "message": message
                         })
-        # food check, enemy check, etc.
-        else:
-            x, y = db.query(Squire.x_coordinate, Squire.y_coordinate).filter_by(
-                id=squire_id).one()  # no move
-            message = f"You remain where you are, waiting for Godot."
-
-            if direction == "V" or (x == 0 and y == 0):
-                # 1) Reset in the database
-                db.query(Squire) \
-                  .filter(Squire.id == squire_id) \
-                  .update({
-                      Squire.x_coordinate: 0,
-                      Squire.y_coordinate: 0
-                  })
-                db.commit()
-
-                # 2) Update your local vars
-                x, y = 0, 0
-
-                # 3) Tell the client both to go to town *and* where we are now
-                return jsonify({
-                    "redirect": url_for("town.visit_town"),
-                    "position": (x,y),
-                    "message": message
-                })
 
             if quest_id == 14 and x == 40 and y == 40:
                 logging.debug("🏰 Boss fight triggered! Player reached (40,40) during quest 14.")
@@ -143,18 +118,6 @@ def ajax_move():
                     "position": (x,y),
                     "event": event
                 })
-
-            if direction == "I":
-                event = "inventory"
-                return jsonify({"redirect": url_for("town.inventory"), "message": message})
-
-            # ✅ Generate Updated Map
-            #game_map = display_travel_map(squire_id, quest_id)
-            game_map = get_viewport_map(db, squire_id, quest_id,  15)
-
-            if not game_map:
-                logging.error("❌ ERROR: display_travel_map() returned None!")
-                return jsonify({"error": "Failed to load the updated map."}), 500
 
             # **🎁 Treasure Check**
             chest = check_for_treasure_at_location(squire_id, x, y,  quest_id, squire_quest_id)
@@ -263,6 +226,45 @@ def ajax_move():
                 elif event == "npc_trader":
                     return jsonify({"redirect": url_for("town.wandering_trader"), "message": message})
 
+
+        # food check, enemy check, etc.
+        else:
+            x, y = db.query(Squire.x_coordinate, Squire.y_coordinate).filter_by(
+                id=squire_id).one()  # no move
+            message = f"You remain where you are, waiting for Godot."
+
+            if direction == "V" or (x == 0 and y == 0):
+                # 1) Reset in the database
+                db.query(Squire) \
+                  .filter(Squire.id == squire_id) \
+                  .update({
+                      Squire.x_coordinate: 0,
+                      Squire.y_coordinate: 0
+                  })
+                db.commit()
+
+                # 2) Update your local vars
+                x, y = 0, 0
+
+                # 3) Tell the client both to go to town *and* where we are now
+                return jsonify({
+                    "redirect": url_for("town.visit_town"),
+                    "position": (x,y),
+                    "message": message
+                })
+            if direction == "I":
+                event = "inventory"
+                return jsonify({"redirect": url_for("town.inventory"), "message": message})
+
+        # ✅ Generate Updated Map
+        #game_map = display_travel_map(squire_id, quest_id)
+        game_map = get_viewport_map(db, squire_id, quest_id,  15)
+
+        if not game_map:
+            logging.error("❌ ERROR: display_travel_map() returned None!")
+            return jsonify({"error": "Failed to load the updated map."}), 500
+
+            
         # **Build JSON Response**
         response_data = {
             "map": game_map,
