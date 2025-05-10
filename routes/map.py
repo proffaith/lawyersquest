@@ -111,168 +111,168 @@ def ajax_move():
                 id=squire_id).one()  # no move
             message = f"You remain where you are, waiting for Godot."
 
-        if direction == "V" or (x == 0 and y == 0):
-            # 1) Reset in the database
-            db.query(Squire) \
-              .filter(Squire.id == squire_id) \
-              .update({
-                  Squire.x_coordinate: 0,
-                  Squire.y_coordinate: 0
-              })
-            db.commit()
+            if direction == "V" or (x == 0 and y == 0):
+                # 1) Reset in the database
+                db.query(Squire) \
+                  .filter(Squire.id == squire_id) \
+                  .update({
+                      Squire.x_coordinate: 0,
+                      Squire.y_coordinate: 0
+                  })
+                db.commit()
 
-            # 2) Update your local vars
-            x, y = 0, 0
+                # 2) Update your local vars
+                x, y = 0, 0
 
-            # 3) Tell the client both to go to town *and* where we are now
-            return jsonify({
-                "redirect": url_for("town.visit_town"),
-                "position": (x,y),
-                "message": message
-            })
+                # 3) Tell the client both to go to town *and* where we are now
+                return jsonify({
+                    "redirect": url_for("town.visit_town"),
+                    "position": (x,y),
+                    "message": message
+                })
 
-        if quest_id == 14 and x == 40 and y == 40:
-            logging.debug("🏰 Boss fight triggered! Player reached (40,40) during quest 14.")
-            # Optionally call a function to set up boss fight state:
-            #initiate_boss_fight(squire_id, quest_id)  # define this function as needed
-            event = "q14bossfight"
+            if quest_id == 14 and x == 40 and y == 40:
+                logging.debug("🏰 Boss fight triggered! Player reached (40,40) during quest 14.")
+                # Optionally call a function to set up boss fight state:
+                #initiate_boss_fight(squire_id, quest_id)  # define this function as needed
+                event = "q14bossfight"
 
-            return jsonify({
-                "boss_fight": True,
-                "message": "You have reached the stronghold! Prepare to face the boss!",
-                "position": (x,y),
-                "event": event
-            })
+                return jsonify({
+                    "boss_fight": True,
+                    "message": "You have reached the stronghold! Prepare to face the boss!",
+                    "position": (x,y),
+                    "event": event
+                })
 
-        if direction == "I":
-            event = "inventory"
-            return jsonify({"redirect": url_for("town.inventory"), "message": message})
+            if direction == "I":
+                event = "inventory"
+                return jsonify({"redirect": url_for("town.inventory"), "message": message})
 
-        # ✅ Generate Updated Map
-        #game_map = display_travel_map(squire_id, quest_id)
-        game_map = get_viewport_map(db, squire_id, quest_id,  15)
+            # ✅ Generate Updated Map
+            #game_map = display_travel_map(squire_id, quest_id)
+            game_map = get_viewport_map(db, squire_id, quest_id,  15)
 
-        if not game_map:
-            logging.error("❌ ERROR: display_travel_map() returned None!")
-            return jsonify({"error": "Failed to load the updated map."}), 500
+            if not game_map:
+                logging.error("❌ ERROR: display_travel_map() returned None!")
+                return jsonify({"error": "Failed to load the updated map."}), 500
 
-        # **🎁 Treasure Check**
-        chest = check_for_treasure_at_location(squire_id, x, y,  quest_id, squire_quest_id)
-        if chest:
-            logging.debug(f"Found a treasure chest at {x},{y}.")
-            flask_session["current_treasure_id"] = chest.id  # Store chest in session
-            event = "treasure"
-            # before you db.add(...)
-            existing = db.query(ChestHint).filter_by(
-                squire_quest_id=squire_quest_id,
-                chest_x=x,
-                chest_y=y
-            ).first()
-
-            if not existing:
-                hint = ChestHint(
+            # **🎁 Treasure Check**
+            chest = check_for_treasure_at_location(squire_id, x, y,  quest_id, squire_quest_id)
+            if chest:
+                logging.debug(f"Found a treasure chest at {x},{y}.")
+                flask_session["current_treasure_id"] = chest.id  # Store chest in session
+                event = "treasure"
+                # before you db.add(...)
+                existing = db.query(ChestHint).filter_by(
                     squire_quest_id=squire_quest_id,
                     chest_x=x,
                     chest_y=y
-                )
-                db.add(hint)
-                db.commit()
-            else:
-                # already got that hint—do nothing (or log if you care)
-                logging.debug("👍 ChestHint already recorded for that location.")
+                ).first()
 
-        else:
-
-            # Step 1: Build a list of eligible events
-            eligible_events = []
-
-            # 🏞️ NPC Encounter
-            if random.random() < 0.02:
-                eligible_events.append("npc")
-
-            if random.random() < 0.02:
-                eligible_events.append("npc_trader")
-
-            # 🧙‍♂️ Riddle Encounter
-            if random.random() < 0.02:
-                eligible_events.append("riddle")
-
-            # ⚔️ Combat
-            if random.random() < p:
-                eligible_events.append("enemy")
-
-            if random.random() < 0.03 and level > 3:
-                eligible_events.append("blacksmith")
-
-            if eligible_events:
-                event = random.choice(eligible_events)
-
-
-            if event == "npc":
-                coords = (
-                    db.query(
-                        TreasureChest.x_coordinate,
-                        TreasureChest.y_coordinate
+                if not existing:
+                    hint = ChestHint(
+                        squire_quest_id=squire_quest_id,
+                        chest_x=x,
+                        chest_y=y
                     )
-                    .join(
-                        Riddle,
-                        TreasureChest.riddle_id == Riddle.id
-                    )
-                    .outerjoin(
-                        SquireRiddleProgress,
-                        and_(
-                            SquireRiddleProgress.riddle_id == Riddle.id,
-                            SquireRiddleProgress.squire_id   == squire_id
-                        )
-                    )
-                    .filter(
-                        SquireRiddleProgress.riddle_id  == None,           # not yet answered
-                        Riddle.quest_id                  == quest_id,
-                        TreasureChest.is_opened          == False,
-                        TreasureChest.squire_quest_id    == squire_quest_id
-                    )
-                    .order_by(func.rand())  # MySQL’s RAND()
-                    .limit(1)
-                    .first()
-                )
-
-                if coords:
-                    chest_x, chest_y = coords
-                    message = f"🌿 A wandering trader appears: 'There's a chest at ({chest_x},{chest_y}). I tried to open it but couldn't figure out the riddle. Good luck!'"
-                    flask_session['npc_message'] = message
-                    flask_session.modified = True
-                    logging.debug(f"NPC Message Set: {message}")  # Debugging
-                    db.add(ChestHint(
-                        squire_quest_id = squire_quest_id,
-                        chest_x = chest_x,
-                        chest_y = chest_y
-                    ))
+                    db.add(hint)
                     db.commit()
+                else:
+                    # already got that hint—do nothing (or log if you care)
+                    logging.debug("👍 ChestHint already recorded for that location.")
 
-                event = "npc"
+            else:
 
-            elif event == "riddle":
-                pass  # Your riddle logic
+                # Step 1: Build a list of eligible events
+                eligible_events = []
 
-            elif event == "enemy":
-                pass  # Your combat setup logic
+                # 🏞️ NPC Encounter
+                if random.random() < 0.02:
+                    eligible_events.append("npc")
 
-            elif event == "blacksmith":
-                return jsonify({"redirect": url_for("town.blacksmith"), "message": message})
+                if random.random() < 0.02:
+                    eligible_events.append("npc_trader")
 
-            elif event == "npc_trader":
-                return jsonify({"redirect": url_for("town.wandering_trader"), "message": message})
+                # 🧙‍♂️ Riddle Encounter
+                if random.random() < 0.02:
+                    eligible_events.append("riddle")
 
-        # **Build JSON Response**
-        response_data = {
-            "map": game_map,
-            "message": message,
-            "position": (x,y),
-            "event": event,
-            "level": level  # Pass event type
-        }
+                # ⚔️ Combat
+                if random.random() < p:
+                    eligible_events.append("enemy")
 
-        return jsonify(response_data)
+                if random.random() < 0.03 and level > 3:
+                    eligible_events.append("blacksmith")
+
+                if eligible_events:
+                    event = random.choice(eligible_events)
+
+
+                if event == "npc":
+                    coords = (
+                        db.query(
+                            TreasureChest.x_coordinate,
+                            TreasureChest.y_coordinate
+                        )
+                        .join(
+                            Riddle,
+                            TreasureChest.riddle_id == Riddle.id
+                        )
+                        .outerjoin(
+                            SquireRiddleProgress,
+                            and_(
+                                SquireRiddleProgress.riddle_id == Riddle.id,
+                                SquireRiddleProgress.squire_id   == squire_id
+                            )
+                        )
+                        .filter(
+                            SquireRiddleProgress.riddle_id  == None,           # not yet answered
+                            Riddle.quest_id                  == quest_id,
+                            TreasureChest.is_opened          == False,
+                            TreasureChest.squire_quest_id    == squire_quest_id
+                        )
+                        .order_by(func.rand())  # MySQL’s RAND()
+                        .limit(1)
+                        .first()
+                    )
+
+                    if coords:
+                        chest_x, chest_y = coords
+                        message = f"🌿 A wandering trader appears: 'There's a chest at ({chest_x},{chest_y}). I tried to open it but couldn't figure out the riddle. Good luck!'"
+                        flask_session['npc_message'] = message
+                        flask_session.modified = True
+                        logging.debug(f"NPC Message Set: {message}")  # Debugging
+                        db.add(ChestHint(
+                            squire_quest_id = squire_quest_id,
+                            chest_x = chest_x,
+                            chest_y = chest_y
+                        ))
+                        db.commit()
+
+                    event = "npc"
+
+                elif event == "riddle":
+                    pass  # Your riddle logic
+
+                elif event == "enemy":
+                    pass  # Your combat setup logic
+
+                elif event == "blacksmith":
+                    return jsonify({"redirect": url_for("town.blacksmith"), "message": message})
+
+                elif event == "npc_trader":
+                    return jsonify({"redirect": url_for("town.wandering_trader"), "message": message})
+
+            # **Build JSON Response**
+            response_data = {
+                "map": game_map,
+                "message": message,
+                "position": (x,y),
+                "event": event,
+                "level": level  # Pass event type
+            }
+
+            return jsonify(response_data)
     except Exception as e:
         logging.exception("Error in /ajax_move: ")
         return jsonify({"error: Something Horrible Has Happened (to the sys admin)" })
