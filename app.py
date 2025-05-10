@@ -168,6 +168,10 @@ if __name__ == '__main__':
 def inject_version():
     return {"app_version": flask_session.get("ver", "0.3.4")}
 
+@app.teardown_appcontext
+def shutdown_session(exc=None):
+    db_session.remove()
+
 @app.route("/")
 def home():
     return render_template("index.html")
