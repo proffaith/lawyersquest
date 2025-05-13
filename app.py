@@ -137,7 +137,7 @@ def is_valid_email(email):
 
 def send_verification_email(squire_email, squire_name, token):
     try:
-        confirm_url = f"https://proffaith.com/verify?token={token}"
+        confirm_url = f"https://lawyersquest.proffaith.com/verify?token={token}"
         message = Mail(
             from_email='tim@faithatlaw.com',
             to_emails=squire_email,
