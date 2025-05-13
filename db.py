@@ -84,6 +84,7 @@ class Squire(Base):
     uuid = Column(String(255))
     consent_to_TOS = Column(Boolean)
     verified_email = Column(Boolean)
+    beta_survey = Column(Boolean)
 
     map_features  = relationship('MapFeature', back_populates='squire', cascade='all, delete-orphan')
     inventory  = relationship('Inventory', back_populates='squire', cascade='all, delete-orphan')

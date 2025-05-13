@@ -279,6 +279,8 @@ def register_squire():
     db=db_session()
     unique = str(uuid.uuid4())
 
+
+
     if request.method == "POST":
         squire_name = request.form["squire_name"]
         real_name = request.form["real_name"]
@@ -377,7 +379,12 @@ def register_squire():
             return redirect(url_for("register_squire"))
 
     else:
-        teams = db.query(Team.id, Team.team_name, Team.reputation).all()
+        token = request.args.get("team_token")
+        team = None
+        if token:
+            team = db.query(Team.id, Team.team_name, Team.reputation).filter_by(team_token=token).first()
+        else:
+            teams = db.query(Team.id, Team.team_name, Team.reputation).all()
         return render_template("register.html", teams=teams)
 
 @app.route("/verify")
