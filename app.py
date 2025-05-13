@@ -380,9 +380,9 @@ def register_squire():
 
     else:
         token = request.args.get("team_token")
-        team = None
+        teams = None
         if token:
-            team = db.query(Team.id, Team.team_name, Team.reputation).filter_by(team_token=token).first()
+            teams = db.query(Team.id, Team.team_name, Team.reputation).filter_by(team_token=token).first()
         else:
             teams = db.query(Team.id, Team.team_name, Team.reputation).all()
         return render_template("register.html", teams=teams)
