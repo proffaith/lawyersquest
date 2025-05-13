@@ -110,6 +110,9 @@ class Team(Base):
     team_name  = Column(String(255), unique=True, nullable=False)
     gold       = Column(Integer, default=0)
     reputation = Column(Integer, default=0)
+    subscriber_user_id = Column(Integer)  # points to proffaith.User.id
+    team_token = Column(String(255), unique=True, nullable=False, default=lambda: secrets.token_urlsafe(16))
+
 
     def __repr__(self):
         return (f"<Team(name={self.team_name!r}, "
