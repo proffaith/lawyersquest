@@ -22,6 +22,7 @@ pydantic==2.11.7
 pydantic_core==2.33.2
 PyMuPDF==1.26.1
 PyMySQL==1.1.1
+PySocks==1.7.1
 python-dotenv==1.1.1
 python-http-client==3.3.7
 requests==2.32.4
