@@ -39,6 +39,15 @@ document.addEventListener('DOMContentLoaded', function () {
     <td><img src="/static/blacksmith.jpg" width=150 height=150>
     </td>
     <td><p>You encounter a Roaming Blacksmith that can repair an item in your inventory. You have <b>{{ team.gold }} ₿.</b> Which item will you repair?</p>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flashes">
+            {% for category, message in messages %}
+              <b> <class="flash {{ category }}">{{ message }}</b><br>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
     </td>
   </tr>
   <tr>

@@ -98,24 +98,44 @@ def blacksmith():
 
 
     if request.method == 'POST':
-        item_id   = int(request.form['item_id'])
-        pay_amount= int(request.form['bitcoin'])
-        item = db.query(Inventory).get(item_id)
+        item_id_raw   = request.form.get('item_id', '').strip()
+        pay_amount_raw = request.form.get('bitcoin', '').strip()
 
-        # sanity checks
-        if pay_amount <= 0 or pay_amount > team.gold:
-            flash("Invalid payment amount.", "error")
+        if not item_id_raw or not pay_amount_raw:
+            flash("Please select an item and enter a payment amount.", "error")
+            return redirect(url_for('town.blacksmith'))
+
+        try:
+            item_id = int(item_id_raw)
+            pay_amount = int(pay_amount_raw)
+        except ValueError:
+            flash("Invalid input. Please enter a number.", "error")
             return redirect(url_for('blacksmith'))
 
-        # e.g. 1 bitcoin = 1 use repaired
-        repaired_uses = pay_amount
-        item.uses_remaining = min(50, item.uses_remaining + repaired_uses)
-        team.gold -= pay_amount
+        try:
+            item = db.query(Inventory).get(item_id)
 
-        db.commit()
-        message = f"Your {item.item_name} regained {repaired_uses} uses!"
-        flask_session['game_message'] = message
-        return redirect(url_for('map_view'))
+            if not item:
+                flash("Item not found.","error")
+                return redirect(url_for('blacksmith'))
+
+            # sanity checks
+            if pay_amount <= 0 or pay_amount > team.gold:
+                flash("Invalid payment amount.", "error")
+                return redirect(url_for('blacksmith'))
+
+            # e.g. 1 bitcoin = 1 use repaired
+            repaired_uses = pay_amount
+            item.uses_remaining = min(50, item.uses_remaining + repaired_uses)
+            team.gold -= pay_amount
+
+            db.commit()
+            message = f"Your {item.item_name} regained {repaired_uses} uses!"
+            flask_session['game_message'] = message
+            return redirect(url_for('map_view'))
+        except Exception as e:
+            logging.error(f"Error encounterd on post for blacksmith route with {e}")
+
 
     return render_template('blacksmith.html',
                            squire=squire,
@@ -153,7 +173,7 @@ def wandering_trader():
             item_type=shop_item.item_type
         ))
         db.commit()
-        flash(f"You bought {shop_item.item_name} for {agreed_price} gold!", "success")
+        flash(f"You bought {shop_item.item_name} for {agreed_price} bits!", "success")
         return redirect(url_for('map_view'))
 
     trader_items = (
@@ -483,7 +503,7 @@ def buy_item():
 
         # 3) Check gold balance
         if team.gold < item.price:
-            return jsonify(success=False, message="Not enough gold to buy this item!"), 400
+            return jsonify(success=False, message="Not enough bits to buy this item!"), 400
 
         # 4) Deduct gold and add to inventory
         team.gold -= item.price

@@ -728,7 +728,6 @@ def check_MC_question_enemy():
                 flask_session["combat_result"] = (
                     f"❌ Incorrect! You are defeated by "
                     f"{enemy.get('name')} and lose some experience points! \n"
-                    f"{hint}"
                 )
                 flask_session["success"] = False
 
