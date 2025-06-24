@@ -5,6 +5,7 @@ from services.progress import update_squire_progress
 from sqlalchemy import func, and_
 import random
 import logging
+import uuid
 
 from utils.shared import add_team_message
 from utils.shared import degrade_gear
@@ -667,74 +668,78 @@ def check_MC_question_enemy():
         return redirect(url_for("combat.combat_results"))
 
     if question_id == "api":
-        toast =[]
+        try:
+            toast =[]
 
-        current_q = flask_session.get("current_question")
-        if not current_q:
-            flask_session["combat_result"] = "Error: Question not found in session."
-            return redirect(url_for("combat.combat_results"))
+            current_q = flask_session.get("current_question")
+            if not current_q:
+                flask_session["combat_result"] = "Error: Question not found in session."
+                return redirect(url_for("combat.combat_results"))
 
-        correct = (user_answer == current_q["correct_answer"])
+            correct = (user_answer == current_q["correct_answer"])
 
-        if correct:
-            # Maybe add a new table: SquireApiQuestion (squire_id, question_text, answered_correctly, timestamp)
-            sq = SquireQuestion (
-                squire_id=squire_id,
-                question_id=-1,
-                question_type='multiple_choice',
-                answered_correctly=True,
-                is_api=True
-            )
-            db.add(sq)
-            
-            # Reputation gain? Bits?
-            team = db.query(Team).get(flask_session['team_id'])
-            team.reputation += 1
-            db.commit()
+            if correct:
+                # Maybe add a new table: SquireApiQuestion (squire_id, question_text, answered_correctly, timestamp)
+                sq = SquireQuestion (
+                    squire_id=squire_id,
+                    question_id=-int(uuid.uuid4().int % 1000000000),
+                    question_type='multiple_choice',
+                    answered_correctly=True,
+                    is_api=True
+                )
+                db.add(sq)
 
-            # 3b) Combat reward
-            flask_session["forced_combat"] = False
-            xp_gain   = enemy.get("xp_reward", 0)
-            gold_gain = enemy.get("gold_reward", 0)
-            toast.append(update_squire_progress(squire_id, xp_gain, gold_gain))
+                # Reputation gain? Bits?
+                team = db.query(Team).get(flask_session['team_id'])
+                team.reputation += 1
+                db.commit()
 
-            toast.append (
-                f"{flask_session['squire_name']} defeated "
-                f"{enemy.get('name')} and gained "
-                f"{xp_gain} XP and {gold_gain} bits."
-            )
-            message = " ".join([str(m) for m in toast if m])
-            add_team_message(flask_session['team_id'], message)
-            db.commit()
+                # 3b) Combat reward
+                flask_session["forced_combat"] = False
+                xp_gain   = enemy.get("xp_reward", 0)
+                gold_gain = enemy.get("gold_reward", 0)
+                toast.append(update_squire_progress(squire_id, xp_gain, gold_gain))
 
-            flask_session["combat_result"] = (
-                f"✅ Correct! You have defeated the enemy "
-                f"and earned {xp_gain} XP and {gold_gain} bits."
-            )
-            flask_session["success"] = True
+                toast.append (
+                    f"{flask_session['squire_name']} defeated "
+                    f"{enemy.get('name')} and gained "
+                    f"{xp_gain} XP and {gold_gain} bits."
+                )
+                message = " ".join([str(m) for m in toast if m])
+                add_team_message(flask_session['team_id'], message)
+                db.commit()
 
-        else:
-            # Damage gear and penalize XP
-            degrade_gear(squire_id, enemy.get("weakness"))
-            squire = db.query(Squire).get(squire_id)
-            squire.experience_points = max(
-                0,
-                squire.experience_points - enemy.get("xp_reward", 0)
-            )
-            db.commit()
+                flask_session["combat_result"] = (
+                    f"✅ Correct! You have defeated the enemy "
+                    f"and earned {xp_gain} XP and {gold_gain} bits."
+                )
+                flask_session["success"] = True
 
-            flask_session["combat_result"] = (
-                f"❌ Incorrect! You are defeated by "
-                f"{enemy.get('name')} and lose some experience points! \n"
-                f"{hint}"
-            )
-            flask_session["success"] = False
+            else:
+                # Damage gear and penalize XP
+                degrade_gear(squire_id, enemy.get("weakness"))
+                squire = db.query(Squire).get(squire_id)
+                squire.experience_points = max(
+                    0,
+                    squire.experience_points - enemy.get("xp_reward", 0)
+                )
+                db.commit()
 
-        return render_template(
-            "combat_results.html",
-            success=flask_session.pop("success", None),
-            combat_result=flask_session.pop("combat_result", ""))
+                flask_session["combat_result"] = (
+                    f"❌ Incorrect! You are defeated by "
+                    f"{enemy.get('name')} and lose some experience points! \n"
+                    f"{hint}"
+                )
+                flask_session["success"] = False
 
+            return render_template(
+                "combat_results.html",
+                success=flask_session.pop("success", None),
+                combat_result=flask_session.pop("combat_result", ""))
+        except Exception as e:
+            logging.error(f"There was a problem with the API MC submission: {e}")
+        finally:
+            db.close()
 
 
     toast =[]
