@@ -82,7 +82,28 @@
 
       // If "question" is clicked, redirect immediately.
       if (choice === "question") {
-        window.location.href = '{{ url_for("questions.answer_question") }}';
+        // Show a loading message or overlay
+        const loadingDiv = document.createElement("div");
+        loadingDiv.id = "loading-message";
+        loadingDiv.innerHTML = "<p>🧠 Soon you will meet your doom, Squire! Prepare yourself for the mind-fight of your life!</p>";
+        loadingDiv.style.position = "fixed";
+        loadingDiv.style.top = 0;
+        loadingDiv.style.left = 0;
+        loadingDiv.style.width = "100%";
+        loadingDiv.style.height = "100%";
+        loadingDiv.style.backgroundColor = "rgba(255,255,255,0.8)";
+        loadingDiv.style.display = "flex";
+        loadingDiv.style.justifyContent = "center";
+        loadingDiv.style.alignItems = "center";
+        loadingDiv.style.fontSize = "1.5em";
+        loadingDiv.style.zIndex = "9999";
+
+        document.body.appendChild(loadingDiv);
+
+        // Let the loading message render, then redirect after slight delay
+        setTimeout(() => {
+          window.location.href = '{{ url_for("questions.answer_question") }}';
+        }, 600); // 300ms is just enough to let DOM render it
         return;
       }
 

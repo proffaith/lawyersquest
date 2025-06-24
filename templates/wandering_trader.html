@@ -1,36 +1,87 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Lawyer's Quest</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+{% extends base_template %}
+{% block title %}{{ 'Edit Course' if course else 'Add Course' }}{% endblock %}
+
+{% block content %}
 
 
-</head>
-<body>
-  <script>
-document.addEventListener('DOMContentLoaded', function () {
-  const itemData = {{ item_info | tojson }};
-  const teamGold = {{ team.gold }};
-  const itemSelect = document.getElementById('item');
-  const bitcoinInput = document.getElementById('bitcoin');
+<script>
+let lastCounterOffer = null;
+let lastSelectedItemId = null;
 
-  function updateRepairLimit() {
-    const selectedId = parseInt(itemSelect.value);
-    const selectedItem = itemData.find(i => i.id === selectedId);
-    if (!selectedItem) return;
+function haggle() {
+  const itemSelect = document.querySelector('input[name="item_id"]:checked');
+  const offerInput = document.getElementById('offer_input');
+  const replyBox = document.getElementById('npc_reply');
 
-    const usesLeft = selectedItem.max_uses - selectedItem.uses_remaining;
-    const maxSpendable = Math.min(usesLeft, teamGold);
-
-    bitcoinInput.max = maxSpendable;
-    bitcoinInput.placeholder = `Up to ${maxSpendable} gold`;
-    bitcoinInput.value = "";
+  if (!itemSelect || !offerInput.value) {
+    replyBox.innerText = "Please select an item and enter an offer.";
+    return;
   }
 
-  itemSelect.addEventListener('change', updateRepairLimit);
-  updateRepairLimit();  // Run once on load
-});
+  const itemId = parseInt(itemSelect.value);
+  const itemData = {{ item_info | tojson }};
+  const selectedItem = itemData.find(i => i.id === itemId);
+  const offer = parseInt(offerInput.value);
+
+  replyBox.innerText = "💭 The trader rubs their chin, considering your offer...";
+  document.getElementById("accept_button").disabled = true;
+
+
+  fetch('/negotiate/trader', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      item: selectedItem.name,
+      base_price: selectedItem.price,
+      offer: offer
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.trader_gone) {
+      replyBox.innerText = data.npc_reply;
+      document.getElementById("accept_button").disabled = true;
+      document.getElementById("buy_button").disabled = true;
+
+      // Disable offer box and haggling
+      document.getElementById("offer_input").disabled = true;
+      document.querySelectorAll('input[name="item_id"]').forEach(el => el.disabled = true);
+
+      return; // Skip further updates
+    }
+    replyBox.innerText = data.npc_reply;
+    lastCounterOffer = data.counteroffer;
+    lastSelectedItemId = itemId;
+    document.getElementById("accept_button").disabled = false;
+
+
+  });
+}
+
+function acceptOffer() {
+  if (!lastCounterOffer || !lastSelectedItemId) return;
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/wandering_trader';
+
+  const itemInput = document.createElement('input');
+  itemInput.type = 'hidden'
+  itemInput.name = 'item_id';
+  itemInput.value = lastSelectedItemId;
+  form.appendChild(itemInput);
+
+  const priceInput = document.createElement('input');
+  priceInput.name = 'agreed_price';
+  priceInput.type = 'hidden'
+  priceInput.value = lastCounterOffer;
+  form.appendChild(priceInput);
+
+  document.body.appendChild(form);
+  form.submit();
+}
 </script>
+
+
 
 <h2>🔨 A Wandering Trader 🔨</h2>
 
@@ -63,24 +114,31 @@ document.addEventListener('DOMContentLoaded', function () {
             <td>Uses: {{ item.uses }}</td>
           </tr>
         {% endfor %}
-        <tr><td colspan="4"><button type="submit">Buy Selected Item</button></td></tr>
+        <tr>
+          <td colspan="4">
+            <label for="offer_input">Your Offer (in gold):</label>
+            <input type="number" id="offer_input" min="1" placeholder="Enter your offer">
+            <button type="button" onclick="haggle()">Haggle with Trader</button>
+            <button type="button" id="accept_button" onclick="acceptOffer()" disabled>Accept Trader's Offer</button>
+            <p id="npc_reply" style="margin-top: 1em; font-style: italic;"></p>
+            <button id="buy_button" type="submit">Buy Selected Item</button>
+          </td>
+        </tr>
+
       </form>
     </table>
 </td>
 </tr>
 <tr><td colspan="2">
-<p><a href="{{ url_for('map_view') }}">Decline and move on</a></p>
-</td></tr>
-</table>
-<footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
   <p>
-    <a href="{{ url_for('terms') }}">Privacy & Terms of Use</a> |
-    <a href="{{ url_for('getting_started') }}">Getting Started</a> |
-    <a href="https://youtu.be/DTIb4VuoziA">Video Walkthrough</a> |
-    <a href="{{ url_for('logout') }}">Log Out</a> |
-    © 2025, Tim Faith <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank">CC BY-SA 4.0</a> |
-    {{ app_version }}
+    {% if trader_is_gone %}
+      🏃 The trader has stormed off. <a href="{{ url_for('map_view') }}">Return to the map</a>
+    {% else %}
+      <a href="{{ url_for('map_view') }}">Decline and move on</a>
+    {% endif %}
   </p>
-</footer>
-</body>
-</html>
+</td></tr>
+
+</table>
+
+{% endblock %}

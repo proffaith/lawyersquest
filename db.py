@@ -92,6 +92,7 @@ class Squire(Base):
     questions = relationship('SquireQuestion', back_populates='squire', cascade='all, delete-orphan')
     riddle_progress = relationship('SquireRiddleProgress',back_populates='squire',cascade='all, delete-orphan')
     travel_history = relationship('TravelHistory',back_populates='squire', cascade='all, delete-orphan')
+    negotiations = relationship("NPCNegotiation", back_populates="squire")
 
 class Course(Base):
     __tablename__ = 'courses'
@@ -168,6 +169,7 @@ class SquireQuestion(Base):
     question_id        = Column(Integer, nullable=False)
     question_type      = Column(Enum('true_false','riddle','multiple_choice'), nullable=False)
     answered_correctly = Column(Boolean, default=False)
+    is_api             = Column(Boolean, default=False)
 
     # Relationship back to Squire
     squire = relationship('Squire', back_populates='questions')
@@ -429,6 +431,30 @@ class ChestHint(Base):
         'SquireQuestStatus',
         back_populates='chest_hints'
     )
+
+class NPCNegotiation(Base):
+    __tablename__ = 'npc_negotiations'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    squire_id = Column(Integer, ForeignKey('squires.id'), nullable=False)
+    npc_type = Column(String(50), nullable=False)
+    item = Column(String(100), nullable=False)
+    base_price = Column(Integer, nullable=False)
+    offer = Column(Integer, nullable=False)
+    final_price = Column(Integer, nullable=False)
+    reputation_awarded = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    squire = relationship("Squire", back_populates="negotiations")
+
+class TextExtract(Base):
+    __tablename__ = 'text_extracts'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    course_id = Column(Integer, ForeignKey(Course.id), nullable=False)
+    book_name = Column(String(255))
+    quest_id = Column(Integer, ForeignKey(Quest.id), nullable=False)
+    page_start = Column(Integer)
+    page_end = Column(Integer)
+
 
 
 # ────────────── Initialize DB ──────────────

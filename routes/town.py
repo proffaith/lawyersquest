@@ -4,8 +4,20 @@ from db import db_session, Squire, ShopItem, Team, Job, Inventory
 import random
 from collections import defaultdict
 from sqlalchemy import create_engine, func, and_
+from dotenv import load_dotenv
+from openai import OpenAI
+
+import re
+import os
+import json
+
+client = OpenAI(api_key=os.getenv("OPENAI_APIKEY"))
+
 
 from utils.shared import get_inventory
+
+load_dotenv()
+
 
 town_bp = Blueprint('town', __name__)
 
@@ -43,7 +55,8 @@ def visit_town():
         level=level,
         job_message=job_message
     )
-#NPC interactions
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~NPC interactions
 @town_bp.route('/npc', methods=['GET'])
 def npc():
     """Handles Wandering Trader encounters and displays hints."""
@@ -112,30 +125,35 @@ def blacksmith():
 
 @town_bp.route('/wandering_trader', methods=['GET', 'POST'])
 def wandering_trader():
+    trader_is_gone = flask_session.pop("trader_gone", False)  # Clear on reload
     squire_id = flask_session.get('squire_id')
     db = db_session()
     squire = db.query(Squire).get(squire_id)
     team = db.query(Team).get(squire.team_id)
+    base_template = 'base.html'
 
     if request.method == 'POST':
         item_id = int(request.form['item_id'])
+        agreed_price = int(request.form.get('agreed_price') or 0)
         shop_item = db.query(ShopItem).get(item_id)
 
-        if shop_item.price > team.gold:
+        if agreed_price <= 0 or agreed_price > team.gold:
             flash("You can't afford that!", "error")
             return redirect(url_for('wandering_trader'))
 
-        team.gold -= shop_item.price
+        reputation_awarded = max(0, (shop_item.price - agreed_price) // 10)
+        team.reputation = (team.reputation or 0) + reputation_awarded
+
+        team.gold -= agreed_price
         db.add(Inventory(
-            squire_id = squire.id,
-            item_name = shop_item.item_name,
-            description = shop_item.description,
-            uses_remaining = shop_item.uses,
-            item_type = shop_item.item_type
+            squire_id=squire.id,
+            item_name=shop_item.item_name,
+            description=shop_item.description,
+            uses_remaining=shop_item.uses,
+            item_type=shop_item.item_type
         ))
         db.commit()
-        message = f"You bought {shop_item.item_name} for {shop_item.price} bits!"
-        flask_session['game_message'] = message
+        flash(f"You bought {shop_item.item_name} for {agreed_price} gold!", "success")
         return redirect(url_for('map_view'))
 
     trader_items = (
@@ -165,7 +183,115 @@ def wandering_trader():
                            squire=squire,
                            team=team,
                            items=trader_items,
-                           item_info=item_info)
+                           item_info=item_info,
+                           base_template=base_template,
+                           trader_is_gone=trader_is_gone)
+
+@town_bp.route('/negotiate/<npc_type>', methods=['POST'])
+def negotiate(npc_type):
+    session_key = f"lowball_strikes_{npc_type}"
+    lowball_strikes = flask_session.get(session_key, 0)
+
+    squire_id = flask_session['squire_id']
+    db = db_session()
+    squire = db.query(Squire).get(squire_id)
+
+    try:
+        data = request.get_json(force=True)
+        print("📨 Received haggle request data:", data)
+    except Exception as e:
+        print("❌ Error parsing JSON in haggle route:", e)
+        return jsonify({"error": "Invalid JSON"}), 400
+
+
+
+    item = data.get('item')
+    offer = data.get('offer')
+    base_price = data.get('base_price')
+
+    try:
+        offer_val = int(offer)
+        reputation_change = max(0, (int(base_price) - offer_val) // 10)
+    except Exception as e:
+        print(f"💥 Offer conversion error: {e}")
+        offer_val = int(base_price)
+        reputation_change = 0
+
+
+    if not all([item, offer, base_price]):
+        return jsonify({"error": "Missing data in request."}), 400
+
+    # Check if offer is absurdly low
+    if int(offer) < int(base_price) * 0.25:
+        lowball_strikes += 1
+        flask_session[session_key] = lowball_strikes
+
+        if lowball_strikes >= 3:
+            npc_reply = (
+                "😡 'You mock me for the last time! I won't trade with you anymore.' "
+                "The trader grabs their wares and disappears into the woods."
+            )
+            return jsonify({
+                "npc_reply": npc_reply,
+                "final_price": None,
+                "reputation_awarded": 0,
+                "counteroffer": None,
+                "trader_gone": True,
+                "trader_is_gone": True
+            })
+
+        npc_reply = (
+            f"The trader frowns deeply. 'You're wasting my time with that kind of offer. "
+            f"Try again later... if I’m still here.' [Counteroffer: {base_price}]"
+        )
+        return jsonify({
+            "npc_reply": npc_reply,
+            "final_price": int(offer),
+            "reputation_awarded": 0,
+            "counteroffer": base_price,
+            "trader_gone": False,
+            "trader_is_gone": False
+        })
+
+
+    personality = {
+        "blacksmith": "gruff but fair, values honesty",
+        "trader": "wily, smooth-talking, always looking for a profit"
+    }.get(npc_type, "neutral")
+
+    system_prompt = f"You are a {npc_type}, {personality}. You're haggling over an item in a fantasy town."
+
+    user_prompt = (
+        f"The player offered {offer} gold for '{item}', normally worth {base_price} gold. "
+        "Respond as a clever NPC, and include a number for your counteroffer in the reply. "
+        "Your response should be short, and end with: [Counteroffer: <amount>]"
+    )
+
+    try:
+        response = client.chat.completions.create(model="gpt-4",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ])
+        npc_reply = response.choices[0].message.content
+
+        match = re.search(r"\[Counteroffer:\s*(\d+)", npc_reply)
+        counteroffer = int(match.group(1)) if match else base_price
+
+        print("🤖 NPC reply:", npc_reply)
+        print("🔍 Parsed counteroffer:", counteroffer)
+
+
+    except Exception as e:
+        print(f"💥 GPT API error: {e}")
+        return jsonify({"error": "NPC is refusing to talk right now."}), 500
+
+    return jsonify({
+        "npc_reply": npc_reply,
+        "final_price": offer_val,
+        "reputation_awarded": reputation_change,
+        "counteroffer": counteroffer
+    })
 
 
 # 🚶 Game Actions (Movement, Shop, Town, Combat)

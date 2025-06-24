@@ -8,8 +8,25 @@ import logging
 
 from utils.shared import add_team_message
 from utils.shared import degrade_gear
+from utils.api_calls import generate_openai_question
 
 questions_bp = Blueprint('questions', __name__)
+
+
+
+@questions_bp.route('/npc_encounter/<int:quest_id>', methods=['GET'])
+def npc_encounter(quest_id):
+    excerpt = get_random_excerpt_from_textbook(quest_id)
+
+    if should_use_api():
+        question = generate_openai_question(excerpt)
+        source = "openai"
+    else:
+        question = get_question_from_db(quest_id)
+        source = "db"
+
+    return render_template("npc_encounter.html", question=question, source=source)
+
 
 @questions_bp.route('/handle_true_false_question', methods=['POST'])
 def handle_true_false_question():
@@ -176,7 +193,7 @@ def answer_question():
         enemylevel = enemy["min_level"]
 
         if level > 2 and enemylevel > 2:
-            question_type = random.choice(["true_false", "multiple_choice"])
+            question_type = random.choice(["true_false", "multiple_choice", "api_question"])
         else:
             question_type = "true_false"
 
@@ -225,7 +242,7 @@ def answer_question():
             # 6) No question left?
             if not question_row:
                 flask_session["battle_summary"] = "No question available. You must fight!"
-                return redirect(url_for("combat.ajax_handle_combat"))
+                return redirect(url_for("ajax_handle_combat"))
 
             # 7) Store for validation and render
             flask_session["current_question"] = {
@@ -242,6 +259,25 @@ def answer_question():
             )
         finally:
             db.close()
+
+    elif question_type == "api_question":
+
+        try:
+            q_data = generate_openai_question(quest_id)
+
+            # Save it in session for validation
+            flask_session["current_question"] = {
+                "id": "api",  # No DB ID
+                "type": "api_generated",
+                "text": q_data["question"],
+                "options": q_data["options"],
+                "correct_answer": q_data["correct_answer"]
+            }
+
+            return render_template("answer_question_mc.html", question=flask_session["current_question"])
+        except Exception as e:
+            flask_session["battle_summary"] = f"OpenAI Error: {e}"
+            return redirect(url_for("ajax_handle_combat"))
 
     else:
         # Grab answered multiple choice question IDs
@@ -615,20 +651,92 @@ def check_MC_question():
 def check_MC_question_enemy():
     """Validates the player's True/False answer."""
     squire_id    = flask_session.get("squire_id")
-    question_id  = request.form.get("question_id")
-    user_answer  = request.form.get("answer", "").strip().upper()
     enemy        = flask_session.get("enemy", {})
     pending_job  = flask_session.pop("pending_job", None)
+    user_answer  = request.form.get("answer", "").strip().upper()
+    question_id  = request.form.get("question_id")
+
     flask_session.pop("success", None)
-    toast =[]
+
+    db = db_session()
+
+    logging.debug(f"Check_MC_question qid/user_answer {question_id}/{user_answer}")
 
     if not (squire_id and question_id):
         flask_session["battle_summary"] = "Error: Missing session or question."
         return redirect(url_for("combat.combat_results"))
 
-    db = db_session()
+    if question_id == "api":
+        toast =[]
+        
+        current_q = flask_session.get("current_question")
+        if not current_q:
+            flask_session["combat_result"] = "Error: Question not found in session."
+            return redirect(url_for("combat.combat_results"))
 
-    logging.debug(f"Check_MC_question qid/user_answer {question_id}/{user_answer}")
+        correct = (user_answer == current_q["correct_answer"])
+
+        if correct:
+            # Maybe add a new table: SquireApiQuestion (squire_id, question_text, answered_correctly, timestamp)
+            sq = SquireQuestion (
+                squire_id=squire_id,
+                question_id=-1,
+                question_type='multiple_choice',
+                answered_correctly=True,
+                is_api=True
+            )
+
+            # Reputation gain? Bits?
+            team = db.query(Team).get(flask_session['team_id'])
+            team.reputation += 1
+            db.commit()
+
+            # 3b) Combat reward
+            flask_session["forced_combat"] = False
+            xp_gain   = enemy.get("xp_reward", 0)
+            gold_gain = enemy.get("gold_reward", 0)
+            toast.append(update_squire_progress(squire_id, xp_gain, gold_gain))
+
+            toast.append (
+                f"{flask_session['squire_name']} defeated "
+                f"{enemy.get('name')} and gained "
+                f"{xp_gain} XP and {gold_gain} bits."
+            )
+            message = " ".join([str(m) for m in toast if m])
+            add_team_message(flask_session['team_id'], message)
+            db.commit()
+
+            flask_session["combat_result"] = (
+                f"✅ Correct! You have defeated the enemy "
+                f"and earned {xp_gain} XP and {gold_gain} bits."
+            )
+            flask_session["success"] = True
+
+        else:
+            # Damage gear and penalize XP
+            degrade_gear(squire_id, enemy.get("weakness"))
+            squire = db.query(Squire).get(squire_id)
+            squire.experience_points = max(
+                0,
+                squire.experience_points - enemy.get("xp_reward", 0)
+            )
+            db.commit()
+
+            flask_session["combat_result"] = (
+                f"❌ Incorrect! You are defeated by "
+                f"{enemy.get('name')} and lose some experience points! \n"
+                f"{hint}"
+            )
+            flask_session["success"] = False
+
+        return render_template(
+            "combat_results.html",
+            success=flask_session.pop("success", None),
+            combat_result=flask_session.pop("combat_result", ""))
+
+
+
+    toast =[]
 
     try:
         # 1) Load the MC question
