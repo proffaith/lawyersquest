@@ -668,7 +668,7 @@ def check_MC_question_enemy():
 
     if question_id == "api":
         toast =[]
-        
+
         current_q = flask_session.get("current_question")
         if not current_q:
             flask_session["combat_result"] = "Error: Question not found in session."
@@ -685,7 +685,8 @@ def check_MC_question_enemy():
                 answered_correctly=True,
                 is_api=True
             )
-
+            db.add(sq)
+            
             # Reputation gain? Bits?
             team = db.query(Team).get(flask_session['team_id'])
             team.reputation += 1
