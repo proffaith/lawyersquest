@@ -173,7 +173,7 @@ def wandering_trader():
             item_type=shop_item.item_type
         ))
         db.commit()
-        message = f"You bought {shop_item.item_name} for {agreed_price} bits!", "success"
+        message = f"You bought {shop_item.item_name} for {agreed_price} bits!"
         flask_session['game_message'] = message
         return redirect(url_for('map_view'))
 
