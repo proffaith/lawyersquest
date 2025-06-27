@@ -1,7 +1,7 @@
 # Map-related routes
 from flask import Blueprint, session as flask_session, request, jsonify, redirect, url_for, render_template, flash
 
-from db import Squire, Course, Team, engine, db_session, Team, TravelHistory, Quest, SquireQuestion, SquireRiddleProgress, Riddle, Enemy, Inventory, WizardItem, Job, MapFeature, MultipleChoiceQuestion, TrueFalseQuestion, ShopItem, SquireQuestStatus, TeamMessage, TreasureChest, XpThreshold, ChestHint
+from db import Squire, Course, Team, engine, db_session, Team, TravelHistory, Quest, SquireQuestion, SquireRiddleProgress, Riddle, Enemy, Inventory, WizardItem, Job, MapFeature, MultipleChoiceQuestion, TrueFalseQuestion, ShopItem, SquireQuestStatus, TeamMessage, TreasureChest, XpThreshold, ChestHint, SquireQuestionAttempt
 from sqlalchemy import create_engine, func, and_
 from services.progress import update_player_position
 import logging
@@ -358,6 +358,33 @@ def ajax_move():
                         "position": (x, y),
                         "event": event
                     })
+                if quest_id == 28 and x == -35 and y == -35:
+                    logging.debug("🏰 The Tourney Has Been Reached in quest 28.")
+                    event = "q28tourney"
+                    return jsonify({
+                        "boss_fight": True,
+                        "message": "You have reached the Tournament where Squires show their true mettle!",
+                        "position": (x, y),
+                        "event": event
+                    })
+
+                if quest_id == 32 and x == -35 and y == -35:
+                    logging.debug("🏰 The Tourney Has Been Reached in quest 32.")
+                    event = "q32tourney"
+                    return jsonify({
+                        "boss_fight": True,
+                        "message": "You have reached the Tournament where Squires show their true mettle!",
+                        "position": (x, y),
+                        "event": event
+                    })
+
+                if x == 0 and y == 0:
+                    # Redirect to town
+                    return jsonify({
+                        "redirect": url_for("town.visit_town"),
+                        "position": (x, y),
+                        "message": message
+                    })
 
                 # Check for treasure
                 chest = check_for_treasure_at_location(squire_id, x, y, quest_id, squire_quest_id)
@@ -402,7 +429,7 @@ def ajax_move():
                     if random.random() < p:
                         eligible_events.append("enemy")
 
-                    if random.random() < 0.03 and level > 3:
+                    if random.random() < 0.02 and level > 3:
                         eligible_events.append("blacksmith")
 
                     if eligible_events:
@@ -586,6 +613,7 @@ def check_riddle():
 
     logging.debug(f"Session contents: {flask_session}")
     logging.debug(f"Current riddle in session: {current}")
+    riddle_id = current["id"]
 
     if not squire_id or not current:
         logging.error(f"No active riddle found. Squire ID: {squire_id}, Session: {flask_session}")
@@ -597,7 +625,15 @@ def check_riddle():
     db = db_session()
     try:
         if user_answer == correct_answer:
-            riddle_id = current["id"]
+
+
+            new_attempt = SquireQuestionAttempt(
+                squire_id=squire_id,
+                question_id=riddle_id,
+                question_type='fill_in_blank',  # must match one of the ENUM values
+                answered_correctly=True
+                )
+
 
             # 1) Record in squire_riddle_progress
             progress = SquireRiddleProgress(
@@ -629,7 +665,11 @@ def check_riddle():
             else:
                 sq.answered_correctly = True
 
-            db.commit()
+            try:
+                db.add(new_attempt)
+                db.commit()
+            except Exception as e:
+                logging.error(f"Error committing for FITB question {e}")
 
             # 3) Calculate and award the special item
             special_item = calculate_riddle_reward(squire_id, riddle_id)
@@ -645,7 +685,21 @@ def check_riddle():
                 message=f"🎉 Correct! The wizard nods in approval and grants you {special_item}"
             )
         else:
+            new_attempt = SquireQuestionAttempt(
+                squire_id=squire_id,
+                question_id=riddle_id,
+                question_type='fill_in_blank',  # must match one of the ENUM values
+                answered_correctly=False
+                )
+
+            try:
+                db.add(new_attempt)
+                db.commit()
+            except Exception as e:
+                logging.error(f"Error committing for FITB question {e}")
+
             return jsonify(success=False, message="❌ Incorrect! Try again.")
+
     except Exception as e:
         db.rollback()
         logging.error(f"Error in check_riddle: {e}")
@@ -824,7 +878,18 @@ def check_treasure():
             chest.is_opened = True
 
             # 7) Commit all changes
-            db.commit()
+            new_attempt = SquireQuestionAttempt(
+                squire_id=squire_id,
+                question_id=riddle_id,
+                question_type='fill_in_blank',  # must match one of the ENUM values
+                answered_correctly=True
+                )
+
+            try:
+                db.add(new_attempt)
+                db.commit()
+            except Exception as e:
+                logging.error(f"Error committing for FITB question {e}")
 
             # 8) Notify the team
             toast_parts = []
@@ -851,6 +916,20 @@ def check_treasure():
                 message="✅ Correct! The chest unlocks! " + " ".join(reward_msgs)
             )
         else:
+            riddle_id    = current["riddle_id"]
+            new_attempt = SquireQuestionAttempt(
+                squire_id=squire_id,
+                question_id=riddle_id,
+                question_type='fill_in_blank',  # must match one of the ENUM values
+                answered_correctly=False
+                )
+
+            try:
+                db.add(new_attempt)
+                db.commit()
+            except Exception as e:
+                logging.error(f"Error committing for FITB question {e}")
+
             return jsonify(
                 success=False,
                 message="❌ Incorrect! The chest remains locked. Try again later."

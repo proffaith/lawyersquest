@@ -166,7 +166,7 @@ if __name__ == '__main__':
 
 @app.context_processor
 def inject_version():
-    return {"app_version": flask_session.get("ver", "0.3.5")}
+    return {"app_version": flask_session.get("ver", "0.3.6")}
 
 @app.teardown_appcontext
 def shutdown_session(exc=None):
@@ -260,7 +260,7 @@ def login():
                 flask_session['squire_name'] = squire.squire_name
                 flask_session['team_id']     = squire.team_id
                 flask_session['level']       = squire.level
-                flask_session['ver']         = "0.3.4"
+                flask_session['ver']         = "0.3.6"
 
                 # Refactored helper should accept the ORM session
                 update_riddle_hints()

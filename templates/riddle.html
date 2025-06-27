@@ -1,11 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>🧙‍♂️ Riddle Challenge</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-</head>
-<body>
+{% extends 'base.html' %}
+{% block title %}{{ '🧙‍♂️ Riddle Challenge' }}{% endblock %}
+
+{% block content %}
     <div class="riddle-container">
         <h1>🧙‍♂️ A Wizard Appears!</h1>
         <table>
@@ -61,15 +57,4 @@
         });
     });
     </script>
-
-    <footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
-      <p>
-        <a href="{{ url_for('terms') }}">Privacy & Terms of Use</a> |
-        <a href="{{ url_for('getting_started') }}">Getting Started</a> |
-        <a href="{{ url_for('logout') }}">Log Out</a> |
-        © 2025, Tim Faith <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank">CC BY-SA 4.0</a> |
-        {{ app_version }}
-      </p>
-    </footer>
-</body>
-</html>
+{% endblock %}

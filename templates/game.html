@@ -1,11 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Lawyer's Quest</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+{% extends 'base.html' %}
+{% block title %}{{ 'Lawyer''s Quest' }}{% endblock %}
 
-</head>
-<body>
+{% block content %}
     <h1>Lawyer's Quest</h1>
     <p>{{ message }}</p>
     <p>📍 You are at: {{ position }}</p>
@@ -23,5 +19,4 @@
     <a href="/combat">Check for Combat</a>
     <a href="/shop">Visit Shop</a>
     <a href="/riddle">Solve a Riddle</a>
-</body>
-</html>
+{% endblock %}

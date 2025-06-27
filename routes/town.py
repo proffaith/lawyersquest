@@ -10,6 +10,8 @@ from openai import OpenAI
 import re
 import os
 import json
+import logging
+
 
 client = OpenAI(api_key=os.getenv("OPENAI_APIKEY"))
 
@@ -63,6 +65,79 @@ def npc():
     npc_message = flask_session.pop("npc_message", "The trader has no hints for you.")
     return render_template("npc.html", npc_message=npc_message)
 
+@town_bp.route('/api/repair_quote', methods=['POST'])
+def get_repair_quote():
+    squire_id = flask_session['squire_id']
+    db = db_session()
+    # load squire and inventory items that need repair:
+    squire = db.query(Squire).get(squire_id)
+    team = db.query(Team).get(squire.team_id)  # or use a relationship if defined
+    level = squire.level
+
+    max_uses = level * 4
+
+
+    data = request.get_json()
+    item_id = data.get('item_id')
+
+    db = db_session()
+    item = db.query(Inventory).get(item_id)
+
+    if not item or "magic" in item.description.lower():
+        return jsonify({"error": "Invalid or magical item"}), 400
+
+    shop_item = db.query(ShopItem).filter_by(item_name=item.item_name).first()
+
+    if not shop_item:
+        return jsonify({"error": "Original item data not found"}), 404
+
+    original_value = shop_item.price
+    original_uses = shop_item.uses
+    uses_remaining = item.uses_remaining
+
+    if uses_remaining > original_uses:
+        damage_ratio = (max_uses - uses_remaining) / max_uses
+    else:
+        damage_ratio = (original_uses - uses_remaining) / original_uses
+
+    base_quote = round(damage_ratio * original_value)
+    pct = random.uniform(0.1, 0.3)       # 10%–30% off
+    discount = round(base_quote * pct)
+    quoted_price = max(0, base_quote - discount)
+
+    system_prompt = (f"You are a gruff, medieval blacksmith NPC that is not patient with fools.")
+
+    user_prompt = (
+        f"A player brought in a damaged {item.item_name} with {uses_remaining} out of "
+        f"{original_uses} uses remaining. The original price was {original_value} bits. "
+        f"As the blacksmith, offer a repair quote based on the damage and be open to haggling. "
+        f"Start with a price of {quoted_price} bits, and act like a gruff but fair medieval craftsman."
+    )
+
+    flask_session["blacksmith_quote"] = quoted_price
+    flask_session["blacksmith_rounds"] = 0
+    flask_session["blacksmith_item_id"] = item.id
+    flask_session["blacksmith_last_offer"] = None
+    flask_session["blacksmith_minimum_price"] = quoted_price # updateable counter
+
+
+
+    # Call ChatGPT
+    response = client.chat.completions.create(model="gpt-4",
+    messages=[
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ])
+
+    blacksmith_reply = response.choices[0].message.content
+
+    return jsonify({
+        "quote": quoted_price,
+        "message": blacksmith_reply,
+        "item_id": item.id
+    })
+
+
 @town_bp.route('/blacksmith', methods=['GET', 'POST'])
 def blacksmith():
     squire_id = flask_session['squire_id']
@@ -79,7 +154,7 @@ def blacksmith():
         .filter(
             Inventory.squire_id == squire_id,
             Inventory.item_type == "gear",
-            ~Inventory.description.ilike("%magical%"),
+            ~Inventory.description.ilike("%magic%"),
             Inventory.uses_remaining < max_uses
         )
         .all()
@@ -98,43 +173,93 @@ def blacksmith():
 
 
     if request.method == 'POST':
-        item_id_raw   = request.form.get('item_id', '').strip()
+        item_id_raw = request.form.get('item_id', '').strip()
         pay_amount_raw = request.form.get('bitcoin', '').strip()
 
         if not item_id_raw or not pay_amount_raw:
             flash("Please select an item and enter a payment amount.", "error")
             return redirect(url_for('town.blacksmith'))
 
-        try:
-            item_id = int(item_id_raw)
-            pay_amount = int(pay_amount_raw)
-        except ValueError:
-            flash("Invalid input. Please enter a number.", "error")
-            return redirect(url_for('blacksmith'))
+        item_id = int(item_id_raw)
+        pay_amount = int(pay_amount_raw)
+        item = db.query(Inventory).get(item_id)
 
-        try:
-            item = db.query(Inventory).get(item_id)
+        if not item:
+            flash("Sorry, the Blacksmith cannot repair magical items.", "error")
+            return redirect(url_for('town.blacksmith'))
 
-            if not item:
-                flash("Item not found.","error")
-                return redirect(url_for('blacksmith'))
+        squire_id = flask_session['squire_id']
+        squire = db.query(Squire).get(squire_id)
+        team = db.query(Team).get(squire.team_id)  # ⬅️ was missing on POST
 
-            # sanity checks
-            if pay_amount <= 0 or pay_amount > team.gold:
-                flash("Invalid payment amount.", "error")
-                return redirect(url_for('blacksmith'))
+        # Check quote session values
+        session_item_id = flask_session.get("blacksmith_item_id")
+        if session_item_id != item_id:
+            flash("Please request a new quote for this item.", "error")
+            return redirect(url_for('town.blacksmith'))
 
-            # e.g. 1 bitcoin = 1 use repaired
-            repaired_uses = pay_amount
-            item.uses_remaining = min(50, item.uses_remaining + repaired_uses)
+        quoted_price     = flask_session.get("blacksmith_quote")
+        rounds           = flask_session.get("blacksmith_rounds", 0)
+        current_minimum  = flask_session.get("blacksmith_minimum_price", quoted_price)
+        flask_session['blacksmith_offer']   = current_minimum
+
+        # 🔑 compare against current_minimum, not the original quote:
+        logging.debug(f"[HAGGLE] offer={pay_amount}, original_quote={quoted_price}, "
+                      f"current_minimum={current_minimum}, rounds={rounds}")
+
+        if pay_amount >= current_minimum or rounds >= 3:
+
+            # Accept offer and repair
+            item.uses_remaining = min(max_uses, item.uses_remaining + pay_amount)
             team.gold -= pay_amount
-
             db.commit()
-            message = f"Your {item.item_name} regained {repaired_uses} uses!"
-            flask_session['game_message'] = message
+
+            flask_session.pop("blacksmith_quote", None)
+            flask_session.pop("blacksmith_rounds", None)
+            flask_session.pop("blacksmith_item_id", None)
+            flask_session.pop("blacksmith_last_offer", None)
+            flask_session.pop("blacksmith_offer", None)
+
+            flask_session["game_message"] = f"🛠️ The blacksmith nods gruffly. Your {item.item_name} is restored!"
             return redirect(url_for('map_view'))
-        except Exception as e:
-            logging.error(f"Error encounterd on post for blacksmith route with {e}")
+
+        # Still haggling — generate a reply
+        flask_session["blacksmith_rounds"] = rounds + 1
+        flask_session["blacksmith_last_offer"] = pay_amount
+
+        # Prepare back-and-forth prompt
+        system_prompt = "You are a gruff medieval blacksmith NPC. Stay in character and respond to offers on item repairs."
+        user_prompt = (
+            f"A player offered {pay_amount} bits to repair a {item.item_name}. "
+            f"You originally quoted {quoted_price}. "
+            f"This is round {rounds + 1} of the negotiation. "
+            f"Stay gruff, maybe snarky, but open to countering. "
+            f"If the offer is insultingly low, scold them. If it's decent, suggest a counter or accept it."
+        )
+
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        )
+        reply = response.choices[0].message.content
+        flask_session["blacksmith_reply"] = reply
+        matches = re.findall(r'(\d+)\s*bits', reply)
+        if matches:
+            # last occurrence is the blacksmith’s actual counter
+            new_counter = int(matches[-1])
+            flask_session["blacksmith_minimum_price"] = new_counter
+        else:
+            logging.warning("No counter-offer found; keeping previous minimum.")
+
+        logging.debug(f"Offer: {pay_amount}, Minimum: {current_minimum}, Rounds: {rounds}")
+        logging.debug(f"Blacksmith said: {reply}")
+
+        return redirect(url_for("town.blacksmith"))
+
+
 
 
     return render_template('blacksmith.html',
@@ -159,7 +284,7 @@ def wandering_trader():
 
         if agreed_price <= 0 or agreed_price > team.gold:
             flash("You can't afford that!", "error")
-            return redirect(url_for('wandering_trader'))
+            return redirect(url_for('town.wandering_trader'))
 
         reputation_awarded = max(0, (shop_item.price - agreed_price) // 10)
         team.reputation = (team.reputation or 0) + reputation_awarded

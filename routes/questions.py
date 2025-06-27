@@ -1,15 +1,16 @@
 # Question-related routes
 from flask import Blueprint, session as flask_session, request, jsonify, render_template, redirect, url_for, flash
-from db import db_session, Squire, TrueFalseQuestion, SquireQuestion, MultipleChoiceQuestion, Team
-from services.progress import update_squire_progress
-from sqlalchemy import func, and_
+from db import db_session, Squire, TrueFalseQuestion, SquireQuestion, MultipleChoiceQuestion, Team, SquireTournamentScore, SquireQuestionAttempt
+from sqlalchemy import func, and_, desc
 import random
 import logging
 import uuid
 
 from utils.shared import add_team_message
 from utils.shared import degrade_gear
+from utils.shared import complete_quest
 from utils.api_calls import generate_openai_question
+from services.progress import update_squire_progress
 
 questions_bp = Blueprint('questions', __name__)
 
@@ -76,7 +77,18 @@ def handle_true_false_question():
                 degrade_gear(squire_id, "zip")
                 squire = db.query(Squire).get(squire_id)
                 squire.experience_points = max(0, squire.experience_points - 10)
-                db.commit()
+
+                new_attempt = SquireQuestionAttempt(
+                    squire_id=squire_id,
+                    question_id=0,
+                    question_type='true_false',  # must match one of the ENUM values
+                    answered_correctly=False
+                    )
+                try:
+                    session.add(new_attempt)
+                    db.commit()
+                except Exception as e:
+                    logging.error(f"Error committing response to T/F question {e}")
 
                 flee_msg = (
                     "🛑 The enemy forces you to flee because you are unarmed.\n"
@@ -127,9 +139,21 @@ def handle_true_false_question():
                 f"{enemy['name']} and gained {xp_gain} XP "
                 f"and {gold_gain} bits."
             )
-            add_team_message(flask_session['team_id'], toast)
+            new_attempt = SquireQuestionAttempt(
+                squire_id=squire_id,
+                question_id=tq.id,
+                question_type='true_false',  # must match one of the ENUM values
+                answered_correctly=True
+                )
 
-            db.commit()
+            try:
+                session.add(new_attempt)
+                add_team_message(flask_session['team_id'], toast)
+                db.commit()
+
+            except Exception as e:
+                logging.error(f"Error committing response to T/F question {e}")
+
 
             return jsonify(
                 success=True,
@@ -153,7 +177,19 @@ def handle_true_false_question():
         degrade_gear(squire_id, "zip")
         squire = db.query(Squire).get(squire_id)
         squire.experience_points = max(0, squire.experience_points - 10)
-        db.commit()
+
+        new_attempt = SquireQuestionAttempt(
+            squire_id=squire_id,
+            question_id=tq.id,
+            question_type='true_false',  # must match one of the ENUM values
+            answered_correctly=True
+            )
+
+        try:
+            session.add(new_attempt)
+            db.commit()
+        except Exception as e:
+            logging.error(f"Error committing response to T/F question {e}")
 
         flee_msg = (
             "🛑 The enemy forces you to flee by your wrong answer.\n"
@@ -348,9 +384,12 @@ def check_true_false_question():
         return redirect(url_for("combat_results"))
 
     db = db_session()
+    q = db.query(TrueFalseQuestion).get(int(question_id))
+    question_id_int = int(question_id)
+
     try:
         # 1) Load question
-        q = db.query(TrueFalseQuestion).get(int(question_id))
+
         if not q:
             flask_session["battle_summary"] = "Error: Question not found."
             return redirect(url_for("combat_results"))
@@ -363,6 +402,16 @@ def check_true_false_question():
 
         # 2) Record as answered correctly if matches
         if user_int == correct_int:
+
+            new_attempt = SquireQuestionAttempt(
+                squire_id=squire_id,
+                question_id=q.id,
+                question_type='true_false',  # must match one of the ENUM values
+                answered_correctly=True
+                )
+
+
+
             sq = (
                 db.query(SquireQuestion)
                   .filter_by(
@@ -375,14 +424,19 @@ def check_true_false_question():
             if not sq:
                 sq = SquireQuestion(
                     squire_id=squire_id,
-                    question_id=q.id,
+                    question_id=question_id_int,
                     question_type='true_false',
                     answered_correctly=True
                 )
                 db.add(sq)
             else:
                 sq.answered_correctly = True
-            db.commit()
+
+            try:
+                db.add(new_attempt)
+                db.commit()
+            except Exception as e:
+                logging.error(f"Error committing response to T/F question {e}")
 
             # 3a) Pending job payout
             if pending_job:
@@ -399,7 +453,10 @@ def check_true_false_question():
                 # Increment work sessions
                 squire.work_sessions += 1
 
-                db.commit()
+                try:
+                    db.commit()
+                except Exception as e:
+                    logging.error(f"Error committing response to T/F question {e}")
 
                 msg = (f"✅ You completed '{pending_job['job_name']}' "
                        f"and earned 💰 {payout} bits!")
@@ -424,7 +481,10 @@ def check_true_false_question():
             )
             message = " ".join([str(m) for m in toast if m])
             add_team_message(flask_session['team_id'], message)
-            db.commit()
+            try:
+                db.commit()
+            except Exception as e:
+                logging.error(f"Error committing team message for T/F question {e}")
 
             flask_session["combat_result"] = (
                 f"✅ Correct! You have defeated the enemy "
@@ -456,7 +516,17 @@ def check_true_false_question():
                 0,
                 squire.experience_points - enemy.get("xp_reward", 0)
             )
-            db.commit()
+            new_attempt = SquireQuestionAttempt(
+                squire_id=squire_id,
+                question_id=question_id_int,
+                question_type='true_false',  # must match one of the ENUM values
+                answered_correctly=False
+                )
+            try:
+                db.add(new_attempt)
+                db.commit()
+            except Exception as e:
+                logging.error(f"Error committing team message for T/F question {e}")
 
             flask_session["combat_result"] = (
                 f"❌ Incorrect! You are defeated by "
@@ -471,23 +541,44 @@ def check_true_false_question():
             success=flask_session.pop("success", None),
             combat_result=flask_session.pop("combat_result", "")
         )
+    except Exception as e:
+        logging.error(f"General error in check_true_false_question: {e}")
+        flask_session["battle_summary"] = f"Error: {e}."
+        return render_template(
+            "combat_results.html",
+            success=flask_session.pop("success", None),
+            combat_result=flask_session.pop("combat_result", "")
+            )
+
     finally:
         db.close()
 
-#present questions
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Boss and Tourney Section
 @questions_bp.route('/answer_MC_question', methods=['GET'])
 def answer_MC_question():
     """Displays a random multiple‐choice question for boss combat."""
-    boss       = flask_session.get('boss')
+    boss       = flask_session.get('boss', None)
     squire_id  = flask_session.get("squire_id")
     quest_id   = flask_session.get("quest_id")
 
-    if not (boss and squire_id and quest_id):
+    if not (squire_id and quest_id):
         return redirect(url_for("login"))
 
+    # set mode
+    if quest_id == 14:
+        flask_session['mode'] = 'combat'
+    elif quest_id in (28, 32):
+        # start tournament mode if not already started
+        flask_session['mode'] = 'tournament'
+        if 'tournament_score' not in flask_session:
+            flask_session['tournament_score'] = 0
+
+
     # pull in hunger if needed elsewhere
-    player_current_hunger = flask_session.get("player_current_hunger")
-    boss_current_hunger   = flask_session.get("boss_current_hunger")
+    player_current_hunger = flask_session.get("player_current_hunger", None)
+    boss_current_hunger   = flask_session.get("boss_current_hunger", None)
+
 
     db = db_session()
     try:
@@ -503,15 +594,35 @@ def answer_MC_question():
         answered_ids = {qid for (qid,) in answered_rows}
 
         # 2) Fetch a random MCQ with quest_id < current and not yet seen
-        mcq = (
-            db.query(MultipleChoiceQuestion)
-              .filter(
-                  MultipleChoiceQuestion.quest_id < quest_id,
-                  ~MultipleChoiceQuestion.id.in_(answered_ids)
-              )
-              .order_by(func.rand())
-              .first()
-        )
+
+        if flask_session.get("mode") == "tournament" and quest_id == 28:
+            mcq = ( db.query(MultipleChoiceQuestion)
+            .filter(MultipleChoiceQuestion.quest_id.in_([23, 24, 25, 26, 27]),
+            ~MultipleChoiceQuestion.id.in_(answered_ids))
+            .order_by(func.rand())
+            .first()
+            )
+        elif quest_id == 14:
+            mcq = ( db.Query(MultipleChoiceQuestion)
+            .filter(MultipleChoiceQuestion.quest_id.in_([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13]),
+            ~MultipleChoiceQuestion.id.in_(answered_ids))
+            .order_by(func.rand())
+            .first()
+            )
+        elif flask_session.get("mode") == "tournament" and quest_id == 32:
+            mcq = ( db.Query(MultipleChoiceQuestion)
+            .filter(MultipleChoiceQuestion.quest_id.in_([15, 16, 17, 18, 19, 20, 29, 30, 31]),
+            ~MultipleChoiceQuestion.id.in_(answered_ids))
+            .order_by(func.rand())
+            .first()
+            )
+        else:
+            mcq = ( db.query(MultipleChoiceQuestion)
+            .filter(MultipleChoiceQuestion.quest_id < quest_id,
+            ~MultipleChoiceQuestion.id.in_(answered_ids))
+            .order_by(func.rand())
+            .first()
+            )
 
         if not mcq:
             flask_session["battle_summary"] = "No question available. You must flee!"
@@ -528,7 +639,11 @@ def answer_MC_question():
             "correctAnswer": mcq.correctAnswer
         }
 
-        return render_template('boss_combat.html', boss=boss)
+        if flask_session.get("mode") == "tournament":
+            return render_template('tourney_combat.html')
+
+        else:
+            return render_template('boss_combat.html', boss=boss)
 
     finally:
         db.close()
@@ -548,6 +663,9 @@ def check_MC_question():
     player_max_hunger  = flask_session.get("player_max_hunger", 0)
     boss_max_hunger    = flask_session.get("boss_max_hunger", 0)
 
+    mode = flask_session.get("mode")
+    score = flask_session.get("tournament_score", 0)
+
     logging.debug(f"Check_MC_question qid/user_answer {question_id}/{user_answer}")
     db = db_session()
     try:
@@ -560,93 +678,224 @@ def check_MC_question():
         # 2) Determine correctness
         correct = (user_answer == mcq.correctAnswer)
 
-        # 3) Record attempt if correct
-        if correct:
-            # Upsert SquireQuestion
-            sq = (
-                db.query(SquireQuestion)
-                  .filter_by(
-                      squire_id=squire_id,
-                      question_id=mcq.id,
-                      question_type='multiple_choice'
-                  )
-                  .one_or_none()
-            )
-            if not sq:
-                sq = SquireQuestion(
+        if mode == "tournament":
+            if correct:
+                score += 1
+                flask_session["tournament_score"] = score
+
+                new_attempt = SquireQuestionAttempt(
                     squire_id=squire_id,
                     question_id=mcq.id,
-                    question_type='multiple_choice',
+                    question_type='multiple_choice',  # must match one of the ENUM values
                     answered_correctly=True
-                )
-                db.add(sq)
-            else:
-                sq.answered_correctly = True
-            db.commit()
+                    )
 
-            # 4a) Increase boss hunger
-            boss_hunger += 1
-            flask_session["boss_current_hunger"] = boss_hunger
-            flask_session["question_id"] = None
-            enemy_message = f"💥 Good Answer! {boss.get('name')} is getting hungrier."
-            flask_session["enemy_message"] = enemy_message
+
+                # Upsert SquireQuestion
+                sq = (
+                    db.query(SquireQuestion)
+                      .filter_by(
+                          squire_id=squire_id,
+                          question_id=mcq.id,
+                          question_type='multiple_choice'
+                      )
+                      .one_or_none()
+                )
+                if not sq:
+                    sq = SquireQuestion(
+                        squire_id=squire_id,
+                        question_id=mcq.id,
+                        question_type='multiple_choice',
+                        answered_correctly=True
+                    )
+                    db.add(sq)
+                else:
+                    sq.answered_correctly = True
+
+                try:
+                    db.add(new_attempt)
+                    db.commit()
+                except Exception as e:
+                    logging.error(f"Error committing team message for M/C question {e}")
+
+                return redirect(url_for('questions.answer_MC_question'))
+
+            else: #incorrect tourney ends the run
+                flask_session.pop("mode", None)
+                return redirect(url_for("questions.tourney_results"))
 
         else:
-            # 4b) Player hunger
-            player_hunger += 1
-            flask_session["player_current_hunger"] = player_hunger
-            flask_session["question_id"] = None
-            player_message = "❌ Not good, Squire! You are getting hungrier."
-            flask_session["player_message"] = player_message
+            if correct:
 
-        # 5) Check victory: boss too hungry
-        if boss_hunger >= boss_max_hunger:
-            flask_session["boss_defeated"] = True
-            xp = boss.get("xp_reward", 0)
-            gold = boss.get("gold_reward", 0)
-            result.append(update_squire_progress(db, squire_id, xp, gold))
+                new_attempt = SquireQuestionAttempt(
+                    squire_id=squire_id,
+                    question_id=mcq.id,
+                    question_type='multiple_choice',  # must match one of the ENUM values
+                    answered_correctly=True
+                    )
 
-            result.append (
-                f"🍕 The {boss.get('name')} is too hungry to continue! "
-                f"They run off to eat a pizza.\nYou gain {xp} XP and {gold} bits."
-            )
 
-            message = " ".join([str(m) for m in result if m])
+                # Upsert SquireQuestion
+                sq = (
+                    db.query(SquireQuestion)
+                      .filter_by(
+                          squire_id=squire_id,
+                          question_id=mcq.id,
+                          question_type='multiple_choice'
+                      )
+                      .one_or_none()
+                )
+                if not sq:
+                    sq = SquireQuestion(
+                        squire_id=squire_id,
+                        question_id=mcq.id,
+                        question_type='multiple_choice',
+                        answered_correctly=True
+                    )
+                    db.add(sq)
+                else:
+                    sq.answered_correctly = True
 
-            flask_session["combat_result"] = message
+                try:
+                    db.add(new_attempt)
+                    db.commit()
+                except Exception as e:
+                    logging.error(f"Error committing team message for M/C question {e}")
 
-            # Clean up combat state
-            for key in ("boss", "player_current_hunger", "boss_current_hunger"):
-                flask_session.pop(key, None)
+                boss_hunger += 1
+                flask_session["boss_current_hunger"] = boss_hunger
+                flask_session["question_id"] = None
+                enemy_message = f"💥 Good Answer! {boss.get('name')} is getting hungrier."
+                flask_session["enemy_message"] = enemy_message
 
-            toast = (
-                f"{flask_session['squire_name']} defeated {boss.get('name')} "
-                f"and gained {xp} XP and {gold} bits."
-            )
-            add_team_message(flask_session['team_id'], toast)
-            db.commit()
-            return redirect(url_for("combat_results"))
+            else:
+                # 4b) Player hunger
+                player_hunger += 1
+                flask_session["player_current_hunger"] = player_hunger
+                flask_session["question_id"] = None
+                player_message = "❌ Not good, Squire! You are getting hungrier."
+                flask_session["player_message"] = player_message
 
-        # 6) Check defeat: player too hungry
-        if player_hunger >= player_max_hunger:
-            degrade_gear(squire_id, boss.get("weakness"))
-            squire = db.query(Squire).get(squire_id)
-            squire.experience_points = max(0, squire.experience_points - 100)
-            db.commit()
+                new_attempt = SquireQuestionAttempt(
+                    squire_id=squire_id,
+                    question_id=mcq.id,
+                    question_type='multiple_choice',  # must match one of the ENUM values
+                    answered_correctly=False
+                    )
 
-            flask_session["combat_result"] = (
-                "🛑 You are too hungry to continue fighting! "
-                "The enemy forces you to flee.\n❌ You lose 100 XP."
-            )
-            for key in ("boss", "player_current_hunger", "boss_current_hunger"):
-                flask_session.pop(key, None)
-            return redirect(url_for("combat_results"))
+                try:
+                    db.add(new_attempt)
+                    db.commit()
+                except Exception as e:
+                    logging.error(f"Error committing team message for M/C question {e}")
 
-        # 7) Continue boss combat
-        return redirect(url_for("boss_combat"))
+                return redirect(url_for("combat.boss_combat"))
+
+            # 5) Check victory: boss too hungry
+            if boss_hunger >= boss_max_hunger:
+                flask_session["boss_defeated"] = True
+                xp = boss.get("xp_reward", 0)
+                gold = boss.get("gold_reward", 0)
+                result.append(update_squire_progress(db, squire_id, xp, gold))
+
+                result.append (
+                    f"🍕 The {boss.get('name')} is too hungry to continue! "
+                    f"They run off to eat a pizza.\nYou gain {xp} XP and {gold} bits."
+                )
+
+                message = " ".join([str(m) for m in result if m])
+
+                flask_session["combat_result"] = message
+
+                # Clean up combat state
+                for key in ("boss", "player_current_hunger", "boss_current_hunger"):
+                    flask_session.pop(key, None)
+
+                toast = (
+                    f"{flask_session['squire_name']} defeated {boss.get('name')} "
+                    f"and gained {xp} XP and {gold} bits."
+                )
+                add_team_message(flask_session['team_id'], toast)
+                db.commit()
+
+            # 6) Check defeat: player too hungry
+            if player_hunger >= player_max_hunger:
+                degrade_gear(squire_id, boss.get("weakness"))
+                squire = db.query(Squire).get(squire_id)
+                squire.experience_points = max(0, squire.experience_points - 100)
+                db.commit()
+
+                flask_session["combat_result"] = (
+                    "🛑 You are too hungry to continue fighting! "
+                    "The enemy forces you to flee.\n❌ You lose 100 XP."
+                )
+                for key in ("boss", "player_current_hunger", "boss_current_hunger"):
+                    flask_session.pop(key, None)
+
+            return redirect(url_for("combat.combat_results"))
+
+    except Exception as e:
+        logging.error(f"Boss/Tourney Combat error {e}")
+        return redirect(url_for("map_view"))
 
     finally:
         db.close()
+
+
+@questions_bp.route('/tourney_results')
+def tourney_results():
+    squire_id = flask_session.get('squire_id')
+    team_id   = flask_session.get('team_id')
+    quest_id  = flask_session.get('quest_id')
+    score     = flask_session.pop('tournament_score', 0)
+    flask_session.pop('mode', None)
+
+    db = db_session()
+    try:
+        # 1) Save the run
+        tr = SquireTournamentScore(
+            squire_id=squire_id,
+            quest_id=quest_id,
+            score=score
+        )
+        db.add(tr)
+        db.commit()
+
+        # 2) Mark the quest complete (award XP/gold or just flag it)
+        #    You’ve used update_squire_progress elsewhere:
+        update_squire_progress(squire_id, 500, 500)
+        complete_quest(squire_id, quest_id)
+        db.commit()
+
+        # 2) Build the full leaderboard: all individual runs, by team
+        leaderboard = (
+            db.query(
+                Team.team_name.label('team_name'),
+                Squire.squire_name.label('squire_name'),
+                SquireTournamentScore.score,
+                SquireTournamentScore.timestamp
+            )
+            .join(Squire, SquireTournamentScore.squire_id == Squire.id)
+            .join(Team,   Squire.team_id   == Team.id)
+            .filter(SquireTournamentScore.quest_id == quest_id)
+            .order_by(
+                Team.team_name,                       # alphabetical by team
+                desc(SquireTournamentScore.score)     # highest scores first
+            )
+            .all()
+        )
+    finally:
+        db.close()
+
+    return render_template(
+        'tourney_results.html',
+        leaderboard=leaderboard,
+        your_score=score
+    )
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ End Boss/Tourney
+
 
 @questions_bp.route('/check_MC_question_enemy', methods=['POST'])
 def check_MC_question_enemy():
@@ -679,7 +928,14 @@ def check_MC_question_enemy():
             correct = (user_answer == current_q["correct_answer"])
 
             if correct:
-                # Maybe add a new table: SquireApiQuestion (squire_id, question_text, answered_correctly, timestamp)
+                new_attempt = SquireQuestionAttempt(
+                    squire_id=squire_id,
+                    question_id=-1,
+                    question_type='api_generated',  # must match one of the ENUM values
+                    answered_correctly=True
+                    )
+
+
                 sq = SquireQuestion (
                     squire_id=squire_id,
                     question_id=-int(uuid.uuid4().int % 1000000000),
@@ -687,12 +943,16 @@ def check_MC_question_enemy():
                     answered_correctly=True,
                     is_api=True
                 )
-                db.add(sq)
 
-                # Reputation gain? Bits?
                 team = db.query(Team).get(flask_session['team_id'])
                 team.reputation += 1
-                db.commit()
+
+                try:
+                    db.add(new_attempt)
+                    db.add(sq)
+                    db.commit()
+                except Exception as e:
+                    logging.error(f"Error committing team message for API M/C question {e}")
 
                 # 3b) Combat reward
                 flask_session["forced_combat"] = False
@@ -718,12 +978,24 @@ def check_MC_question_enemy():
             else:
                 # Damage gear and penalize XP
                 degrade_gear(squire_id, enemy.get("weakness"))
+                new_attempt = SquireQuestionAttempt(
+                    squire_id=squire_id,
+                    question_id=-1,
+                    question_type='api_generated',  # must match one of the ENUM values
+                    answered_correctly=True
+                    )
+
                 squire = db.query(Squire).get(squire_id)
                 squire.experience_points = max(
                     0,
                     squire.experience_points - enemy.get("xp_reward", 0)
                 )
-                db.commit()
+
+                try:
+                    db.add(new_attempt)
+                    db.commit()
+                except Exception as e:
+                    logging.error(f"Error committing team message for API M/C question {e}")
 
                 flask_session["combat_result"] = (
                     f"❌ Incorrect! You are defeated by "
@@ -755,6 +1027,13 @@ def check_MC_question_enemy():
 
         # 3) Record attempt if correct
         if correct:
+            new_attempt = SquireQuestionAttempt(
+                squire_id=squire_id,
+                question_id=mcq.id,
+                question_type='multiple_choice',  # must match one of the ENUM values
+                answered_correctly=True
+                )
+
             # Upsert SquireQuestion
             sq = (
                 db.query(SquireQuestion)
@@ -775,7 +1054,14 @@ def check_MC_question_enemy():
                 db.add(sq)
             else:
                 sq.answered_correctly = True
-            db.commit()
+
+            try:
+                db.add(new_attempt)
+                db.add(sq)
+                db.commit()
+            except Exception as e:
+                logging.error(f"Error committing  for M/C question {e}")
+
 
             # 3a) Pending job payout
             if pending_job:
@@ -792,7 +1078,11 @@ def check_MC_question_enemy():
                 # Increment work sessions
                 squire.work_sessions += 1
 
-                db.commit()
+                try:
+
+                    db.commit()
+                except Exception as e:
+                    logging.error(f"Error committing team update M/C question {e}")
 
                 msg = (f"✅ You completed '{pending_job['job_name']}' "
                        f"and earned 💰 {payout} bits!")
@@ -817,7 +1107,11 @@ def check_MC_question_enemy():
             )
             message = " ".join([str(m) for m in toast if m])
             add_team_message(flask_session['team_id'], message)
-            db.commit()
+
+            try:
+                db.commit()
+            except Exception as e:
+                logging.error(f"Error committing team message for M/C question {e}")
 
             flask_session["combat_result"] = (
                 f"✅ Correct! You have defeated the enemy "
@@ -840,14 +1134,27 @@ def check_MC_question_enemy():
                 )
                 return redirect(url_for("town.visit_town"))
 
+            new_attempt = SquireQuestionAttempt(
+                squire_id=squire_id,
+                question_id=mcq.id,
+                question_type='multiple_choice',  # must match one of the ENUM values
+                answered_correctly=False
+                )
+
             # Damage gear and penalize XP
             degrade_gear(squire_id, enemy.get("weakness"))
+
             squire = db.query(Squire).get(squire_id)
             squire.experience_points = max(
                 0,
                 squire.experience_points - enemy.get("xp_reward", 0)
             )
-            db.commit()
+
+            try:
+                db.add(new_attempt)
+                db.commit()
+            except Exception as e:
+                logging.error(f"Error committing  for M/C question {e}")
 
             flask_session["combat_result"] = (
                 f"❌ Incorrect! You are defeated by "

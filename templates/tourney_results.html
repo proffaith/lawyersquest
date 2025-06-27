@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}🏆 Tournament Rankings{% endblock %}
+
+{% block content %}
+<h1>🏆 Tournament Over!</h1>
+<p>Your final score: <strong>{{ your_score }}</strong></p>
+
+<h2>Team Leaderboard</h2>
+<table class="leaderboard">
+  <thead>
+    <tr>
+      <th>Team</th>
+      <th>Player</th>
+      <th>Score</th>
+      <th>Completed At</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in leaderboard %}
+      <tr>
+        <td>{{ row.team_name }}</td>
+        <td>{{ row.squire_name }}</td>
+        <td>{{ row.score }}</td>
+        <td>{{ row.timestamp.strftime("%Y-%m-%d %H:%M") }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+  <p><a class="btn" href="{{ url_for('quest_select') }}">
+    🎲 Choose Your Next Quest
+  </a></p>
+{% endblock %}

@@ -93,6 +93,7 @@ class Squire(Base):
     riddle_progress = relationship('SquireRiddleProgress',back_populates='squire',cascade='all, delete-orphan')
     travel_history = relationship('TravelHistory',back_populates='squire', cascade='all, delete-orphan')
     negotiations = relationship("NPCNegotiation", back_populates="squire")
+    tournament_scores = relationship("SquireTournamentScore", back_populates="squire")
 
 class Course(Base):
     __tablename__ = 'courses'
@@ -455,6 +456,26 @@ class TextExtract(Base):
     page_start = Column(Integer)
     page_end = Column(Integer)
 
+class SquireTournamentScore(Base):
+    __tablename__ = 'SquireTournamentScore'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    squire_id = Column(Integer, ForeignKey('squires.id'), nullable=False)
+    quest_id = Column(Integer, nullable=False)  # Which tournament/quest this was for
+    score = Column(Integer, nullable=False)
+    timestamp = Column(DateTime, default=func.now())
+
+    # Optional: backref to Squire if you want easy access from a Squire object
+    squire = relationship("Squire", back_populates="tournament_scores")
+
+class SquireQuestionAttempt(Base):
+    __tablename__ = 'squire_question_attempts'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    squire_id = Column(Integer, ForeignKey('squires.id'), nullable=False)
+    question_id = Column(Integer)
+    question_type      = Column(Enum('true_false','riddle','multiple_choice'), nullable=False)
+    answered_correctly = Column(Boolean, default=False)
 
 
 # ────────────── Initialize DB ──────────────

@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.dialects.mysql import insert
 from decimal import Decimal
 
+from services.progress import update_squire_progress
 
 # Load environment variables
 load_dotenv()
@@ -155,7 +156,7 @@ def generate_terrain_features_dynamic(
             TreasureChest.is_opened == False
         ).all()
     restricted.update(treasure_coords)
-    restricted.update({(0, 0), (40, 40)})
+    restricted.update({ (0, 0), (40, 40), (-35,-35) })
 
     to_add = []  # collect new MapFeature instances
 
@@ -180,6 +181,36 @@ def generate_terrain_features_dynamic(
     existing_forests = session.query(MapFeature).filter_by(squire_id=squire_id, terrain_type='forest').count()
     forests_needed = max_forests - existing_forests
     clusters = min(num_forest_clusters, forests_needed // cluster_size)
+
+    # Ensure forest near (-35, -35)
+    pinned_cluster_center = (-35, -35)
+    pinned_cluster_size = min(cluster_size, forests_needed)
+    for _ in range(pinned_cluster_size):
+        fx = pinned_cluster_center[0] + random.randint(-2, 2)
+        fy = pinned_cluster_center[1] + random.randint(-2, 2)
+        if (fx, fy) not in restricted:
+            to_add.append(MapFeature(
+                x_coordinate=fx,
+                y_coordinate=fy,
+                squire_id=squire_id,
+                terrain_type='forest'
+            ))
+            restricted.add((fx, fy))
+
+    pinned_cluster_center = (40, 40)
+    pinned_cluster_size = min(cluster_size, forests_needed)
+    for _ in range(pinned_cluster_size):
+        fx = pinned_cluster_center[0] + random.randint(-2, 2)
+        fy = pinned_cluster_center[1] + random.randint(-2, 2)
+        if (fx, fy) not in restricted:
+            to_add.append(MapFeature(
+                x_coordinate=fx,
+                y_coordinate=fy,
+                squire_id=squire_id,
+                terrain_type='forest'
+            ))
+            restricted.add((fx, fy))
+
     for _ in range(clusters):
         cx = random.randint(-placement_radius, placement_radius)
         cy = random.randint(-placement_radius, placement_radius)
@@ -350,7 +381,9 @@ def get_viewport_map(db, squire_id: int, quest_id: int, viewport_size: int = 15)
                 elif (cx, ry) == (0, 0):
                     char = "🏰"
                 elif (cx, ry) == (40, 40):
-                    char = "🏰"
+                    char = "🧌"
+                elif (cx, ry) == (-35,-35):
+                    char = "🏇"
                 # 3) Already opened chest?
                 elif (cx,ry) in opened_coords:
                     char = ICONS['opened_chest']
@@ -469,7 +502,10 @@ def ishint(db_session, squire_id):
         db_session.query(func.count(Inventory.id))
         .filter(
             Inventory.squire_id == squire_id,
-            Inventory.item_name.ilike('%banishment%')  # Case-insensitive match
+            or_(
+                Inventory.item_name.ilike('%banishment%'),
+                Inventory.item_name.ilike('%decoder%')
+            )
         )
         .scalar() > 0
     )
@@ -1358,9 +1394,11 @@ def complete_quest(squire_id: int, quest_id: int) -> tuple[bool, list[str]]:
     """
     db = db_session()
     messages: list[str] = []
+    logging.debug(f"⚔️ complete_quest start: squire={squire_id}, quest={quest_id}")
     try:
         # 1) Check completion via ORM helper
-        if not check_quest_completion(squire_id, quest_id):
+        if quest_id not in (28, 32) and not check_quest_completion(squire_id, quest_id):
+            logging.debug("🔎 Quest not yet complete (riddles remain). Exiting.")
             return False, ["🔎 You still have more riddles to solve in this quest!"]
 
         messages.append("🎉 Congratulations! You have completed this quest!")

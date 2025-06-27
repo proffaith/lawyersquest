@@ -121,9 +121,17 @@
                 window.location.href = "/npc";
             } else if (response.event === "inventory") {
                 window.location.href = "/inventory";
-            } else if (response.event === "q14bossfight") {
-              setTimeout(() => { window.location.href = "/encounter_boss"; }, 500);
+              } else if (response.event === "q14bossfight") {
+                setTimeout(() => {
+                    window.location.href = "/encounter_boss";
+                }, 500);
+            } else if (response.event === "q28tourney") {
+                setTimeout(() => {
+                    window.location.href = "/encounter_boss";
+                }, 500);
             }
+
+            
         },
         error: function(xhr) {
             console.error("❌ Error updating movement:", xhr.responseJSON);

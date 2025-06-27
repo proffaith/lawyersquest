@@ -1,30 +1,29 @@
 {% extends 'base.html' %}
-{% block title %}{{ '⚔️ Boss Combat' }}{% endblock %}
+{% block title %}{{ 'Jousting Tournament' }}{% endblock %}
 
 {% block content %}
 
-    <h1>⚔️ Battle with {{ boss.name }}</h1>
-    <p>{{ boss.description }}</p>
-    <table>
+  <table>
       <tr>
-        <td> <div id="hunger-bars">
-        <div id="player-hunger-container">
-            <img src="/static/knight_fountain_pen.jpeg" width=100 height=100>
-            <p>Your Hunger: <span id="player_current_hunger">{{ session.get("player_current_hunger") }}</span>/<span id="player_max_hunger">{{ session.get("player_max_hunger") }}</span></p>
-            <progress id="player_hunger_progress" value="" max=""></progress>
-            <p id="player_message" class="battle-message"></p>
-        </div></td>
-        <td><div id="enemy-hunger-container">
-          {% if boss.name == 'Lexiconis' %} <img src="/static/lexiconis.jpeg" width=150 height=150> {% endif %}
-
-            <p>{{ boss.name }}'s Hunger: <span id="boss_current_hunger">{{ session.get("boss_current_hunger") }}</span>/<span id="boss_max_hunger">{{ session.get("boss_max_hunger")}}</span></p>
-            <progress id="enemy_hunger_progress" value="" max=""></progress>
-            <p id="enemy_message" class="battle-message"></p>
-        </div></td>
+        <td colspan="2"><h1>🤺 The Jousting Tournament Begins!</h1></td>
       </tr>
+      <tr>
+        <td><img src="/static/tourney.jpeg" width=250 height=250
+        </td>
+        <td><p>Answer each question correctly to stay in the saddle. One wrong answer and you're unseated!</p></td>
+      </tr>
+      <tr>
+        <td colspan="2">
+        <div style="margin-bottom: 1em;">
+          <strong>🏇 Current Score:</strong>
+          {{ session.get("tournament_score", 0) }}
+        </div>
+      </td>
+    </tr>
     </table>
 
-    <h3>Choose Wisely, Squire!</h3>
+    <h3>⚖️ Prove Thy Legal Mettle!</h3>
+
 
     {% if session.current_question %}
   <div id="question-container">
@@ -54,15 +53,19 @@
 
       <table>
         <tr>
-          <td><p>You must answer enough questions to defeat the enemy or flee! Do you...?</p></td>
+          <td><p>The Squire that answers the most questions correctly in the tournament, wins!</p></td>
           <td>
               <form id="combat-form" method="post">
                   <button type="submit" name="action" value="question">🧠 Answer the question</button>
-                  <button type="submit" name="action" value="flee">🏃 Run away</button>
               </form>
           </td>
       </tr>
     </table>
+
+    <p>
+  <a href="{{ url_for('tournament_results') }}">See Tournament Results</a>
+</p>
+
 {% endif %}
 
     <script>

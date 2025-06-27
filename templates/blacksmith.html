@@ -1,36 +1,26 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Lawyer's Quest</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+{% extends 'base.html' %}
+{% block title %}{{ '🔨 Roaming Blacksmith 🔨' }}{% endblock %}
 
+{% block content %}
 
-</head>
-<body>
-  <script>
-document.addEventListener('DOMContentLoaded', function () {
-  const itemData = {{ item_info | tojson }};
-  const teamGold = {{ team.gold }};
-  const itemSelect = document.getElementById('item');
-  const bitcoinInput = document.getElementById('bitcoin');
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn   = document.getElementById('accept_button');
+    if (!btn) return;
 
-  function updateRepairLimit() {
-    const selectedId = parseInt(itemSelect.value);
-    const selectedItem = itemData.find(i => i.id === selectedId);
-    if (!selectedItem) return;
+    // 1) enable the button now that we know there's an offer
+    btn.disabled = false;
 
-    const usesLeft = selectedItem.max_uses - selectedItem.uses_remaining;
-    const maxSpendable = Math.min(usesLeft, teamGold);
-
-    bitcoinInput.max = maxSpendable;
-    bitcoinInput.placeholder = `Up to ${maxSpendable} gold`;
-    bitcoinInput.value = "";
-  }
-
-  itemSelect.addEventListener('change', updateRepairLimit);
-  updateRepairLimit();  // Run once on load
-});
+    // 2) when clicked, shove the offer into the bitcoin field and submit
+    btn.addEventListener('click', () => {
+      const offer = btn.getAttribute('data-offer');
+      const form  = btn.closest('form');
+      form.elements['bitcoin'].value = offer;
+      form.submit();
+    });
+  });
 </script>
+
 
 <h2>🔨 Roaming Blacksmith 🔨</h2>
 
@@ -48,42 +38,87 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>
         {% endif %}
       {% endwith %}
+
+
+
     </td>
   </tr>
   <tr>
     <td colspan="2">
-<form method="post">
-  <label for="item">Item:</label>
-  <select name="item_id" id="item">
-    {% for item in item_info %}
-    <option value="{{ item.id }}">
-      {{ item.name }} ({{ item.uses_remaining }}/ {{item.max_uses}} uses left)
-    </option>
-  {% endfor %}
+      <select id="item-select">
+        {% for item in broken_items %}
+            <option value="{{ item.id }}">{{ item.item_name }} ({{ item.uses_remaining }} uses)</option>
+        {% endfor %}
+      </select>
 
-</select>
+      <button onclick="requestQuote()">🔧 Get Repair Quote</button>
+      <div id="blacksmith-thinking" style="display: none;">
+        <p>🧠 The Blacksmith grunts and rubs his beard, thinking it over...</p>
+      </div>
+
+      <div id="blacksmith-response"></div>
+
+      {% if session.get("blacksmith_reply") %}
+        <div class="blacksmith-reply">
+          <p><strong>Smith’s final price:</strong> {{ session.pop("blacksmith_reply") }}</p>
+          <form method="POST" action="{{ url_for('town.blacksmith') }}">
+            <input type="hidden" name="item_id" value="{{ session.get('blacksmith_item_id') }}">
+            <label>Your Counter Offer (bits):</label>
+            <input type="number" name="bitcoin" required>
+            <button type="submit">💬 Haggle Again</button>
+            <button
+              type="button"
+              id="accept_button"
+              data-offer="{{ session.get('blacksmith_offer') }}"
+              disabled
+            >
+              🏳️ Accept {{ session.get('blacksmith_offer') }} ₿
+            </button>
+          </form>
+        </div>
+      {% endif %}
 
 
-  <label for="bitcoin">₿ to spend (1₿ = 1 use):</label>
-  <input type="number" name="bitcoin" id="bitcoin" min="1" max="" style="width: 200px;" placeholder="Select an item first">
-
-  <button type="submit">Repair</button>
-</form>
-</td>
-</tr>
-<tr><td colspan="2">
-<p><a href="{{ url_for('map_view') }}">Decline and move on</a></p>
-</td></tr>
+    </td>
+  </tr>
+  <tr><td colspan="2">
+    <p><a href="{{ url_for('map_view') }}">Decline and move on</a></p>
+  </td></tr>
 </table>
-<footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
-  <p>
-    <a href="{{ url_for('terms') }}">Privacy & Terms of Use</a> |
-    <a href="{{ url_for('getting_started') }}">Getting Started</a> |
-    <a href="https://youtu.be/DTIb4VuoziA">Video Walkthrough</a> |
-    <a href="{{ url_for('logout') }}">Log Out</a> |
-    © 2025, Tim Faith <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank">CC BY-SA 4.0</a> |
-    {{ app_version }}
-  </p>
-</footer>
-</body>
-</html>
+
+
+<script>
+function requestQuote() {
+  const itemId = document.getElementById('item-select').value;
+
+  // Show "thinking" message
+    document.getElementById('blacksmith-thinking').style.display = 'block';
+    document.getElementById('blacksmith-response').innerHTML = '';  // Clear old response
+
+
+  fetch('/api/repair_quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item_id: itemId })
+  })
+  .then(res => res.json())
+  .then(data => {
+      if (data.error) {
+          alert(data.error);
+      } else {
+          document.getElementById('blacksmith-response').innerHTML = `
+              <p><strong>Blacksmith:</strong> ${data.message}</p>
+              <form method="POST" action="/blacksmith">
+                  <input type="hidden" name="item_id" value="${data.item_id}">
+                  <label for="bitcoin">Your Offer (bits):</label>
+                  <input type="number" name="bitcoin" required>
+                  <button type="submit">💰 Submit Offer</button>
+              </form>
+          `;
+      }
+  });
+}
+</script>
+
+
+{% endblock %}

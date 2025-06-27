@@ -352,45 +352,52 @@ def encounter_enemy():
 @combat_bp.route('/encounter_boss', methods=['GET'])
 def encounter_boss():
     squire_id = flask_session.get("squire_id")
+    quest_id = flask_session.get("quest_id")
     if not squire_id:
         return redirect(url_for("login"))
 
     db = db_session()
-    try:
-        # 1) Fetch squire’s position & level
-        x, y, level = (
-            db.query(
-                Squire.x_coordinate,
-                Squire.y_coordinate,
-                Squire.level
+
+    if quest_id == 14:
+        try:
+            # 1) Fetch squire’s position & level
+            x, y, level = (
+                db.query(
+                    Squire.x_coordinate,
+                    Squire.y_coordinate,
+                    Squire.level
+                )
+                .filter(Squire.id == squire_id)
+                .one()
             )
-            .filter(Squire.id == squire_id)
-            .one()
-        )
 
-        # 2) Fetch the boss by name pattern
-        boss = (
-            db.query(Enemy)
-              .filter(Enemy.enemy_name.ilike("%Lexiconis%"))
-              .first()
-        )
+            # 2) Fetch the boss by name pattern
+            boss = (
+                db.query(Enemy)
+                  .filter(Enemy.enemy_name.ilike("%Lexiconis%"))
+                  .first()
+            )
 
-        if boss:
-            # 3) Store JSON‑safe boss data in session
-            flask_session['boss'] = {
-                "id":           boss.id,
-                "name":         boss.enemy_name,
-                "description":  boss.description,
-                "weakness":     boss.weakness,
-                "gold_reward":  boss.gold_reward,
-                "xp_reward":    boss.xp_reward,
-                "max_hunger":   boss.max_hunger
-            }
+            if boss:
+                # 3) Store JSON‑safe boss data in session
+                flask_session['boss'] = {
+                    "id":           boss.id,
+                    "name":         boss.enemy_name,
+                    "description":  boss.description,
+                    "weakness":     boss.weakness,
+                    "gold_reward":  boss.gold_reward,
+                    "xp_reward":    boss.xp_reward,
+                    "max_hunger":   boss.max_hunger
+                }
 
-        return redirect(url_for('combat.boss_combat'))
+            return redirect(url_for('combat.boss_combat'))
 
-    finally:
-        db.close()
+        finally:
+            db.close()
+
+    if quest_id == 28:
+        return redirect(url_for('questions.answer_MC_question'))
+
 
 @combat_bp.route('/boss_combat', methods=['GET', 'POST'])
 def boss_combat():
@@ -398,6 +405,8 @@ def boss_combat():
     boss = flask_session.get('boss')
     squire_id = flask_session.get("squire_id")
     quest_id = flask_session.get("quest_id")
+
+    db = db_session()
 
     if not boss:
         logging.debug("Guess the boss is out to lunch: redirecting to map.")
@@ -419,12 +428,12 @@ def boss_combat():
 
     # initialize session variables for battle
     if flask_session.get("player_current_hunger") is None:
-        session["player_current_hunger"] = 0
+        flask_session["player_current_hunger"] = 0
     if flask_session.get("boss_current_hunger") is None:
-        session["boss_current_hunger"] = 0
+        flask_session["boss_current_hunger"] = 0
 
-    session["player_max_hunger"] = int(player_max_hunger)
-    session["boss_max_hunger"] = int(boss_max_hunger)
+    flask_session["player_max_hunger"] = int(player_max_hunger)
+    flask_session["boss_max_hunger"] = int(boss_max_hunger)
 
     return render_template('boss_combat.html', boss=boss)
 

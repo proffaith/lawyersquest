@@ -5,41 +5,6 @@ from sqlalchemy.dialects.mysql import insert
 
 import logging
 
-from utils.shared import get_squire_stats
-from utils.shared import check_quest_completion
-from utils.shared import complete_quest
-from utils.shared import get_random_riddle
-from utils.shared import check_riddle_answer
-from utils.shared import get_active_quests
-from utils.shared import chooseq
-from utils.shared import get_riddles_for_quest
-from utils.shared import get_inventory
-from utils.shared import visit_shop
-from utils.shared import consume_food
-from utils.shared import get_hunger_bar
-from utils.shared import check_for_treasure
-from utils.shared import open_treasure_chest
-from utils.shared import check_quest_progress
-from utils.shared import display_progress_bar
-from utils.shared import generate_word_length_hint
-from utils.shared import update_riddle_hints
-from utils.shared import display_travel_map
-from utils.shared import check_for_treasure_at_location
-from utils.shared import calculate_hit_chance
-from utils.shared import get_viewport_map
-from utils.shared import calculate_enemy_encounter_probability
-from utils.shared import update_work_for_combat
-from utils.shared import get_player_max_hunger
-from utils.shared import mod_enemy_hunger
-from utils.shared import calculate_riddle_reward
-from utils.shared import combat_mods
-from utils.shared import hunger_mods
-from utils.shared import degrade_gear
-from utils.shared import ishint
-from utils.shared import iswordcounthint
-from utils.shared import iswordlengthhint
-from utils.shared import flee_safely
-from utils.shared import calc_flee_safely
 
 # travel
 def log_travel_history(db_session, squire_id, x, y):

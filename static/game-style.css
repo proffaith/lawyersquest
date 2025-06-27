@@ -152,3 +152,35 @@ td {
     .map-button:hover {
       transform: scale(1.05);
     }
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1em;
+      margin-top: 1em;
+    }
+
+    .inventory-card {
+      background: #f4f4f4;
+      border: 1px solid #ccc;
+      padding: 1em;
+      border-radius: 8px;
+      min-height: 100px;
+    }
+
+    .category-toggle {
+      background-color: #dfeffd;
+      cursor: pointer;
+    }
+
+    .category-toggle:hover {
+      background-color: #cbe0ff;
+    }
+    #blacksmith-thinking p {
+      font-style: italic;
+      animation: fadeInOut 2s ease-in-out infinite;
+    }
+
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
