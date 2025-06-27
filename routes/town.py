@@ -251,6 +251,7 @@ def blacksmith():
             # last occurrence is the blacksmith’s actual counter
             new_counter = int(matches[-1])
             flask_session["blacksmith_minimum_price"] = new_counter
+            flask_session["blacksmith_offer"] = new_counter
         else:
             logging.warning("No counter-offer found; keeping previous minimum.")
 
