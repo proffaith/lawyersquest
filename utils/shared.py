@@ -1755,8 +1755,8 @@ def consume_food(squire_id: int) -> tuple[bool, str]:
         level = squire.level if squire else 1
 
         # 2) Define reduction chances
-        hunger_reduction = {1: 0, 2: 10, 3: 25, 4: 50, 5: 75}
-        avoid_chance = hunger_reduction.get(level, 0)
+
+        avoid_chance = min(level*3, 75)
 
         # 3) Random roll to skip consumption
         if random.randint(1, 100) <= avoid_chance:
