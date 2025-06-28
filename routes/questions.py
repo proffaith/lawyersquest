@@ -279,7 +279,7 @@ def answer_question():
             # 6) No question left?
             if not question_row:
                 flask_session["battle_summary"] = "No question available. You must fight!"
-                return redirect(url_for("combat.ajax_handle_combat"))
+                return redirect(url_for("combat.combat"))
 
             # 7) Store for validation and render
             flask_session["current_question"] = {
