@@ -45,7 +45,12 @@
           <td>
               <form id="combat-form" method="post">
                 <table border='none'>
+                  {% if session.battle_message %}
+                    <tr><td><p>{{ session.battle_message }} </td></tr>
+                  {% else %}
+
                   <tr><td><button type="submit" name="action" value="question">🧠 Answer the question</button></td></tr>
+                  {% endif %}
                   {% if enemy.has_weapon %}
                       <tr><td><button type="submit" name="action" value="fight">⚔️ Fight the enemy</button></td></tr>
                   {% else %}

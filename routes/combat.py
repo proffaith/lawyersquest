@@ -390,7 +390,7 @@ def encounter_boss():
                     "max_hunger":   boss.max_hunger
                 }
 
-            return redirect(url_for('combat.boss_combat'))
+            return redirect(url_for('questions.answer_MC_question'))
 
         finally:
             db.close()

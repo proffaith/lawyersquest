@@ -12,14 +12,14 @@
             <img src="/static/knight_fountain_pen.jpeg" width=100 height=100>
             <p>Your Hunger: <span id="player_current_hunger">{{ session.get("player_current_hunger") }}</span>/<span id="player_max_hunger">{{ session.get("player_max_hunger") }}</span></p>
             <progress id="player_hunger_progress" value="" max=""></progress>
-            <p id="player_message" class="battle-message"></p>
+            <p id="player_message" class="battle-message">{{ player_message }}</p>
         </div></td>
         <td><div id="enemy-hunger-container">
           {% if boss.name == 'Lexiconis' %} <img src="/static/lexiconis.jpeg" width=150 height=150> {% endif %}
 
             <p>{{ boss.name }}'s Hunger: <span id="boss_current_hunger">{{ session.get("boss_current_hunger") }}</span>/<span id="boss_max_hunger">{{ session.get("boss_max_hunger")}}</span></p>
             <progress id="enemy_hunger_progress" value="" max=""></progress>
-            <p id="enemy_message" class="battle-message"></p>
+            <p id="enemy_message" class="battle-message">{{ enemy_message }}</p>
         </div></td>
       </tr>
     </table>
@@ -68,6 +68,7 @@
     <script>
   document.addEventListener("DOMContentLoaded", () => {
     const combatForm = document.getElementById("combat-form");
+      if (!combatForm) return;
     let selectedAction = "";
 
     // Capture the clicked button's value.

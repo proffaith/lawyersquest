@@ -1397,7 +1397,7 @@ def complete_quest(squire_id: int, quest_id: int) -> tuple[bool, list[str]]:
     logging.debug(f"⚔️ complete_quest start: squire={squire_id}, quest={quest_id}")
     try:
         # 1) Check completion via ORM helper
-        if quest_id not in (28, 32) and not check_quest_completion(squire_id, quest_id):
+        if quest_id not in (14, 28, 32) and not check_quest_completion(squire_id, quest_id):
             logging.debug("🔎 Quest not yet complete (riddles remain). Exiting.")
             return False, ["🔎 You still have more riddles to solve in this quest!"]
 
