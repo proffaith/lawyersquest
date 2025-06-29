@@ -631,7 +631,8 @@ def check_riddle():
                 squire_id=squire_id,
                 question_id=riddle_id,
                 question_type='fill_in_blank',  # must match one of the ENUM values
-                answered_correctly=True
+                answered_correctly=True,
+                quest_id=quest_id
                 )
 
 
@@ -689,7 +690,8 @@ def check_riddle():
                 squire_id=squire_id,
                 question_id=riddle_id,
                 question_type='fill_in_blank',  # must match one of the ENUM values
-                answered_correctly=False
+                answered_correctly=False,
+                quest_id=quest_id
                 )
 
             try:
@@ -882,7 +884,8 @@ def check_treasure():
                 squire_id=squire_id,
                 question_id=riddle_id,
                 question_type='fill_in_blank',  # must match one of the ENUM values
-                answered_correctly=True
+                answered_correctly=True,
+                quest_id=quest_id
                 )
 
             try:
@@ -921,7 +924,8 @@ def check_treasure():
                 squire_id=squire_id,
                 question_id=riddle_id,
                 question_type='fill_in_blank',  # must match one of the ENUM values
-                answered_correctly=False
+                answered_correctly=False,
+                quest_id=quest_id
                 )
 
             try:
