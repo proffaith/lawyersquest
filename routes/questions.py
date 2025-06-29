@@ -84,7 +84,8 @@ def handle_true_false_question():
                     squire_id=squire_id,
                     question_id=0,
                     question_type='true_false',  # must match one of the ENUM values
-                    answered_correctly=False
+                    answered_correctly=False,
+                    quest_id=quest_id
                     )
                 try:
                     session.add(new_attempt)
@@ -184,7 +185,8 @@ def handle_true_false_question():
             squire_id=squire_id,
             question_id=tq.id,
             question_type='true_false',  # must match one of the ENUM values
-            answered_correctly=True
+            answered_correctly=True,
+            quest_id=quest_id
             )
 
         try:
@@ -375,6 +377,7 @@ def check_true_false_question():
     """Validates the player's True/False answer."""
     squire_id    = flask_session.get("squire_id")
     question_id  = request.form.get("question_id")
+    quest_id  = flask_session.get("quest_id")
     user_answer  = request.form.get("answer", "").strip().upper()
     enemy        = flask_session.get("enemy", {})
     pending_job  = flask_session.pop("pending_job", None)
@@ -409,7 +412,8 @@ def check_true_false_question():
                 squire_id=squire_id,
                 question_id=q.id,
                 question_type='true_false',  # must match one of the ENUM values
-                answered_correctly=True
+                answered_correctly=True,
+                quest_id=quest_id
                 )
 
 
@@ -522,7 +526,8 @@ def check_true_false_question():
                 squire_id=squire_id,
                 question_id=question_id_int,
                 question_type='true_false',  # must match one of the ENUM values
-                answered_correctly=False
+                answered_correctly=False,
+                quest_id=quest_id
                 )
             try:
                 db.add(new_attempt)
@@ -711,7 +716,8 @@ def check_MC_question():
                     squire_id=squire_id,
                     question_id=mcq.id,
                     question_type='multiple_choice',  # must match one of the ENUM values
-                    answered_correctly=True
+                    answered_correctly=True,
+                    quest_id=quest_id
                     )
                 sq = (
                     db.query(SquireQuestion)
@@ -755,7 +761,8 @@ def check_MC_question():
                     squire_id=squire_id,
                     question_id=mcq.id,
                     question_type='multiple_choice',  # must match one of the ENUM values
-                    answered_correctly=True
+                    answered_correctly=True,
+                    quest_id=quest_id
                     )
                 sq = (
                     db.query(SquireQuestion)
@@ -806,7 +813,8 @@ def check_MC_question():
                     squire_id=squire_id,
                     question_id=mcq.id,
                     question_type='multiple_choice',  # must match one of the ENUM values
-                    answered_correctly=False
+                    answered_correctly=False,
+                    quest_id=quest_id
                     )
 
                 try:
@@ -947,6 +955,7 @@ def tourney_results():
 def check_MC_question_enemy():
     """Validates the player's True/False answer."""
     squire_id    = flask_session.get("squire_id")
+    quest_id = flask_session.get("quest_id")
     enemy        = flask_session.get("enemy", {})
     pending_job  = flask_session.pop("pending_job", None)
     user_answer  = request.form.get("answer", "").strip().upper()
@@ -978,7 +987,8 @@ def check_MC_question_enemy():
                     squire_id=squire_id,
                     question_id=-1,
                     question_type='api_generated',  # must match one of the ENUM values
-                    answered_correctly=True
+                    answered_correctly=True,
+                    quest_id=quest_id
                     )
 
 
@@ -1028,7 +1038,8 @@ def check_MC_question_enemy():
                     squire_id=squire_id,
                     question_id=-1,
                     question_type='api_generated',  # must match one of the ENUM values
-                    answered_correctly=True
+                    answered_correctly=False,
+                    quest_id=quest_id
                     )
 
                 squire = db.query(Squire).get(squire_id)
@@ -1077,7 +1088,8 @@ def check_MC_question_enemy():
                 squire_id=squire_id,
                 question_id=mcq.id,
                 question_type='multiple_choice',  # must match one of the ENUM values
-                answered_correctly=True
+                answered_correctly=True,
+                quest_id=quest_id
                 )
 
             # Upsert SquireQuestion
@@ -1184,7 +1196,8 @@ def check_MC_question_enemy():
                 squire_id=squire_id,
                 question_id=mcq.id,
                 question_type='multiple_choice',  # must match one of the ENUM values
-                answered_correctly=False
+                answered_correctly=False,
+                quest_id=quest_id
                 )
 
             # Damage gear and penalize XP

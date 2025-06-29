@@ -474,8 +474,9 @@ class SquireQuestionAttempt(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     squire_id = Column(Integer, ForeignKey('squires.id'), nullable=False)
     question_id = Column(Integer)
-    question_type      = Column(Enum('true_false','riddle','multiple_choice'), nullable=False)
+    question_type      = Column(Enum('true_false','fill_in_blank','multiple_choice','api_generated'), nullable=False)
     answered_correctly = Column(Boolean, default=False)
+    quest_id = Column(Integer)
 
 
 # ────────────── Initialize DB ──────────────
