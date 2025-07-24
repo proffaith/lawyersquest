@@ -168,7 +168,7 @@ if __name__ == '__main__':
 
 @app.context_processor
 def inject_version():
-    return {"app_version": flask_session.get("ver", "0.3.6")}
+    return {"app_version": flask_session.get("ver", "0.3.7")}
 
 @app.teardown_appcontext
 def shutdown_session(exc=None):
