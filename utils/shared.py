@@ -279,8 +279,76 @@ def generate_river_path(start_x, start_y, length, bendiness=0.6, restricted=set(
 
     return river
 
+def generate_dungeon(squire_id, quest_id=39, size=10, path_length=50):
+    """Creates a randomized dungeon for the given squire."""
+    start = (0, 0)
+    path = [start]
+    visited = set(path)
 
+    while len(path) < path_length:
+        x, y = path[-1]
+        candidates = [(x+1, y), (x-1, y), (x, y+1), (x, y-1)]
+        random.shuffle(candidates)
+        for nx, ny in candidates:
+            if (nx, ny) not in visited and abs(nx) < size and abs(ny) < size:
+                path.append((nx, ny))
+                visited.add((nx, ny))
+                break
 
+    boss_room = path[-1]
+    content_rooms = path[:-1]
+    room_types = ['true_false', 'riddle', 'mcq', 'treasure', 'empty']
+    weights = [0.3, 0.2, 0.3, 0.1, 0.1]
+
+    room_data = []
+    for x, y in content_rooms:
+        room_type = random.choices(room_types, weights)[0]
+        room_data.append((x, y, room_type))
+
+    # Add the boss room at the end of the path
+    bx, by = boss_room
+    room_data.append((bx, by, 'boss'))
+
+    return room_data
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~ Update Question Data
+def update_squire_question_attempt(db, squire_id, question_id, question_type, answered_correctly, quest_id):
+
+    new_attempt = SquireQuestionAttempt(
+        squire_id=squire_id,
+        question_id=question_id,
+        question_type=question_type,  # must match one of the ENUM values
+        answered_correctly=answered_correctly,
+        quest_id=quest_id
+        )
+
+    try:
+        db.add(new_attempt)
+        db.commit()
+        return True
+    except Exception as e:
+        logging.error(f"Error committing response to {question_type}: {e}")
+        return False
+
+def update_squire_question(db, squire_id, question_id, question_type, answered_correctly, is_api=False):
+
+    sq = SquireQuestion(
+        squire_id=squire_id,
+        question_id=question_id,
+        question_type=question_type,
+        answered_correctly=answered_correctly,
+        is_api=is_api
+    )
+
+    try:
+        db.add(sq)
+        db.commit()
+        return True
+    except Exception as e:
+        logging.error(f"Error committing response to {question_type}: {e}")
+        return False
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~ Update Team Messaging Toasts
 def add_team_message(team_id: int, message: str) -> TeamMessage:
     """
     Persist a new team message and flush it to the database.

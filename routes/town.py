@@ -283,7 +283,10 @@ def wandering_trader():
         agreed_price = int(request.form.get('agreed_price') or 0)
         shop_item = db.query(ShopItem).get(item_id)
 
-        if agreed_price <= 0 or agreed_price > team.gold:
+        if agreed_price <= 0:
+            agreed_price = int(request.form.get(f'price_{item_id}', shop_item.price))
+
+        if agreed_price > team.gold:
             flash("You can't afford that!", "error")
             return redirect(url_for('town.wandering_trader'))
 

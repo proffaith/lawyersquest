@@ -478,6 +478,19 @@ class SquireQuestionAttempt(Base):
     answered_correctly = Column(Boolean, default=False)
     quest_id = Column(Integer)
 
+class DungeonRooms(Base):
+    __tablename__ = 'dungeon_rooms'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    squire_id = Column(Integer, ForeignKey('squires.id'), nullable=False)
+    quest_id = Column(Integer, ForeignKey('quests.id'), nullable=False)
+    x = Column(Integer)
+    y = Column(Integer)
+    room_type = Column(Enum('empty', 'true_false', 'riddle', 'mcq', 'treasure', 'boss'), nullable=False)
+    visited = Column(Boolean, default=False)
+    locked = Column(Boolean, default=False)
+    allowed_directions = Column(String(10))
+    answered = Column(Boolean, default=False)
 
 # ────────────── Initialize DB ──────────────
 

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Dungeon Riddle Challenge' }}{% endblock %}
+
+{% block content %}
+    <div class="riddle-container">
+        <h1>Solve the Riddle!</h1>
+        <table>
+            <tr><td>{{ riddle.riddle_text }}</td></tr>
+
+            {% if show_hint == True %}
+            <tr><td>Pssst: a hint ( {{ riddle.hint }} )</td></tr>
+            {% endif %}
+
+            {% if show_word_count == True %}
+            <tr><td>Number of words in this riddle: ( {{ riddle.word_count }} )</td></tr>
+            {% endif %}
+
+            {% if show_word_length == True %}
+            <tr><td>Length of each word in this riddle: ( {{ riddle.word_length_hint }} )</td></tr>
+            {% endif %}
+            <tr><td>
+                <form id="riddle-form" method="POST" action="{{ url_for('map.check_riddle') }}">
+                    <input type="text" id="riddle-answer" name="answer" placeholder="Your answer..." required>
+                    <input type="hidden" name="source" value="dungeon">
+                    <button type="submit" class="submit-btn">Submit Answer</button>
+                </form>
+                <p id="result-message" class="message"></p>
+            </td></tr>
+        </table>
+    </div>
+
+{% endblock %}

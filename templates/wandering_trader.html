@@ -109,6 +109,7 @@ function acceptOffer() {
         <table>
         {% for item in items %}
           <tr><td><input type="radio" name="item_id" value="{{ item.id }}" required></td>
+            <input type="hidden" name="price_{{ item.id }}" value="{{ item.price }}">
             <td><strong>{{ item.item_name }}</strong> - {{ item.price }} gold</td>
             <td><em>{{ item.description }}</em></td>
             <td>Uses: {{ item.uses }}</td>

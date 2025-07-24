@@ -1,7 +1,7 @@
 # Map-related routes
 from flask import Blueprint, session as flask_session, request, jsonify, redirect, url_for, render_template, flash
 
-from db import Squire, Course, Team, engine, db_session, Team, TravelHistory, Quest, SquireQuestion, SquireRiddleProgress, Riddle, Enemy, Inventory, WizardItem, Job, MapFeature, MultipleChoiceQuestion, TrueFalseQuestion, ShopItem, SquireQuestStatus, TeamMessage, TreasureChest, XpThreshold, ChestHint, SquireQuestionAttempt
+from db import Squire, Course, Team, engine, db_session, Team, TravelHistory, Quest, SquireQuestion, SquireRiddleProgress, Riddle, Enemy, Inventory, WizardItem, Job, MapFeature, MultipleChoiceQuestion, TrueFalseQuestion, ShopItem, SquireQuestStatus, TeamMessage, TreasureChest, XpThreshold, ChestHint, SquireQuestionAttempt, DungeonRooms
 from sqlalchemy import create_engine, func, and_
 from services.progress import update_player_position
 import logging
@@ -44,241 +44,55 @@ from utils.shared import flee_safely
 from utils.shared import calc_flee_safely
 from utils.shared import add_team_message
 
+from utils.shared import generate_dungeon
+from utils.shared import update_squire_question_attempt
+from utils.shared import update_squire_question
 
 
 map_bp = Blueprint('map', __name__)
-""" 0.3.4 route
-@map_bp.route('/ajax_move', methods=['POST'])
-def ajax_move():
-    event = None
-    message = ""
-    x = y = tm = None
 
-    squire_id = flask_session.get("squire_id")
-    quest_id = flask_session.get("quest_id")
-    squire_quest_id = flask_session.get("squire_quest_id")
-    db=db_session()
-
-    if not squire_id:
-        return jsonify({"error": "Session expired. Please log in again."}), 400
-
-    direction = request.json.get("direction")  # Get movement direction from AJAX request
-
-    level = db.query(Squire.level).filter(Squire.id == squire_id).scalar()
-    flask_session["level"] = level
-
-    try:
-        # **Check if movement is valid (including food requirement)**
-        if direction in ("N","S","E","W"):
-            ok, food_message = consume_food(squire_id)
-            if not ok:
-                game_map = get_viewport_map(db, squire_id, quest_id,  15)
-                cur_x, cur_y = (
-                db.query(Squire.x_coordinate, Squire.y_coordinate)
-                  .filter(Squire.id == squire_id)
-                  .one()
-                )
-                return jsonify({
-                    "map": game_map,
-                    "position": (cur_x, cur_y),
-                    "message": food_message,      # “You have no food!”
-                    "level": level,
-                })
-
-            # 2) they had food → move exactly once
-            x, y, tm = update_player_position(db, squire_id, direction)
-            if food_message:
-                message = f"{food_message} \n {tm}"
-
-            p = calculate_enemy_encounter_probability(squire_id, quest_id, x,y,  squire_quest_id)
-            logging.debug(f"Combat Probability: {p}")
-
-            if check_quest_completion(squire_id, quest_id):
-                flask_session["quest_completed"] = True
-                completed, messages = complete_quest(squire_id, quest_id)
-
-                if completed:
-                    for msg in messages:
-                        flash(msg, "success")  # or use "quest" if you're styling categories
-
-                    return jsonify({"redirect": url_for("quest_select"),
-                        "position": (x,y),
-                        "message": message
-                        })
-
-            if quest_id == 14 and x == 40 and y == 40:
-                logging.debug("🏰 Boss fight triggered! Player reached (40,40) during quest 14.")
-                # Optionally call a function to set up boss fight state:
-                #initiate_boss_fight(squire_id, quest_id)  # define this function as needed
-                event = "q14bossfight"
-
-                return jsonify({
-                    "boss_fight": True,
-                    "message": "You have reached the stronghold! Prepare to face the boss!",
-                    "position": (x,y),
-                    "event": event
-                })
-
-            # **🎁 Treasure Check**
-            chest = check_for_treasure_at_location(squire_id, x, y,  quest_id, squire_quest_id)
-            if chest:
-                logging.debug(f"Found a treasure chest at {x},{y}.")
-                flask_session["current_treasure_id"] = chest.id  # Store chest in session
-                event = "treasure"
-                # before you db.add(...)
-                existing = db.query(ChestHint).filter_by(
-                    squire_quest_id=squire_quest_id,
-                    chest_x=x,
-                    chest_y=y
-                ).first()
-
-                if not existing:
-                    hint = ChestHint(
-                        squire_quest_id=squire_quest_id,
-                        chest_x=x,
-                        chest_y=y
-                    )
-                    db.add(hint)
-                    db.commit()
-                else:
-                    # already got that hint—do nothing (or log if you care)
-                    logging.debug("👍 ChestHint already recorded for that location.")
-
-            else:
-
-                # Step 1: Build a list of eligible events
-                eligible_events = []
-
-                # 🏞️ NPC Encounter
-                if random.random() < 0.02:
-                    eligible_events.append("npc")
-
-                if random.random() < 0.02:
-                    eligible_events.append("npc_trader")
-
-                # 🧙‍♂️ Riddle Encounter
-                if random.random() < 0.02:
-                    eligible_events.append("riddle")
-
-                # ⚔️ Combat
-                if random.random() < p:
-                    eligible_events.append("enemy")
-
-                if random.random() < 0.03 and level > 3:
-                    eligible_events.append("blacksmith")
-
-                if eligible_events:
-                    event = random.choice(eligible_events)
+def get_allowed_directions(coord, all_coords):
+    x, y = coord
+    directions = ""
+    if (x, y - 1) in all_coords:
+        directions += "N"
+    if (x, y + 1) in all_coords:
+        directions += "S"
+    if (x + 1, y) in all_coords:
+        directions += "E"
+    if (x - 1, y) in all_coords:
+        directions += "W"
+    return directions
 
 
-                if event == "npc":
-                    coords = (
-                        db.query(
-                            TreasureChest.x_coordinate,
-                            TreasureChest.y_coordinate
-                        )
-                        .join(
-                            Riddle,
-                            TreasureChest.riddle_id == Riddle.id
-                        )
-                        .outerjoin(
-                            SquireRiddleProgress,
-                            and_(
-                                SquireRiddleProgress.riddle_id == Riddle.id,
-                                SquireRiddleProgress.squire_id   == squire_id
-                            )
-                        )
-                        .filter(
-                            SquireRiddleProgress.riddle_id  == None,           # not yet answered
-                            Riddle.quest_id                  == quest_id,
-                            TreasureChest.is_opened          == False,
-                            TreasureChest.squire_quest_id    == squire_quest_id
-                        )
-                        .order_by(func.rand())  # MySQL’s RAND()
-                        .limit(1)
-                        .first()
-                    )
+def insert_dungeon_to_db(room_data, squire_id, quest_id=39):
+    """
+    room_data is a list of tuples: (x, y, room_type)
+    """
+    coords = [(x, y) for x, y, _ in room_data]  # For direction checking
+    db = db_session()
 
-                    if coords:
-                        chest_x, chest_y = coords
-                        message = f"🌿 A wandering trader appears: 'There's a chest at ({chest_x},{chest_y}). I tried to open it but couldn't figure out the riddle. Good luck!'"
-                        flask_session['npc_message'] = message
-                        flask_session.modified = True
-                        logging.debug(f"NPC Message Set: {message}")  # Debugging
-                        db.add(ChestHint(
-                            squire_quest_id = squire_quest_id,
-                            chest_x = chest_x,
-                            chest_y = chest_y
-                        ))
-                        db.commit()
+    for x, y, room_type in room_data:
+        allowed_dirs = get_allowed_directions((x, y), coords)
+        db.add(DungeonRooms(
+            squire_id=squire_id,
+            quest_id=quest_id,
+            x=x,
+            y=y,
+            room_type=room_type,
+            allowed_directions=allowed_dirs
+        ))
+    db.commit()
 
-                    event = "npc"
+def dungeon_exists(squire_id: int, quest_id: int = 39) -> bool:
+    db = db_session()
 
-                elif event == "riddle":
-                    pass  # Your riddle logic
-
-                elif event == "enemy":
-                    pass  # Your combat setup logic
-
-                elif event == "blacksmith":
-                    return jsonify({"redirect": url_for("town.blacksmith"), "message": message})
-
-                elif event == "npc_trader":
-                    return jsonify({"redirect": url_for("town.wandering_trader"), "message": message})
+    return db.query(DungeonRooms).filter_by(
+        squire_id=squire_id,
+        quest_id=quest_id
+    ).first() is not None
 
 
-        # food check, enemy check, etc.
-        else:
-            x, y = db.query(Squire.x_coordinate, Squire.y_coordinate).filter_by(
-                id=squire_id).one()  # no move
-            message = f"You remain where you are, waiting for Godot."
-
-            if direction == "V" or (x == 0 and y == 0):
-                # 1) Reset in the database
-                db.query(Squire) \
-                  .filter(Squire.id == squire_id) \
-                  .update({
-                      Squire.x_coordinate: 0,
-                      Squire.y_coordinate: 0
-                  })
-                db.commit()
-
-                # 2) Update your local vars
-                x, y = 0, 0
-
-                # 3) Tell the client both to go to town *and* where we are now
-                return jsonify({
-                    "redirect": url_for("town.visit_town"),
-                    "position": (x,y),
-                    "message": message
-                })
-            if direction == "I":
-                event = "inventory"
-                return jsonify({"redirect": url_for("town.inventory"), "message": message})
-
-        # ✅ Generate Updated Map
-        #game_map = display_travel_map(squire_id, quest_id)
-        game_map = get_viewport_map(db, squire_id, quest_id,  15)
-
-        if not game_map:
-            logging.error("❌ ERROR: display_travel_map() returned None!")
-            return jsonify({"error": "Failed to load the updated map."}), 500
-
-
-        # **Build JSON Response**
-        response_data = {
-            "map": game_map,
-            "message": message,
-            "position": (x,y),
-            "event": event,
-            "level": level  # Pass event type
-        }
-
-        return jsonify(response_data)
-    except Exception as e:
-        logging.exception(f"Error in /ajax_move: {e}")
-        return jsonify({"error": "Something horrible happened"}), 500
-"""
 @map_bp.route('/ajax_move', methods=['POST'])
 def ajax_move():
     """Handle player movement with proper database transaction management."""
@@ -378,6 +192,21 @@ def ajax_move():
                         "event": event
                     })
 
+                if quest_id == 39 and x == -25 and y == 50:
+                    logging.debug("Welcome to the FINAL Dungeon, Squire!")
+                    event = "dungeon"
+                    if not dungeon_exists(squire_id=squire_id, quest_id=39):
+                        room_data = generate_dungeon(squire_id=squire_id)
+                        insert_dungeon_to_db(room_data, squire_id)
+
+                    flask_session["in_dungeon"] = True
+                    flask_session["dungeon_pos"] = (0, 0)  # Start of dungeon
+                    return jsonify({
+                        "boss_fight": True,
+                        "message": "You have reached the Dungeon!",
+                        "event": event
+                        })
+
                 if x == 0 and y == 0:
                     # Redirect to town
                     return jsonify({
@@ -418,7 +247,7 @@ def ajax_move():
                     if random.random() < 0.02:
                         eligible_events.append("npc")
 
-                    if random.random() < 0.02:
+                    if random.random() < 0.40:
                         eligible_events.append("npc_trader")
 
                     # 🧙‍♂️ Riddle Encounter
@@ -610,6 +439,7 @@ def check_riddle():
     squire_id    = flask_session.get("squire_id")
     quest_id     = flask_session.get("quest_id")
     current      = flask_session.get("current_riddle")
+    source = request.form.get("source")
 
     logging.debug(f"Session contents: {flask_session}")
     logging.debug(f"Current riddle in session: {current}")
@@ -626,15 +456,7 @@ def check_riddle():
     try:
         if user_answer == correct_answer:
 
-
-            new_attempt = SquireQuestionAttempt(
-                squire_id=squire_id,
-                question_id=riddle_id,
-                question_type='fill_in_blank',  # must match one of the ENUM values
-                answered_correctly=True,
-                quest_id=quest_id
-                )
-
+            new_attempt = update_squire_question_attempt(db, squire_id, riddle_id, 'fill_in_blank', True, quest_id)
 
             # 1) Record in squire_riddle_progress
             progress = SquireRiddleProgress(
@@ -656,18 +478,12 @@ def check_riddle():
                   .one_or_none()
             )
             if not sq:
-                sq = SquireQuestion(
-                    squire_id=squire_id,
-                    question_id=riddle_id,
-                    question_type='riddle',
-                    answered_correctly=True
-                )
-                db.add(sq)
+                update_squire_question(db, squire_id, riddle_id, 'riddle', answered_correctly)
             else:
                 sq.answered_correctly = True
 
             try:
-                db.add(new_attempt)
+
                 db.commit()
             except Exception as e:
                 logging.error(f"Error committing for FITB question {e}")
@@ -678,27 +494,31 @@ def check_riddle():
             # 4) Notify the team
             toast = f"{flask_session['squire_name']} solved a riddle and received {special_item}."
             add_team_message(flask_session['team_id'], toast)
-            db.commit()
+            try:
+
+                db.commit()
+            except Exception as e:
+                logging.error(f"Error committing for FITB question {e}")
 
             flask_session.pop("current_riddle", None)
+            if source == "dungeon":
+                flask_session["combat_result"] = (
+                    f"✅ Correct! A {special_item} appears in your inventory."
+                )
+                return redirect(url_for("dungeon.dungeon_map"))
+
             return jsonify(
                 success=True,
                 message=f"🎉 Correct! The wizard nods in approval and grants you {special_item}"
             )
         else:
-            new_attempt = SquireQuestionAttempt(
-                squire_id=squire_id,
-                question_id=riddle_id,
-                question_type='fill_in_blank',  # must match one of the ENUM values
-                answered_correctly=False,
-                quest_id=quest_id
-                )
+            new_attempt = update_squire_question_attempt(db, squire_id, riddle_id, 'fill_in_blank', False, quest_id)
 
-            try:
-                db.add(new_attempt)
-                db.commit()
-            except Exception as e:
-                logging.error(f"Error committing for FITB question {e}")
+            if source == "dungeon":
+                flask_session["combat_result"] = (
+                    f"❌ Incorrect!"
+                )
+                return redirect(url_for("dungeon.dungeon_map"))
 
             return jsonify(success=False, message="❌ Incorrect! Try again.")
 

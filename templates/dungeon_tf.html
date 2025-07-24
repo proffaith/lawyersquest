@@ -4,10 +4,12 @@
 {% block content %}
 
     <h1>🤔 True or False</h1>
+    <p>You're in room {{ current_pos }}</p>
     <table width=450><tr><td>{{ question.question }}</td></tr></table>
 
     <form action="{{ url_for('questions.check_true_false_question') }}" method="post">
         <input type="hidden" name="question_id" value="{{ question.id }}">
+        <input type="hidden" name="source" value="dungeon">
         <label><input type="radio" name="answer" value="T"> True</label>
         <label><input type="radio" name="answer" value="F"> False</label>
         <button type="submit">Submit Answer</button>

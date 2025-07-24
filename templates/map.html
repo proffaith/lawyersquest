@@ -129,9 +129,12 @@
                 setTimeout(() => {
                     window.location.href = "/encounter_boss";
                 }, 500);
+            } else if (response.event === "dungeon") {
+                setTimeout(() => {
+                    window.location.href = "/dungeon";
+                }, 500);
             }
 
-            
         },
         error: function(xhr) {
             console.error("❌ Error updating movement:", xhr.responseJSON);

@@ -21,6 +21,7 @@ from routes.combat import combat_bp
 from routes.map import map_bp
 from routes.questions import questions_bp
 from routes.town import town_bp
+from routes.dungeon import dungeon_bp
 
 from utils.filters import chance_image
 
@@ -108,6 +109,7 @@ app.register_blueprint(combat_bp)
 app.register_blueprint(map_bp)
 app.register_blueprint(questions_bp)
 app.register_blueprint(town_bp)
+app.register_blueprint(dungeon_bp)
 
 # Database connection function
 def get_db_connection():

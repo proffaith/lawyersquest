@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}{{ '🕸️ Dungeon' }}{% endblock %}
+
+{% block content %}
+
+<h2>🕸️ Dungeon Room: {{ current_room.room_type|capitalize }}</h2>
+<p>You're in room {{ current_pos }}</p>
+
+<h2>🧭 Dungeon Map</h2>
+<style>
+    .dungeon-grid { display: grid; text-align: center; grid-template-columns: repeat(9, 40px); gap: 2px; }
+    .room { width: 40px; height: 40px; text-align: center; line-height: 40px; border: 1px solid #444; }
+    .visited { background-color: #cfc; }
+    .current { background-color: #4af; font-weight: bold; }
+    .unknown { background-color: #333; color: #999; }
+</style>
+
+{% if combat_result  %}
+
+<div style="display: flex; justify-content: center; align-items: center; margin-top: 20px;">
+  <h3>{{ combat_result }}</h3>
+</div>
+
+{% endif %}
+
+<div style="display: flex; justify-content: center; align-items: center; margin-top: 20px;">
+
+  <div class="dungeon-grid">
+      {% for dy in range(-4, 5) %}  {# top to bottom #}
+          {% for dx in range(-4, 5) %}  {# left to right #}
+              {% set x = current_pos[0] + dx %}
+              {% set y = current_pos[1] + dy %}
+              {% set room = rooms.get((x, y)) %}
+              <div class="room
+                          {% if room %}
+                              {% if (x, y) == current_pos %} current
+                              {% elif room.visited %} visited
+                              {% else %} unknown
+                              {% endif %}
+                          {% else %} unknown
+                          {% endif %}">
+                  {% if (x, y) == current_pos %}
+                      📍
+                  {% elif room and room.visited %}
+                      ✅
+                  {% else %}
+                      ❓
+                  {% endif %}
+              </div>
+          {% endfor %}
+      {% endfor %}
+  </div>
+</div>
+
+
+<table class="dungeon-move-table">
+    <tr>
+        <td></td>
+        <td>
+            {% if 'N' in current_room.allowed_directions %}
+            <form method="post" action="{{ url_for('dungeon.move_in_dungeon', direction='N') }}">
+                <button type="submit" class="move-button">⬆️ North</button>
+            </form>
+            {% else %}
+            <button class="move-button invisible">⬆️ North</button>
+            {% endif %}
+        </td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>
+            {% if 'W' in current_room.allowed_directions %}
+            <form method="post" action="{{ url_for('dungeon.move_in_dungeon', direction='W') }}">
+                <button type="submit" class="move-button">⬅️ West</button>
+            </form>
+            {% else %}
+            <button class="move-button invisible">⬅️ West</button>
+            {% endif %}
+        </td>
+        <td style="font-weight: bold; font-size: 20px;">📍</td>
+        <td>
+            {% if 'E' in current_room.allowed_directions %}
+            <form method="post" action="{{ url_for('dungeon.move_in_dungeon', direction='E') }}">
+                <button type="submit" class="move-button">East ➡️</button>
+            </form>
+            {% else %}
+            <button class="move-button invisible">East ➡️</button>
+            {% endif %}
+        </td>
+    </tr>
+    <tr>
+        <td></td>
+        <td>
+            {% if 'S' in current_room.allowed_directions %}
+            <form method="post" action="{{ url_for('dungeon.move_in_dungeon', direction='S') }}">
+                <button type="submit" class="move-button">⬇️ South</button>
+            </form>
+            {% else %}
+            <button class="move-button invisible">⬇️ South</button>
+            {% endif %}
+        </td>
+        <td></td>
+    </tr>
+</table>
+
+
+{% endblock %}
