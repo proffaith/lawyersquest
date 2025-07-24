@@ -247,7 +247,7 @@ def ajax_move():
                     if random.random() < 0.02:
                         eligible_events.append("npc")
 
-                    if random.random() < 0.40:
+                    if random.random() < 0.03:
                         eligible_events.append("npc_trader")
 
                     # 🧙‍♂️ Riddle Encounter
