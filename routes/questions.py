@@ -393,19 +393,22 @@ def check_true_false_question():
         return redirect(url_for("combat_results"))
 
     db = db_session()
-    q = db.query(TrueFalseQuestion).get(int(question_id))
-    question_id_int = int(question_id)
-    correct_int = 1 if q.correct_answer else 0
-    hint_text = q.hint or ""  # capture early
 
     try:
-        # 1) Load question
-
+        # 1) Load question and immediately capture all needed data
+        q = db.query(TrueFalseQuestion).get(int(question_id))
         if not q:
             flask_session["battle_summary"] = "Error: Question not found."
             return redirect(url_for("combat_results"))
 
-        user_int    = 1 if user_answer == "T" else 0
+        # CAPTURE ALL DATA IMMEDIATELY to avoid detached instance errors
+        question_id_int = int(question_id)
+        correct_answer = q.correct_answer  # Store the boolean value
+        correct_int = 1 if correct_answer else 0
+        hint_text = q.hint or ""  # Store the hint text
+        question_db_id = q.id  # Store the database ID
+
+        user_int = 1 if user_answer == "T" else 0
 
         logging.debug(f"TF Check: squire={squire_id}, qid={question_id}, "
                       f"user={user_int}, correct={correct_int}")
@@ -413,12 +416,12 @@ def check_true_false_question():
         # 2) Record as answered correctly if matches
         if user_int == correct_int:
 
-            new_attempt = update_squire_question_attempt(db, squire_id, q.id, 'true_false', True, quest_id)
+            new_attempt = update_squire_question_attempt(db, squire_id, question_db_id, 'true_false', True, quest_id)
             sq = (
                 db.query(SquireQuestion)
                   .filter_by(
                       squire_id=squire_id,
-                      question_id=q.id,
+                      question_id=question_db_id,
                       question_type='true_false'
                   )
                   .one_or_none()
@@ -428,8 +431,6 @@ def check_true_false_question():
                 new_question = update_squire_question(db, squire_id, question_id_int, 'true_false', True)
             else:
                 sq.answered_correctly = True
-
-
 
             # 3a) Pending job payout
             if pending_job:
@@ -490,16 +491,13 @@ def check_true_false_question():
             )
             flask_session["success"] = True
             if flask_session.get("leveled_up"):
-                #return jsonify({"redirect": url_for("level_up")})
                 return redirect(url_for("level_up"))
 
         else:
-            # 4) Incorrect answer handling
-            hint = hint_text  # from earlier capture
-
+            # 4) Incorrect answer handling - use captured hint_text
             if pending_job:
                 flask_session["job_message"] = (
-                    f"❌ Incorrect! You failed the task and earned nothing but this hint: {hint}."
+                    f"❌ Incorrect! You failed the task and earned nothing but this hint: {hint_text}."
                 )
                 return redirect(url_for("town.visit_town"))
 
@@ -515,18 +513,18 @@ def check_true_false_question():
             try:
                 db.commit()
             except Exception as e:
-                logging.error(f"Error committing  for M/C question {e}")
+                logging.error(f"Error committing for T/F question {e}")
 
-            new_attempt = update_squire_question_attempt(db, squire_id, q.id, 'true_false', False, quest_id)
+            new_attempt = update_squire_question_attempt(db, squire_id, question_db_id, 'true_false', False, quest_id)
 
             base_message = (
                 f"❌ Incorrect! You are defeated by {enemy.get('name')} and lose some experience points!\n"
                 if enemy
                 else "❌ Wrong answer: you lose some experience points!\n"
             )
-            hint_text = f"{hint}" if hint else ""
-            flask_session["combat_result"] = base_message + hint_text
-
+            # Use the captured hint_text directly
+            full_message = base_message + (hint_text if hint_text else "")
+            flask_session["combat_result"] = full_message
             flask_session["success"] = False
 
         # 5) Show results
@@ -538,6 +536,7 @@ def check_true_false_question():
             success=flask_session.pop("success", None),
             combat_result=flask_session.pop("combat_result", "")
         )
+
     except Exception as e:
         logging.error(f"General error in check_true_false_question: {e}")
         flask_session["battle_summary"] = f"Error: {e}."
@@ -545,7 +544,7 @@ def check_true_false_question():
             "combat_results.html",
             success=flask_session.pop("success", None),
             combat_result=flask_session.pop("combat_result", "")
-            )
+        )
 
     finally:
         db.close()

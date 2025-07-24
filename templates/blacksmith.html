@@ -1,124 +1,149 @@
 {% extends 'base.html' %}
-{% block title %}{{ '🔨 Roaming Blacksmith 🔨' }}{% endblock %}
+{% block title %}🔨 Roaming Blacksmith 🔨{% endblock %}
 
 {% block content %}
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const btn   = document.getElementById('accept_button');
-    if (!btn) return;
-
-    // 1) enable the button now that we know there's an offer
-    btn.disabled = false;
-
-    // 2) when clicked, shove the offer into the bitcoin field and submit
-    btn.addEventListener('click', () => {
-      const offer = btn.getAttribute('data-offer');
-      const form  = btn.closest('form');
-      form.elements['bitcoin'].value = offer;
-      form.submit();
-    });
-  });
-</script>
-
-
 <h2>🔨 Roaming Blacksmith 🔨</h2>
 
 <table>
   <tr>
-    <td><img src="/static/blacksmith.jpg" width=150 height=150>
-    </td>
-    <td><p>You encounter a Roaming Blacksmith that can repair an item in your inventory. You have <b>{{ team.gold }} ₿.</b> Which item will you repair?</p>
+    <td><img src="/static/blacksmith.jpg" width="150" height="150"></td>
+    <td>
+      <p>
+        You encounter a Roaming Blacksmith who can repair an item in your inventory.
+        You have <b>{{ team.gold }} ₿.</b> Which item will you repair?
+      </p>
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           <div class="flashes">
             {% for category, message in messages %}
-              <b> <class="flash {{ category }}">{{ message }}</b><br>
+              <b class="flash {{ category }}">{{ message }}</b><br>
             {% endfor %}
           </div>
         {% endif %}
       {% endwith %}
-
-
-
     </td>
   </tr>
+
   <tr>
     <td colspan="2">
       <select id="item-select">
         {% for item in broken_items %}
-            <option value="{{ item.id }}">{{ item.item_name }} ({{ item.uses_remaining }} uses)</option>
+          <option value="{{ item.id }}">{{ item.item_name }} ({{ item.uses_remaining }} uses)</option>
         {% endfor %}
       </select>
+      <button id="quote-button">🔧 Get Repair Quote</button>
 
-      <button onclick="requestQuote()">🔧 Get Repair Quote</button>
-      <div id="blacksmith-thinking" style="display: none;">
+      <div id="blacksmith-thinking" style="display:none;">
         <p>🧠 The Blacksmith grunts and rubs his beard, thinking it over...</p>
       </div>
 
       <div id="blacksmith-response"></div>
-
-      {% if session.get("blacksmith_reply") %}
-        <div class="blacksmith-reply">
-          <p><strong>Smith’s final price:</strong> {{ session.pop("blacksmith_reply") }}</p>
-          <form method="POST" action="{{ url_for('town.blacksmith') }}">
-            <input type="hidden" name="item_id" value="{{ session.get('blacksmith_item_id') }}">
-            <label>Your Counter Offer (bits):</label>
-            <input type="number" name="bitcoin" required>
-            <button type="submit">💬 Haggle Again</button>
-            <button
-              type="button"
-              id="accept_button"
-              data-offer="{{ session.get('blacksmith_offer') }}"
-              disabled
-            >
-              🏳️ Accept {{ session.get('blacksmith_offer') }} ₿
-            </button>
-          </form>
-        </div>
-      {% endif %}
-
-
     </td>
   </tr>
-  <tr><td colspan="2">
-    <p><a href="{{ url_for('map_view') }}">Decline and move on</a></p>
-  </td></tr>
+
+  <tr id="decline-row">
+    <td colspan="2">
+      <p><a href="{{ url_for('town.reset_blacksmith') }}">Decline and move on</a></p>
+    </td>
+  </tr>
 </table>
 
-
 <script>
+// Generate the map URL server-side and make it available to JavaScript
+const mapUrl = "{{ url_for('map_view') }}";
+
+document.getElementById('quote-button').addEventListener('click', requestQuote);
+
 function requestQuote() {
   const itemId = document.getElementById('item-select').value;
-
-  // Show "thinking" message
-    document.getElementById('blacksmith-thinking').style.display = 'block';
-    document.getElementById('blacksmith-response').innerHTML = '';  // Clear old response
-
+  document.getElementById('blacksmith-thinking').style.display = 'block';
+  document.getElementById('blacksmith-response').innerHTML = '';
 
   fetch('/api/repair_quote', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ item_id: itemId })
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ item_id: itemId })
   })
   .then(res => res.json())
   .then(data => {
-      if (data.error) {
-          alert(data.error);
+    document.getElementById('blacksmith-thinking').style.display = 'none';
+    if (data.error) return alert(data.error);
+    buildHaggleUI(data.message, data.quote, data.item_id);
+  });
+}
+
+function buildHaggleUI(message, offer, itemId) {
+  const container = document.getElementById('blacksmith-response');
+  container.innerHTML = `
+    <p><strong>Blacksmith:</strong> ${message}</p>
+    <p><em>His current offer is:</em> ${offer} ₿</p>
+    <form id="haggle-form">
+      <input type="hidden" name="item_id" value="${itemId}">
+      <label>Your Counter Offer (bits):</label>
+      <input type="number" name="bitcoin" required>
+      <button type="submit">💬 Haggle Again</button>
+      <button type="button" id="accept_button" data-offer="${offer}">
+        🏳️ Accept ${offer} ₿
+      </button>
+    </form>
+  `;
+  attachHandlers();
+}
+
+function attachHandlers() {
+  const haggleForm = document.getElementById('haggle-form');
+  haggleForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    // Show thinking indicator while processing haggle
+    document.getElementById('blacksmith-thinking').style.display = 'block';
+    document.getElementById('blacksmith-response').innerHTML = '';
+
+    const formData = new FormData(haggleForm);
+    fetch('/blacksmith', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      // Hide thinking indicator when response is received
+      document.getElementById('blacksmith-thinking').style.display = 'none';
+      if (data.error) return alert(data.error);
+      buildHaggleUI(data.reply, data.offer, formData.get('item_id'));
+    })
+    .catch(err => {
+      // Hide thinking indicator on error too
+      document.getElementById('blacksmith-thinking').style.display = 'none';
+      alert("Haggle failed: " + err);
+    });
+  });
+
+  const acceptBtn = document.getElementById('accept_button');
+  acceptBtn.addEventListener('click', function() {
+    const formData = new FormData();
+    formData.append('item_id', document.querySelector('input[name="item_id"]').value);
+    formData.append('bitcoin', this.dataset.offer);
+    formData.append('accept', 'true');
+
+    fetch('/blacksmith', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        // Hide the decline option since the deal is done
+        document.getElementById('decline-row').style.display = 'none';
+        document.getElementById('blacksmith-response').innerHTML =
+          `<p>${data.message}</p><p><a href="${mapUrl}">Return to Map</a></p>`;
       } else {
-          document.getElementById('blacksmith-response').innerHTML = `
-              <p><strong>Blacksmith:</strong> ${data.message}</p>
-              <form method="POST" action="/blacksmith">
-                  <input type="hidden" name="item_id" value="${data.item_id}">
-                  <label for="bitcoin">Your Offer (bits):</label>
-                  <input type="number" name="bitcoin" required>
-                  <button type="submit">💰 Submit Offer</button>
-              </form>
-          `;
+        alert(data.error || 'Something went wrong.');
       }
+    })
+    .catch(err => alert("Accept failed: " + err));
   });
 }
 </script>
-
-
 {% endblock %}

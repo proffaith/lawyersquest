@@ -7,6 +7,7 @@ import fitz
 from openai import OpenAI
 import json
 import os
+import re
 
 client = OpenAI(api_key=os.getenv("OPENAI_APIKEY"))
 
@@ -122,3 +123,98 @@ Excerpt:
     except Exception as e:
         logging.error(f"💥 GPT API error during question generation: {e}")
         return None
+
+def generate_npc_response(npc_type, context):
+    """
+    Generates an NPC response for a negotiation scenario using GPT.
+    Args:
+        npc_type (str): Type of NPC ("blacksmith", "trader", etc.)
+        context (dict): Must include:
+            - item_name (str)
+            - offer (int): Player's current offer
+            - base_price (int): For trader, or original price of the item
+            - original_quote (int): For blacksmith (optional for others)
+            - rounds (int): Current round number
+    Returns:
+        dict: {
+            "reply_text": str,        # GPT-generated response text
+            "counteroffer": int | None # Parsed counteroffer, or None if not found
+        }
+    """
+    # ✅ NPC-specific tone/personality
+    npc_profiles = {
+        "blacksmith": {
+            "system": "You are a gruff medieval blacksmith. Speak curtly, maybe sarcastically, but fair.",
+            "template": (
+                "Player offered {offer} bits to repair '{item_name}'. "
+                "Your original quote was {original_quote} bits. "
+                "This is round {rounds}. "
+                "Respond as the blacksmith, keep it under 3 sentences. "
+                "End with: [Counteroffer: X bits]."
+            )
+        },
+        "trader": {
+            "system": "You are a slick, clever wandering trader. Always sound charming and a bit greedy.",
+            "template": (
+                "Player offered {offer} bits for '{item_name}', normally worth {base_price} bits. "
+                "This is round {rounds}. "
+                "Respond as the trader, make it colorful but short. "
+                "End with: [Counteroffer: X bits]."
+            )
+        }
+    }
+
+    if npc_type not in npc_profiles:
+        raise ValueError(f"Unsupported NPC type: {npc_type}")
+
+    npc_data = npc_profiles[npc_type]
+
+    # ✅ Build the user prompt
+    user_prompt = npc_data["template"].format(**context)
+
+    # ✅ Call GPT
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": npc_data["system"]},
+                {"role": "user", "content": user_prompt}
+            ]
+        )
+        reply_text = response.choices[0].message.content
+
+        # ✅ Parse counteroffer with improved regex
+        counteroffer = None
+        # Try multiple patterns to catch different formats
+        patterns = [
+            r"\[Counteroffer:\s*(\d+)\s*bits?\]",  # [Counteroffer: 44 bits]
+            r"\[Counteroffer:\s*(\d+)\]",          # [Counteroffer: 44]
+            r"Counteroffer:\s*(\d+)\s*bits?",      # Counteroffer: 44 bits
+            r"(\d+)\s*bits?\s*\]",                 # 44 bits]
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, reply_text, re.IGNORECASE)
+            if match:
+                counteroffer = int(match.group(1))
+                break
+
+    except Exception as e:
+        logging.error(f"GPT API error during NPC negotiation: {e}")
+        return {
+            "reply_text": "The NPC glares silently. (System error occurred)",
+            "counteroffer": None
+        }
+
+    logging.debug(f"NPC={npc_type}, Offer={context['offer']}, Reply={reply_text}, Counter={counteroffer}")
+
+    return {
+        "reply_text": reply_text,
+        "counteroffer": counteroffer
+    }
+
+
+def parse_counteroffer(text):
+    """Extracts a numeric counteroffer from GPT response using [Counteroffer: X] pattern."""
+    match = re.search(r"\[Counteroffer:\s*(\d+)\]", text)
+    return int(match.group(1)) if match else None
