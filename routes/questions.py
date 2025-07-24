@@ -395,6 +395,8 @@ def check_true_false_question():
     db = db_session()
     q = db.query(TrueFalseQuestion).get(int(question_id))
     question_id_int = int(question_id)
+    correct_int = 1 if q.correct_answer else 0
+    hint_text = q.hint or ""  # capture early
 
     try:
         # 1) Load question
@@ -403,7 +405,6 @@ def check_true_false_question():
             flask_session["battle_summary"] = "Error: Question not found."
             return redirect(url_for("combat_results"))
 
-        correct_int = 1 if q.correct_answer else 0
         user_int    = 1 if user_answer == "T" else 0
 
         logging.debug(f"TF Check: squire={squire_id}, qid={question_id}, "
@@ -494,11 +495,7 @@ def check_true_false_question():
 
         else:
             # 4) Incorrect answer handling
-            if question_id:
-                question = db.query(TrueFalseQuestion).get(question_id)
-                hint = question.hint if question else None
-            else:
-                hint = None
+            hint = hint_text  # from earlier capture
 
             if pending_job:
                 flask_session["job_message"] = (
