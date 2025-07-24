@@ -686,7 +686,7 @@ def check_MC_question_enemy():
                   .one_or_none()
             )
             if not sq:
-                new_question = update_squire_question(db, squire_id, -int(uuid.uuid4().int % 1000000000), True, 'multiple_choice')
+                new_question = update_squire_question(db, squire_id, -int(uuid.uuid4().int % 1000000000), 'multiple_choice', True)
             else:
                 sq.answered_correctly = True
 
