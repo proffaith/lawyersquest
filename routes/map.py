@@ -478,7 +478,7 @@ def check_riddle():
                   .one_or_none()
             )
             if not sq:
-                update_squire_question(db, squire_id, riddle_id, 'riddle', answered_correctly)
+                update_squire_question(db, squire_id, riddle_id, 'riddle', True)
             else:
                 sq.answered_correctly = True
 
