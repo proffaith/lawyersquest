@@ -25,6 +25,7 @@ from utils.shared import flee_safely
 from utils.shared import calc_flee_safely
 #from utils.filters import chance_image
 from utils.shared import add_team_message
+from utils.shared import question_accuracy
 
 combat_bp = Blueprint('combat', __name__)
 
@@ -249,11 +250,13 @@ def combat():
     mod_enemy_max_hunger = mod_enemy_hunger(mod_for_distance, enemy_max_hunger_base, enemy_in_forest, enemy_in_mountain)
     logging.debug(f"mod_enemy_max_hunger = {mod_enemy_max_hunger}")
     safe_chances = calc_flee_safely(mod_enemy_max_hunger, player_max_hunger, hit_chance)
+    question_chances = question_accuracy(squire_id)
 
     # initialize session variables for battle
     player_current_hunger = 0
     enemy_current_hunger = 0
     battle_log = flask_session.get("battle_log", [])
+
 
     # Save updated values in session
     flask_session["player_current_hunger"] = player_current_hunger
@@ -263,6 +266,7 @@ def combat():
     flask_session["hit_chance"] = hit_chance
     flask_session["mod_for_distance"] = mod_for_distance
     flask_session["safe_chances"] = safe_chances
+    flask_session["question_chances"] = question_chances
 
     return render_template('combat.html', enemy=enemy)
 

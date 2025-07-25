@@ -896,7 +896,7 @@ def calc_flee_safely(e, p, hit_chance):
     if p == 0:
         p = 1
 
-    damage_probability = round(((e / p) * ((100 - hit_chance) / 100)) * 100)
+    damage_probability = 100 - (round(((e / p) * ((100 - hit_chance) / 100)) * 100))
     damage_probability = min(max(damage_probability, 0), 100)
 
     return damage_probability
@@ -1046,14 +1046,65 @@ def combat_mods(squire_id: int, enemy_name: str, level: int) -> int:
         # 3) Level contribution
         level_mod = 2 * level
 
-        total_mods = base_mod + (enemy_mod * 5) + level_mod
-        logging.debug(f"combat_mods → squire={squire_id}, enemy={enemy_name}, "
-                      f"gear={base_mod}, special={enemy_mod}, level={level_mod}, total={total_mods}")
+        # 4) Team rank contribution
+        team_rank_mod = 0
+        team = (
+            db.query(Team)
+              .join(Squire, Team.id == Squire.team_id)
+              .filter(Squire.id == squire_id)
+              .one_or_none()
+        )
+
+        if team:
+            # Get all teams ranked by reputation descending
+            ranked_teams = db.query(Team.id).order_by(Team.reputation.desc()).all()
+            team_ids = [t.id for t in ranked_teams]
+            rank = team_ids.index(team.id) + 1  # 1-based rank
+
+            # Apply tiered bonuses
+            if rank <= 3:
+                team_rank_mod = 5
+            elif rank <= 8:
+                team_rank_mod = 3
+            elif rank <= 18:
+                team_rank_mod = 1
+            else:
+                team_rank_mod = 0
+
+            logging.debug(f"Team {team.id} rank={rank}, bonus={team_rank_mod}")
+
+        # Final total mods
+        total_mods = base_mod + (enemy_mod * 5) + level_mod + team_rank_mod
+
+        logging.debug(
+            f"combat_mods → squire={squire_id}, enemy={enemy_name}, "
+            f"gear={base_mod}, special={enemy_mod}, level={level_mod}, "
+            f"team_rank_mod={team_rank_mod}, total={total_mods}"
+        )
 
         return total_mods
 
     finally:
         db.close()
+
+def question_accuracy(squire_id):
+    db = db_session()
+
+    # Calculate question accuracy
+    attempts = (
+        db.query(func.count(SquireQuestionAttempt.id))
+        .filter(SquireQuestionAttempt.squire_id == squire_id)
+        .scalar()
+    )
+
+    correct = (
+        db.query(func.count(SquireQuestionAttempt.id))
+        .filter(SquireQuestionAttempt.squire_id == squire_id, SquireQuestionAttempt.answered_correctly == True)
+        .scalar()
+    )
+
+    accuracy = round((correct / attempts) * 100, 1) if attempts > 0 else 0
+    return accuracy
 
 # Example usage:
 # mods = combat_mods(squire_id=2, enemy_name='Goblin', level=3)

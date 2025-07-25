@@ -29,8 +29,8 @@
       <table>
         <tr>
           <td>
-            <table><tr><td>Your chances of answering the enemy's question is 50%</td>
-              <td><img src="/static/{{ 50|the_image }}" width="50"></td></tr>
+            <table><tr><td>Your chances of answering the enemy's question is {{ session.get('question_chances') }}%</td>
+              <td><img src="/static/{{ session.get('question_chances')|the_image }}" width="50"></td></tr>
 
               {% if enemy.has_weapon %}
               <tr><td>Your chances of striking {{ enemy.name }} is {{ session.get('hit_chance') }}%</td>

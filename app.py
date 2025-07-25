@@ -248,13 +248,16 @@ def select_course(course_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['squire_id']
+        username = re.sub(r'\s+', ' ', request.form["squire_id"]).strip()
+
         db = db_session()
         try:
             # Load the squire by name
-            squire = db.query(Squire) \
-                       .filter_by(squire_name=username) \
-                       .one_or_none()
+            squire = (
+                db.query(Squire)
+                .filter(func.lower(Squire.squire_name) == username.lower())
+                .one_or_none()
+            )
 
             if squire:
                 # Store in flask session
@@ -262,7 +265,6 @@ def login():
                 flask_session['squire_name'] = squire.squire_name
                 flask_session['team_id']     = squire.team_id
                 flask_session['level']       = squire.level
-                flask_session['ver']         = "0.3.6"
 
                 # Refactored helper should accept the ORM session
                 update_riddle_hints()
@@ -284,7 +286,7 @@ def register_squire():
 
 
     if request.method == "POST":
-        squire_name = request.form["squire_name"]
+        squire_name = re.sub(r'\s+', ' ', request.form["squire_name"]).strip()
         real_name = request.form["real_name"]
         email = request.form["email"]
         captcha_response = request.form.get("g-recaptcha-response")
@@ -294,8 +296,7 @@ def register_squire():
         if consent == "on":
             consent_to_TOS = True
 
-
-        #logging.debug("🧪 CAPTCHA token received:", captcha_response)
+        normalized_name = squire_name.lower()
 
         # Email format check
         if not is_valid_email(email):
@@ -328,7 +329,11 @@ def register_squire():
 
         try:
             # 1) Check for duplicate name/email
-            name_taken = db.query(Squire).filter(Squire.squire_name == squire_name).count()
+            name_taken = (
+                db.query(Squire)
+                .filter(func.lower(Squire.squire_name) == squire_name.lower())
+                .count()
+            )
             if name_taken:
                 flash("Squire name already registered. Click the login link to login with it.")
                 return redirect(url_for("register_squire"))
@@ -476,6 +481,16 @@ def start_quest():
         # 2) Fetch the squire's level
         squire = db.query(Squire).get(squire_id)
         level = squire.level
+
+        if quest_id in (14, 28, 32, 39):
+            if squire:
+                squire.x_coordinate = 0
+                squire.y_coordinate = 0
+                try:
+                    db.commit()
+                except Exception as e:
+                    db.rollback()
+                    logging.error(f"Error resetting Squire coords to 0,0: {e}")
 
         # 3) Generate terrain features
         treesize, mountainsize = calculate_feature_counts(level, quest_id)
