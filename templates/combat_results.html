@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ '⚔️ Battle Results' }}{% endblock %}
+
+{% block content %}
+
+    <h1>⚔️ Battle Results:</h1>
+
+    <div class="log">
+        <table>
+          <tr><td>
+            {% if success %}
+            <img src="/static/happy_knight.jpeg" width=150 height=150>
+            {% else %}
+            <img src="/static/sad_knight.jpeg" width=150 height=150>
+            {% endif %}
+          </td></tr>
+          <tr><td>{{ combat_result|safe }}</td></tr>
+        </table>
+    </div>
+
+    <form action="{{ url_for('map_view') }}">
+        <button type="submit">Return to Map</button>
+    </form>
+{% endblock %}

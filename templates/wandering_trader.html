@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Wandering Trader' }}{% endblock %}
+
+{% block content %}
+
+
+<script>
+let lastCounterOffer = null;
+let lastSelectedItemId = null;
+
+function haggle() {
+  const itemSelect = document.querySelector('input[name="item_id"]:checked');
+  const offerInput = document.getElementById('offer_input');
+  const replyBox = document.getElementById('npc_reply');
+
+  if (!itemSelect || !offerInput.value) {
+    replyBox.innerText = "Please select an item and enter an offer.";
+    return;
+  }
+
+  const itemId = parseInt(itemSelect.value);
+  const itemData = {{ item_info | tojson }};
+  const selectedItem = itemData.find(i => i.id === itemId);
+  const offer = parseInt(offerInput.value);
+
+  replyBox.innerText = "💭 The trader rubs their chin, considering your offer...";
+  document.getElementById("accept_button").disabled = true;
+
+
+  fetch('/negotiate/trader', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      item: selectedItem.name,
+      base_price: selectedItem.price,
+      offer: offer
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.trader_gone) {
+      replyBox.innerText = data.npc_reply;
+      document.getElementById("accept_button").disabled = true;
+      document.getElementById("buy_button").disabled = true;
+
+      // Disable offer box and haggling
+      document.getElementById("offer_input").disabled = true;
+      document.querySelectorAll('input[name="item_id"]').forEach(el => el.disabled = true);
+
+      return; // Skip further updates
+    }
+    replyBox.innerText = data.npc_reply;
+    lastCounterOffer = data.counteroffer;
+    lastSelectedItemId = itemId;
+    document.getElementById("accept_button").disabled = false;
+
+
+  });
+}
+
+function acceptOffer() {
+  if (!lastCounterOffer || !lastSelectedItemId) return;
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/wandering_trader';
+
+  const itemInput = document.createElement('input');
+  itemInput.type = 'hidden'
+  itemInput.name = 'item_id';
+  itemInput.value = lastSelectedItemId;
+  form.appendChild(itemInput);
+
+  const priceInput = document.createElement('input');
+  priceInput.name = 'agreed_price';
+  priceInput.type = 'hidden'
+  priceInput.value = lastCounterOffer;
+  form.appendChild(priceInput);
+
+  document.body.appendChild(form);
+  form.submit();
+}
+</script>
+
+
+
+<h2>🔨 A Wandering Trader 🔨</h2>
+
+<table>
+  <tr>
+    <td><img src="/static/wandering_trader.jpeg" width=150 height=150>
+    </td>
+    <td><p>You encounter a Wandering Trader with some wares for sale. You have <b>{{ team.gold }} ₿.</b> Would you like to buy something?</p>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flashes">
+            {% for category, message in messages %}
+              <b> <class="flash {{ category }}">{{ message }}</b><br>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <form method="POST">
+        <table>
+        {% for item in items %}
+          <tr><td><input type="radio" name="item_id" value="{{ item.id }}" required></td>
+            <input type="hidden" name="price_{{ item.id }}" value="{{ item.price }}">
+            <td><strong>{{ item.item_name }}</strong> - {{ item.price }} gold</td>
+            <td><em>{{ item.description }}</em></td>
+            <td>Uses: {{ item.uses }}</td>
+          </tr>
+        {% endfor %}
+        <tr>
+          <td colspan="4">
+            <label for="offer_input">Your Offer (in gold):</label>
+            <input type="number" id="offer_input" min="1" placeholder="Enter your offer">
+            <button type="button" onclick="haggle()">Haggle with Trader</button>
+            <button type="button" id="accept_button" onclick="acceptOffer()" disabled>Accept Trader's Offer</button>
+            <p id="npc_reply" style="margin-top: 1em; font-style: italic;"></p>
+            <button id="buy_button" type="submit">Buy Selected Item</button>
+          </td>
+        </tr>
+
+      </form>
+    </table>
+</td>
+</tr>
+<tr><td colspan="2">
+  <p>
+    {% if trader_is_gone %}
+      🏃 The trader has stormed off. <a href="{{ url_for('map_view') }}">Return to the map</a>
+    {% else %}
+      <a href="{{ url_for('map_view') }}">Decline and move on</a>
+    {% endif %}
+  </p>
+</td></tr>
+
+</table>
+
+{% endblock %}

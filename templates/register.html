@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Lawyer''s Quest Registration' }}{% endblock %}
+
+{% block content %}
+
+  <h1>Registration</h1>
+
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class="flashes">
+      {% for message in messages %}
+        <li style="color: red;">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
+
+<form method="POST" action="{{ url_for('register_squire') }}" onsubmit="return validateCaptcha();" class="registration-form">
+  <table>
+    <tr>
+      <td>
+        <label>Squire Name:</label>
+        <input type="text" name="squire_name" required><br>
+
+        <label>Real Name:</label>
+        <input type="text" name="real_name" required><br>
+
+        <label>Email:</label>
+        <input type="email" name="email" required><br>
+
+        <label for="team_id">Team:</label>
+        <select name="team_id" required>
+          {% for team in teams %}
+            <option value="{{ team.id }}">{{ team.team_name }} {{ team.reputation }} Rep. Level</option>
+          {% endfor %}
+        </select><br>
+
+        <label>Consent:</label>
+        <input type="checkbox" name="tos_agree" required> I agree to the <a href="/terms" target="_blank">Terms of Service</a>
+        and consent to receive email communications.
+
+      </td>
+      <td style="vertical-align: top;">
+        <div class="g-recaptcha" data-sitekey="6Lc8eh0rAAAAAJvBfj7nFI_9zpersbTZ0X5U0Odw"></div>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" style="text-align: center;">
+        <button type="submit">Register</button>
+      </td>
+    </tr>
+  </table>
+</form>
+
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<script>
+  function validateCaptcha() {
+    const response = grecaptcha.getResponse();
+    if (!response) {
+      alert("⚠️ Please complete the CAPTCHA.");
+      return false;
+    }
+    return true;
+  }
+</script>
+
+{% endblock %}

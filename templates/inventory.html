@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}{{ '🌿 Inventory' }}{% endblock %}
+
+{% block content %}
+    <h1>🎒 Your Inventory</h1>
+
+    {% if inventory %}
+        {% set grouped = {} %}
+          {% for item in inventory %}
+          {% set _ = grouped.setdefault(item.item_type, []).append(item) %}
+          {% endfor %}
+
+          <table class="inventory-table">
+          {% for type, items in grouped.items() %}
+              <tr class="category-toggle" onclick="toggleCategory('{{ type }}')">
+                  <td colspan="3">
+                      <span class="toggle-icon" id="icon-{{ type }}">➕</span>
+                      <strong>{{ type|capitalize }}</strong>
+                  </td>
+              </tr>
+              <tr class="inventory-grid-row category-{{ type }}" style="display:none;">
+                  <td colspan="3">
+                      <div class="inventory-grid">
+                          {% for item in items %}
+                              <div class="inventory-card">
+                                  <strong>{{ item.item_name }}</strong>
+                                  {% if item.item_type == 'gear' %}(+{{ item.effect }}){% endif %}
+                                  <br>
+                                  {{ item.description }}
+                                  {% if item.uses_remaining is not none %}
+                                      <br><em>Uses: {{ item.uses_remaining }}</em>
+                                  {% endif %}
+                              </div>
+                          {% endfor %}
+                      </div>
+                  </td>
+              </tr>
+          {% endfor %}
+    </table>
+
+    {% else %}
+        <p>🛑 Your inventory is empty.</p>
+    {% endif %}
+      <p>
+    <button onclick="window.location.href='{{ url_for('map_view') }}'">⬅️ Return to Map</button>
+
+    <script>
+    function toggleCategory(type) {
+        const rows = document.querySelectorAll('.category-' + type);
+        const icon = document.getElementById('icon-' + type);
+        rows.forEach(row => {
+            const isHidden = row.style.display === 'none';
+            row.style.display = isHidden ? 'table-row' : 'none';
+        });
+        if (icon.textContent === '➕') {
+            icon.textContent = '➖';
+        } else {
+            icon.textContent = '➕';
+        }
+    }
+    </script>
+
+
+{% endblock %}

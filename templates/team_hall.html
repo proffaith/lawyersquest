@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ '🏆 Hall of Fame' }}{% endblock %}
+
+{% block content %}
+
+    <h1>🏆 Hall of Fame</h1>
+    <p>The greatest Teams of all time!</p>
+
+    <ul>
+        {% for team in leaders %}
+        <li>{{ team.team_name }} - 🎖 {{ team.reputation }} Rep Level</li>
+        {% endfor %}
+    </ul>
+
+    <form action="{{ url_for('town.visit_town') }}">
+        <button type="submit">⬅ Return to Town</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% block title %}{{ '⚔️ Combat' }}{% endblock %}
+
+{% block content %}
+    <h1>⚔️ Battle with {{ enemy.name }}</h1>
+    <p>{{ enemy.description }}</p>
+    <table>
+      <tr>
+
+          <td>
+          <!-- Enemy -->
+          <div id="enemy-hunger-container">
+            <div id="enemy-sprite"
+                 class="sprite idle"
+                 style="--sheet: url('/static/{{ session.get('enemy', {}).get('sprite_idle', 'hydra_idle.png') }}');
+                        --frames: {{ session.get('enemy', {}).get('frames_idle', 8) }};
+                        --fps: {{ session.get('enemy', {}).get('fps', 12) }};
+                        --w: {{ session.get('enemy', {}).get('frame_w', 128) }};
+                        --h: {{ session.get('enemy', {}).get('frame_h', 128) }};">
+            </div>
+
+            <p>{{ enemy.name }}'s Hunger:
+              <span id="enemy_current_hunger">{{ session.get("enemy_current_hunger") }}</span> /
+              <span id="mod_enemy_max_hunger">{{ session.get("mod_enemy_max_hunger")}}</span>
+            </p>
+            <progress id="enemy_hunger_progress" value="" max=""></progress>
+            <p id="enemy_message" class="battle-message"></p>
+          </div>
+        </td>
+        <td>
+          <div id="hunger-bars">
+          <!-- Player -->
+          <div id="player-hunger-container">
+            <div id="squire-sprite"
+                 class="sprite idle"
+                 style="--sheet: url('/static/sprites/squire_idle.jpeg'); --frames:1; --fps:1; --w:256; --h:256;">
+            </div>
+            <p>Your Hunger:
+              <span id="player_current_hunger">{{ session.get("player_current_hunger") }}</span> /
+              <span id="player_max_hunger">{{ session.get("player_max_hunger") }}</span>
+            </p>
+            <progress id="player_hunger_progress" value="" max=""></progress>
+            <p id="player_message" class="battle-message"></p>
+          </div>
+          </td>
+      </tr>
+    </table>
+
+    <h3>Choose Wisely, Squire!</h3>
+
+      <table>
+        <tr>
+          <td>
+            <table><tr><td>Your chances of answering the enemy's question is {{ session.get('question_chances') }}%</td>
+              <td><img src="/static/{{ session.get('question_chances')|the_image }}" width="50"></td></tr>
+
+              {% if enemy.has_weapon %}
+              <tr><td>Your chances of striking {{ enemy.name }} is {{ session.get('hit_chance') }}%</td>
+              <td><img src="/static/{{ session.get('hit_chance')|the_image }}" width="50"></td></tr>
+              {% endif %}
+
+              <tr><td>Your chances of safely fleeing from {{ enemy.name }} is {{ session.get('safe_chances') }}%</td>
+              <td><img src="/static/{{ session.get('safe_chances')|the_image }}" width="50"></td></tr>
+
+            <tr><td colspan="2"> Do you...?</td></tr></table>
+          </td>
+          <td>
+            <form id="combat-form" method="post">
+            {# If you use Flask-WTF, include the hidden CSRF field #}
+            {% if csrf_token -%}
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {%- endif %}
+            <table>
+              <tr>
+                <td>
+            <button type="submit" name="action" value="question">🧠 Answer the question</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+            {% if enemy.has_weapon %}
+              <button type="submit" name="action" value="fight">⚔️ Fight the enemy</button>
+            {% else %}
+              <p> To fight this enemy, you need a <b>{{ enemy.weakness }}</b> from the Village Mall.</p>
+            {% endif %}
+            </td>
+            </tr>
+            <tr>
+              <td>
+            <button type="submit" name="action" value="flee">🏃 Run away</button>
+            </td>
+            </tr>
+              </table>
+            </form>
+
+          </td>
+      </tr>
+    </table>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+      const combatForm = document.getElementById("combat-form");
+      let selectedAction = ""; // fallback for older browsers or edge cases
+
+      // Optional: keep as a fallback if event.submitter isn't available
+      combatForm.querySelectorAll("button[type=submit]").forEach(btn => {
+        btn.addEventListener("click", () => { selectedAction = btn.value; });
+      });
+
+      combatForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        // ✅ Robustly determine which button triggered submit
+        const submitter = event.submitter || document.activeElement;
+        const choice = (submitter && submitter.value) || selectedAction || "fight";
+
+        // If "question", do your direct redirect branch
+        if (choice === "question") {
+          const loadingDiv = document.createElement("div");
+          loadingDiv.id = "loading-message";
+          loadingDiv.innerHTML = "<p>🧠 Soon you will meet your doom, Squire! Prepare yourself for the mind-fight of your life!</p>";
+          Object.assign(loadingDiv.style, {
+            position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+            backgroundColor: "rgba(255,255,255,0.8)", display: "flex",
+            justifyContent: "center", alignItems: "center", fontSize: "1.5em", zIndex: 9999
+          });
+          document.body.appendChild(loadingDiv);
+          setTimeout(() => {
+            window.location.href = "{{ url_for('questions.answer_question') }}";
+          }, 600);
+          return;
+        }
+
+        // Build FormData (include CSRF if present)
+        const formData = new FormData(combatForm);
+        formData.set("action", choice);
+
+        // If you prefer header-based CSRF (Flask-WTF supports this too), do:
+        const headers = {};
+        const csrfInput = combatForm.querySelector("input[name='csrf_token']");
+        if (csrfInput && csrfInput.value) {
+          headers["X-CSRFToken"] = csrfInput.value;
+        }
+
+        fetch("{{ url_for('combat.ajax_handle_combat') }}", {
+          method: "POST",
+          body: formData,
+          credentials: "same-origin",
+          headers
+        })
+        .then((response) => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.json();
+        })
+        .then((data) => {
+          if (data.redirect) { window.location.href = data.redirect; return; }
+
+          // --- update UI (unchanged) ---
+          document.getElementById("player_current_hunger").textContent = data.player_current_hunger;
+          document.getElementById("player_max_hunger").textContent = data.player_max_hunger;
+          document.getElementById("enemy_current_hunger").textContent = data.enemy_current_hunger;
+          document.getElementById("mod_enemy_max_hunger").textContent = data.mod_enemy_max_hunger;
+
+          const playerProgress = document.getElementById("player_hunger_progress");
+          const enemyProgress  = document.getElementById("enemy_hunger_progress");
+          playerProgress.value = data.player_current_hunger;
+          playerProgress.max   = data.player_max_hunger;
+          enemyProgress.value  = data.enemy_current_hunger;
+          enemyProgress.max    = data.mod_enemy_max_hunger;
+
+          // sprite anim helper
+          const squireEl = document.getElementById("squire-sprite");
+          const enemyEl  = document.getElementById("enemy-sprite");
+
+          squireEl.style.setProperty("--scale", 1.1); // tweak per sprite
+          enemyEl.style.setProperty("--scale", 1.0);
+
+          function applySprite(el, conf) {
+            if (!el || !conf) return;
+            el.style.setProperty("--sheet", `url('${conf.sheet}')`);
+            el.style.setProperty("--frames", conf.frames ?? 8);
+            el.style.setProperty("--fps", conf.fps ?? 12);
+            el.style.setProperty("--w", conf.w ?? 128);
+            el.style.setProperty("--h", conf.h ?? 128);
+            el.classList.remove("idle","attack","hurt","stagger","play");
+            el.classList.add(conf.state || "idle","play");
+            const durationMs = ((conf.frames || 8) / (conf.fps || 12)) * 1000;
+            setTimeout(() => {
+              el.classList.remove("attack","hurt","stagger","play");
+              el.classList.add("idle");
+            }, durationMs);
+          }
+          if (data.anim) {
+            applySprite(squireEl, data.anim.squire);
+            applySprite(enemyEl,  data.anim.enemy);
+          }
+
+          // optional preload
+          if (data.anim) {
+            new Image().src = data.anim.squire.sheet;
+            new Image().src = data.anim.enemy.sheet;
+          }
+
+          // hide/show buttons by hunger
+          const answerBtn = combatForm.querySelector("button[name='action'][value='question']");
+          const fleeBtn   = combatForm.querySelector("button[name='action'][value='flee']");
+          if (parseInt(data.player_current_hunger, 10) > 2) {
+            if (answerBtn) answerBtn.style.display = "none";
+            if (fleeBtn)   fleeBtn.style.display   = "none";
+          } else {
+            if (answerBtn) answerBtn.style.display = "inline-block";
+            if (fleeBtn)   fleeBtn.style.display   = "inline-block";
+          }
+
+          // battle log messages
+          if (data.battle_log?.length) {
+            const latest = data.battle_log[data.battle_log.length - 1];
+            if (latest.includes("hit the")) {
+              document.getElementById("enemy_message").textContent  = latest;
+              document.getElementById("player_message").textContent = "";
+            } else if (latest.includes("Ouch")) {
+              document.getElementById("player_message").textContent = latest;
+              document.getElementById("enemy_message").textContent  = "";
+            }
+          }
+        })
+        .catch(err => {
+          console.error("Error during combat AJAX request:", err);
+          alert("Combat request failed. Check console/network tab.");
+        });
+      });
+    });
+
+</script>
+
+{% endblock %}

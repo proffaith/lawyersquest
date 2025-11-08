@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lawyer's Quest - Game Map</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='game-style.css') }}">
+    <script>
+      function updateStatus() {
+        $.ajax({
+          url: '/ajax_status',
+          type: 'GET',
+          success: function(response) {
+            if (response.hunger !== undefined) {
+              $("#hunger-bar").text(`🍗 Hunger: ${response.hunger}%`);
+            }
+            if (response.xp !== undefined) {
+              $("#xp-display").text(`⭐ XP: ${response.xp}`);
+            }
+            if (response.gold !== undefined) {
+              $("#gold-display").text(`💰 Bitcoin: ${response.gold}`);
+            }
+            if (response.progress_bar !== undefined) {
+              $("#progress-bar").text(`${response.progress_bar}`);
+            }
+            if (response.position !== undefined) {
+              const [x, y] = response.position;
+              $("#position").text(`📍 Position: (${x}, ${y})`);
+            }
+            if (response.level !== undefined) {
+              $("#player-level").text(`🔼 Level: ${response.level}`)
+            }
+            if (response.message !== undefined) {
+              $("#game-message")
+                .html((response.message || "").replace(/\n/g, "<br>"));
+            }
+          },   // ← move this comma onto the same line that closes your success function
+          error: function() {
+            console.error("⚠️ Failed to fetch status updates");
+          }
+        });
+      }
+    </script>
+
+
+
+</head>
+<body>
+    <h1>🗺️ Lawyer's Quest - Game Map</h1>
+    <table><tr><td><p>🎮 Controls: Use <b>N S E W</b> to move / <b>I</b> shows your Inventory / <b>V</b> takes you to Town</p></td>
+      <td><a href="{{ url_for('getting_started') }}">Getting Started with the Game</a><br>
+      <a href="https://youtu.be/DTIb4VuoziA" target="_blank">Video Walkthrough</a></td></tr>
+    </table>
+
+    <table><tr><td>
+  <span id="xp-display">🎖️ XP: {{ xp }}</span>
+  <span id="gold-display">💰 Bitcoin: {{ gold }}</span>
+</td><td>Quest {{quest_id}} <span id="progress-bar">Progress: {{progress_bar}}</span></td><td id="player-level"> 🔼 Level: {{ level }} </td><td><span id="position">{{ position }}</span></td></tr>
+    <tr><td><span id="hunger-bar">🍽️ Hunger: {{ hunger }}</span> </td><td colspan="3"><span id="game-message">{{ game_message or '' }}</span><br>
+    <span id="team-messages"></span></td></tr>
+  </table>
+
+    <div id="game-map" align="center">{{ game_map|safe }}</div>
+
+
+    <div>
+      <button class="move-btn" data-direction="N">⬆️ North</button>
+      <button class="move-btn" data-direction="S">⬇️ South</button>
+      <button class="move-btn" data-direction="E">➡️ East</button>
+      <button class="move-btn" data-direction="W">⬅️ West</button>
+    </div>
+
+    <script>
+    function move(direction) {
+    console.log("🚀 Sending move request:", direction);  // ✅ Log movement request
+    $.ajax({
+        url: '/ajax_move',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ direction: direction }),
+        success: function(response) {
+            console.log("🚀 Move response received:", response);  // ✅ Log full JSON response
+
+            if (!response.map) {
+                console.error("❌ ERROR: data.map is undefined!", response);
+            }
+
+            // ✅ Update the game map if new map data is received
+            if (response.map) {
+                console.log("🚀 Updating map display...");
+                $("#game-map").html(response.map);
+            }
+            if (response.position) {
+                const [x, y] = response.position;
+                $("#position").text(`📍 Position: (${x}, ${y})`);
+            }
+            if (response.level !== undefined) {
+                $("#player-level").text(`🔼 Level: ${response.level}`);
+            }
+            if (response.message) {
+                $("#game-message").html((response.message || "").replace(/\n/g, "<br>"));
+            }
+            updateStatus();
+
+            if (response.redirect) {
+                window.location.href = response.redirect;
+            }
+
+            if (response.event === "treasure") {
+                console.log("🎁 Treasure chest found! Redirecting...");
+                setTimeout(() => { window.location.href = "/treasure_encounter"; }, 500);
+            } else if (response.event === "enemy") {
+                console.log("⚔️ Combat triggered! Redirecting...");
+                setTimeout(() => { window.location.href = "/encounter_enemy"; }, 500);
+            } else if (response.event === "riddle") {
+                window.location.href = "/riddle_encounter";
+            } else if (response.event === "town") {
+                console.log("🏰 Heading to Town...");
+                window.location.href = "/town";
+            } else if (response.event === "npc") {
+                console.log("NPC interaction....");
+                window.location.href = "/npc";
+            }   else if (response.event === "clue") {
+                    console.log("NPC interaction....");
+                    window.location.href = "/clue";
+
+            } else if (response.event === "inventory") {
+                window.location.href = "/inventory";
+              } else if (response.event === "boss_arena") {
+                setTimeout(() => {
+                    window.location.href = "/encounter_boss";
+                }, 500);
+            } else if (response.event === "tournament") {
+                setTimeout(() => {
+                    window.location.href = "/encounter_boss";
+                }, 500);
+            } else if (response.event === "dungeon") {
+                setTimeout(() => {
+                    window.location.href = "/dungeon";
+                }, 500);
+            }
+
+        },
+        error: function(xhr) {
+            console.error("❌ Error updating movement:", xhr.responseJSON);
+            alert("Error: " + xhr.responseJSON.error);
+        }
+    });
+}
+
+
+    // ✅ **Button Clicks for Movement**
+    $(".move-btn").click(function() {
+        let direction = $(this).data("direction");
+        move(direction);
+    });
+
+    // ✅ **Keyboard Event Listener for NSEW + V**
+    $(document).keydown(function(event) {
+        let keyMap = {
+            78: "N",  // N key
+            83: "S",  // S key
+            69: "E",  // E key
+            87: "W",  // W key
+            86: "V",   // V key for Town Visit
+            73: "I"
+        };
+
+        if (event.which in keyMap) {
+          console.log("Key Pressed:", event.which, "Mapped to:", keyMap[event.which]);
+          move(keyMap[event.which]); // Call move function with the corresponding action
+        }
+    });
+</script>
+<script>
+  function getAdjustedISO(secondsBack = 5) {
+    const now = new Date();
+    now.setSeconds(now.getSeconds() - secondsBack);  // ⏪ move back in time
+    return now.toISOString();
+  }
+
+  let lastCheck = getAdjustedISO();
+  const teamId = {{ team_id | tojson }}; // Replace with dynamic team ID if you have one in JS
+
+  function pollTeamMessages() {
+    fetch(`/team_messages/${teamId}?since=${lastCheck}`)
+        .then(response => response.json())
+        .then(messages => {
+            if (messages.length > 0) {
+                messages.forEach(msg => {
+                    displayTeamMessage(msg.message);
+                });
+
+                // Update lastCheck using last message's timestamp
+                const latest = messages[messages.length - 1].created_at;
+
+                // Add 1 second buffer to avoid overlap
+                const adjusted = new Date(new Date(latest).getTime() + 1000).toISOString();
+                lastCheck = adjusted;
+            }
+        })
+        .catch(error => console.error("Error fetching team messages:", error));
+}
+
+
+  function displayTeamMessage(message) {
+      const container = document.getElementById("team-messages");
+      const div = document.createElement("div");
+      div.classList.add("team-msg");
+      div.textContent = message;
+      container.appendChild(div);
+
+      // Optional: Auto-scroll to latest
+      container.scrollTop = container.scrollHeight;
+
+      // Optional: Remove after 30 seconds
+      setTimeout(() => div.remove(), 30000);
+  }
+
+  // 🔁 Poll every 5 seconds
+  setInterval(pollTeamMessages, 5000);
+</script>
+    <br>
+    <footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
+      <p>
+        <a href="{{ url_for('terms') }}">Privacy & Terms of Use</a> |
+        <a href="{{ url_for('getting_started') }}">Getting Started</a> |
+        <a href="{{ url_for('logout') }}">Log Out</a> |
+        © 2025, Tim Faith <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank">CC BY-SA 4.0</a> |
+        {{ app_version }}
+      </p>
+    </footer>
+
+
+</body>
+</html>

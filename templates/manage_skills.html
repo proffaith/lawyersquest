@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}⚖️ Skills{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 820px; margin: 0 auto;">
+  <h1>⚖️ Manage Skills</h1>
+  <p>Total granted: {{ total_granted }} • Spent: {{ total_allocated }} • <strong>Unspent: <span id="remaining">{{ available }}</span></strong></p>
+
+  <form method="post" action="{{ url_for('skills.allocate_skills') }}" id="skillsForm">
+    <table class="table" style="width:100%; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th style="text-align:left;">Skill</th>
+          <th style="text-align:left;">Description</th>
+          <th style="text-align:center;">Points</th>
+          <th style="text-align:center;">Max</th>
+          <th style="text-align:center;">Adjust</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in skills %}
+          {% set cur = allocated.get(s.id, 0) %}
+          <tr>
+            <td><strong>{{ s.name }}</strong></td>
+            <td>{{ s.description or '' }}</td>
+            <td style="text-align:center;">
+              <input
+                type="number"
+                min="0"
+                max="{{ s.max_points }}"
+                value="{{ cur }}"
+                name="points[{{ s.id }}]"
+                id="points-{{ s.id }}"
+                data-current="{{ cur }}"
+                data-max="{{ s.max_points }}"
+                class="points-input"
+                style="width:70px; text-align:center;"
+              />
+            </td>
+            <td style="text-align:center;">{{ s.max_points }}</td>
+            <td style="text-align:center;">
+              <button type="button" class="dec" data-target="points-{{ s.id }}">−</button>
+              <button type="button" class="inc" data-target="points-{{ s.id }}">+</button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top: 12px;">
+      <button type="submit" id="saveBtn">Save Allocations</button>
+      <a href="{{ url_for('map_view') }}"><button type="button">Back to Map</button></a>
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+  const remainingEl = document.getElementById('remaining');
+  const inputs = Array.from(document.querySelectorAll('.points-input'));
+  const incs = Array.from(document.querySelectorAll('.inc'));
+  const decs = Array.from(document.querySelectorAll('.dec'));
+  const saveBtn = document.getElementById('saveBtn');
+
+  const totalGranted = {{ total_granted|int }};
+  const originalTotalAllocated = {{ total_allocated|int }};
+
+  function computeRemaining(){
+    const sum = inputs.reduce((acc, el) => acc + (parseInt(el.value || '0', 10)), 0);
+    const remaining = Math.max(0, totalGranted - sum);
+    remainingEl.textContent = remaining;
+    // prevent overspend client-side (server still enforces)
+    saveBtn.disabled = (sum - originalTotalAllocated) > {{ available|int }};
+  }
+
+  function clamp(el){
+    const max = parseInt(el.getAttribute('data-max'), 10);
+    let v = parseInt(el.value || '0', 10);
+    if (isNaN(v) || v < 0) v = 0;
+    if (v > max) v = max;
+    el.value = v;
+  }
+
+  inputs.forEach(el => {
+    el.addEventListener('input', () => { clamp(el); computeRemaining(); });
+  });
+
+  incs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(btn.dataset.target);
+      el.value = (parseInt(el.value || '0', 10) + 1);
+      clamp(el); computeRemaining();
+    });
+  });
+
+  decs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(btn.dataset.target);
+      el.value = (parseInt(el.value || '0', 10) - 1);
+      clamp(el); computeRemaining();
+    });
+  });
+
+  computeRemaining();
+})();
+</script>
+{% endblock %}

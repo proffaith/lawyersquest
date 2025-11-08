@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}🌿 Lawyer's Quest{% endblock %}
+{% block content %}
+
+<section class="lq-hero">
+  <header class="lq-hero-head">
+    <h1>⚔️ Welcome, Squire!</h1>
+    <p class="lq-sub">Quest through law, collect loot, and conquer exams—one precedent at a time.</p>
+  </header>
+
+  <div class="lq-hero-grid">
+    <!-- LEFT: Featured Bestiary -->
+    <aside class="lq-left">
+      <div class="lq-section-head">
+        <h2>Meet the Menagerie</h2><br><br>
+          <a class="lq-link" href="/bestiary">View full Bestiary →</a>
+      </div>
+      <div class="lq-beast-grid">
+        {% for e in featured_bestiary %}
+          <a href="/bestiary?q={{ e.name|urlencode }}" class="lq-beast-card">
+            <img src="{{ url_for('static', filename=e.img) }}" alt="{{ e.name }} image" width=150 height=150 loading="lazy" class="lq-beast-img"/>
+            <div class="lq-beast-meta">
+              <div class="lq-beast-name">{{ e.name }}</div>
+              <div class="lq-beast-sub">Lv {{ e.level }}{% if e.boss %} • Boss{% endif %}</div>
+            </div>
+          </a>
+        {% endfor %}
+
+      </div>
+    </aside>
+
+    <!-- RIGHT: Auth + CTAs -->
+    <main class="lq-right">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="lq-alert">{{ messages[0] }}</div>
+          {% if request.args.get("resend_ready") %}
+          <form action="/resend-verification" method="post" class="lq-inline">
+            <input type="hidden" name="uuid" value="{{ request.args.get('uuid') }}">
+            <button type="submit" class="lq-btn">Resend Verification Email</button>
+          </form>
+          {% endif %}
+        {% endif %}
+      {% endwith %}
+
+      <div class="lq-card">
+        <form action="/login" method="POST" class="lq-form">
+          <label class="lq-label">Enter your Squire Name</label>
+          <input type="text" name="squire_id" required class="lq-input" placeholder="e.g., LexRider42">
+          <button type="submit" class="lq-btn lq-btn-primary">Start</button>
+        </form>
+        <div class="lq-muted">New here? <a href="/register" class="lq-link">Register</a> to begin your journey.</div>
+      </div>
+
+      <div class="lq-selling-points">
+        <div class="lq-point">🐉 Battle bosses like the <em>Certiorari Serpent</em></div>
+        <div class="lq-point">📚 Learn real law with quests & case puzzles</div>
+        <div class="lq-point">🏆 Earn XP, gold & extra credit (at your professor’s discretion)</div>
+      </div>
+
+      <div class="lq-cta-row">
+        <a href="/bestiary" class="lq-btn">Browse Bestiary</a>
+        <a href="/getting_started" class="lq-btn">How it Works</a>
+      </div>
+    </main>
+  </div>
+</section>
+
+{% endblock %}

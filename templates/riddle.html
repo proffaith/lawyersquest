@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}{{ '🧙‍♂️ Riddle Challenge' }}{% endblock %}
+
+{% block content %}
+    <div class="riddle-container">
+        <h1>🧙‍♂️ A Wizard Appears!</h1>
+        <table>
+            <tr><td>{{ riddle.riddle_text }}</td></tr>
+
+            {% if show_hint == True %}
+            <tr><td>💡 Pssst: a hint ( {{ session['current_riddle']['hint'] }} )</td></tr>
+            {% endif %}
+
+            {% if show_word_count == True %}
+            <tr><td>📊 Number of words in this riddle: ( {{ session['current_riddle']['word_count'] }} )</td></tr>
+            {% endif %}
+
+            {% if show_word_length == True %}
+            <tr><td>📏 Length of each word in this riddle: ( {{ session['current_riddle']['word_length_hint'] }} )</td></tr>
+            {% endif %}
+
+            {% if partial_words_found %}
+            <tr><td>Words you've found:
+                {% for word in partial_words_found %}
+                  <span class="found-word">{{ word }}</span>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+              </td></tr>
+            {% endif %}
+
+            <!-- NEW: First letter hint (available after 3 attempts) -->
+            {% if show_first_letters and first_letter_hint %}
+                <tr><td>
+                    <strong>First letters:</strong>
+                    <code class="first-letters">{{ first_letter_hint }}</code>
+                    <small class="hint-explanation">(Unlocked after 3 attempts)</small>
+                </td></tr>
+            {% elif attempt_count < 3 %}
+                <tr><td>
+                    <strong>First letter hint:</strong>
+                    <span class="locked">🔒 Available after {{ 3 - attempt_count }} more attempt(s)</span>
+                </td></tr>
+            {% endif %}
+
+            <tr><td>
+                <form id="riddle-form" method="POST" action="{{ url_for('map.check_riddle') }}">
+                    <input type="text" id="riddle-answer" name="answer" placeholder="Your answer..." required>
+                    <button type="submit" class="submit-btn">Submit Answer</button>
+                </form>
+                <p id="result-message" class="message"></p>
+                <form action="{{ url_for('map_view') }}">
+                    <button type="submit">Return to Map</button>
+                </form>
+            </td></tr>
+        </table>
+    </div>
+
+    <script>
+$(document).ready(function() {
+  $("#riddle-form").on('submit', function(e) {
+    e.preventDefault();
+    const $form = $(this);
+    const userAnswer = $form.find('input[name="answer"]').val();
+
+    $.ajax({
+      url: $form.attr('action'),
+      method: "POST",
+      dataType: "json",
+      data: { answer: userAnswer },
+      success: function(response) {
+        // 1) Update the message
+        $("#result-message")
+          .text(response.message)
+          .toggleClass('success error', !response.success);
+
+        // 2) Update partial-words row
+        if (response.partial_words_found && response.partial_words_found.length) {
+          const spans = response.partial_words_found
+            .map(w => `<span class="found-word">${w}</span>`)
+            .join(", ");
+          if ($("#partial-words-row").length) {
+            $("#partial-words-row td").html("Words you’ve found: " + spans);
+          } else {
+            // insert *after* the result message
+            $("#result-message").closest('tr')
+              .after(`<tr id="partial-words-row"><td>Words you’ve found: ${spans}</td></tr>`);
+          }
+        }
+
+        // 3) Update first-letter hint
+        if (response.show_first_letters) {
+          const html = `
+            <tr id="first-letter-row">
+              <td>
+                <strong>First letters:</strong>
+                <code class="first-letters">${response.first_letter_hint}</code>
+                <small class="hint-explanation">(Unlocked after 3 attempts)</small>
+              </td>
+            </tr>`;
+          if ($("#first-letter-row").length) {
+            $("#first-letter-row").replaceWith(html);
+          } else {
+            $("#result-message").closest('tr').after(html);
+          }
+        }
+
+        // 4) If they got it right, go back to map
+        if (response.success) {
+          setTimeout(() => window.location.href = "{{ url_for('map_view') }}", 1000);
+        }
+      },
+      error: function() {
+        $("#result-message").text("❌ An error occurred. Please try again.");
+      }
+    });
+  });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Answer the Quest, Squire' }}{% endblock %}
+
+{% block content %}
+
+    <h1>🤔 Which is it, Squire?</h1>
+    <p>You're in room {{ pos }}</p>
+    <table width=450><tr><td>{{ question.text }}</td></tr></table>
+    <div id="question-container">
+      <form action="{{ url_for('questions.check_MC_question_enemy') }}" method="POST">
+        {% for letter, text in question["options"].items() %}
+          <label><input type="radio" name="answer" value="{{ letter }}"> {{ letter }}) {{ text }}</label><br>
+        {% endfor %}
+        <input type="hidden" name="question_id" value="{{ question['id'] }}">
+        <input type="hidden" name="question_type" value="multiple_choice">
+        <input type="hidden" name="source" value="dungeon">
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+
+{% endblock %}

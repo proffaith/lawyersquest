@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Jousting Tournament' }}{% endblock %}
+
+{% block content %}
+
+  <table>
+      <tr>
+        <td colspan="2"><h1>🤺 The Jousting Tournament Begins!</h1></td>
+      </tr>
+      <tr>
+        <td><img src="/static/tourney.jpeg" width=250 height=250
+        </td>
+        <td><p>Answer each question correctly to stay in the saddle. One wrong answer and you're unseated!</p></td>
+      </tr>
+      <tr>
+        <td colspan="2">
+        <div style="margin-bottom: 1em;">
+          <strong>🏇 Current Score:</strong>
+          {{ session.get("tournament_score", 0) }}
+        </div>
+      </td>
+    </tr>
+    </table>
+
+    <h3>⚖️ Prove Thy Legal Mettle!</h3>
+
+
+    {% if session.current_question %}
+  <div id="question-container">
+    <h2>{{ session.current_question.text }}</h2>
+    <form method="post" action="{{ url_for('questions.check_MC_question') }}">
+      <input type="hidden" name="question_id" value="{{ session.current_question.id }}">
+      <label>
+        <input type="radio" name="selected_option" value="A" required>
+        {{ session.current_question.optionA }}
+      </label><br>
+      <label>
+        <input type="radio" name="selected_option" value="B">
+        {{ session.current_question.optionB }}
+      </label><br>
+      <label>
+        <input type="radio" name="selected_option" value="C">
+        {{ session.current_question.optionC }}
+      </label><br>
+      <label>
+        <input type="radio" name="selected_option" value="D">
+        {{ session.current_question.optionD }}
+      </label><br>
+      <button type="submit">Submit Answer</button>
+    </form>
+  </div>
+{% else %}
+
+      <table>
+        <tr>
+          <td><p>The Squire that answers the most questions correctly in the tournament, wins!</p></td>
+          <td>
+              <form id="combat-form" method="post">
+                  <button type="submit" name="action" value="question">🧠 Answer the question</button>
+              </form>
+          </td>
+      </tr>
+    </table>
+
+    <p>
+  <a href="{{ url_for('tournament_results') }}">See Tournament Results</a>
+</p>
+
+{% endif %}
+
+    <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const combatForm = document.getElementById("combat-form");
+    let selectedAction = "";
+
+    // Capture the clicked button's value.
+    const buttons = combatForm.querySelectorAll("button[type=submit]");
+    buttons.forEach(button => {
+      button.addEventListener("click", () => {
+        selectedAction = button.value;
+      });
+    });
+
+    combatForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const choice = selectedAction;
+      console.log("Chosen action:", choice);
+
+      // If "question" is clicked, redirect immediately.
+      if (choice === "question") {
+        window.location.href = '{{ url_for("questions.answer_MC_question") }}';
+        return;
+      }
+
+      // Build the form data with the captured action.
+      const formData = new FormData();
+      formData.append("action", choice);
+
+      // Send the AJAX request.
+      fetch("{{ url_for('combat.ajax_handle_boss_combat') }}", {
+        method: "POST",
+        body: formData,
+        credentials: "same-origin"
+      })
+      .then(response => response.json())
+      .then(data => {
+        // If the server sends a redirect (as with flee), follow it.
+        if (data.redirect) {
+          window.location.href = data.redirect;
+          return;
+        }
+
+        // Otherwise, update the combat page for fight actions.
+        document.getElementById("player_current_hunger").textContent = data.player_current_hunger;
+        document.getElementById("player_max_hunger").textContent = data.player_max_hunger;
+        document.getElementById("boss_current_hunger").textContent = data.boss_current_hunger;
+        document.getElementById("boss_max_hunger").textContent = data.boss_max_hunger;
+
+        const playerProgress = document.getElementById("player_hunger_progress");
+        const enemyProgress = document.getElementById("enemy_hunger_progress");
+        playerProgress.value = data.player_current_hunger;
+        playerProgress.max = data.player_max_hunger;
+        enemyProgress.value = data.boss_current_hunger;
+        enemyProgress.max = data.boss_max_hunger;
+
+        // Process the latest battle message.
+        if (data.battle_log && data.battle_log.length > 0) {
+          const latestMessage = data.battle_log[data.battle_log.length - 1];
+          if (latestMessage.includes("hit the")) {
+            document.getElementById("enemy_message").textContent = latestMessage;
+            document.getElementById("player_message").textContent = "";
+          } else if (latestMessage.includes("Ouch")) {
+            document.getElementById("player_message").textContent = latestMessage;
+            document.getElementById("enemy_message").textContent = "";
+          }
+        }
+      })
+      .catch(error => {
+        console.error("Error during combat AJAX request:", error);
+      });
+    });
+  });
+</script>
+{% endblock %}

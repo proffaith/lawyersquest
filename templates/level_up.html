@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ '🌿 Level Up' }}{% endblock %}
+
+{% block content %}
+
+  <div style="text-align:center; padding: 40px;">
+      <h1>🎉 Congratulations!</h1>
+      <br><img src="{{ url_for('static', filename='level_up.png') }}" alt="Level Up!" style="max-width:300px;"><br>
+
+      <p>You’ve reached <strong>Level {{ level }}</strong>!</p>
+
+      {% if available_skill_points and available_skill_points > 0 %}
+        <p>You also earned <strong>{{ available_skill_points }}</strong> unspent skill point{{ 's' if available_skill_points != 1 else '' }}.</p>
+        <a href="{{ url_for('skills.manage_skills') }}"><button>Allocate Skill Points</button></a>
+      {% endif %}
+
+      <p>Solving riddles, defeating enemies, and opening treasure chests will increase your experience points.
+        Leveling up will improve your chances at defeating enemies in fights, and helps you to travel on the map
+        without having to eat as much food. Well done, Squire!
+
+      <br><br>
+      <a href="{{ url_for('map_view') }}">
+          <button>Continue Your Quest</button>
+      </a>
+  </div>
+
+{% endblock %}

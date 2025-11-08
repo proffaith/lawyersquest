@@ -1,0 +1,287 @@
+/* 🎨 Medieval Fantasy RPG Theme */
+@import url('https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=MedievalSharp&display=swap');
+
+/* Global Styles */
+body {
+    font-family: 'MedievalSharp', cursive;
+    background: url('parchment-texture.jpg') center/cover;
+    color: #2e1a07;
+    text-align: center;
+    padding: 10px;
+}
+
+h1, h2, h3 {
+    font-family: 'IM Fell English SC', serif;
+    color: #4a260d;
+}
+
+.game-message {
+    white-space: pre-line;
+}
+
+/* Game Map Styles */
+.game-map {
+    display: inline-block;
+    align: center;
+    border: 5px solid #5c4033;
+    background: #f4e1c6;
+    padding: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+    font-size: 24px;
+    white-space: pre;
+}
+
+.captcha-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 15px 0;
+}
+
+/* Buttons & UI */
+button {
+    background: #8b5e3c;
+    color: #fff;
+    border: 2px solid #5c4033;
+    padding: 10px 20px;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: all 0.2s;
+    font-family: 'IM Fell English', serif;
+}
+
+button:hover {
+    background: #5c4033;
+    transform: scale(1.05);
+}
+
+/* Table Styles (For Inventory, Quests, Map) */
+table {
+    width: 90%;
+    margin: auto;
+    border-collapse: collapse;
+    background: #f4e1c6;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+th, td {
+    border: 2px solid #5c4033;
+    padding: 8px;
+}
+th {
+    background: #8b5e3c;
+    color: #fff;
+}
+
+td {
+    text-align: center;
+}
+
+/* Message Popups */
+.alert {
+    background: rgba(255, 223, 186, 0.9);
+    border: 3px solid #5c4033;
+    padding: 10px;
+    font-size: 18px;
+    margin: 10px auto;
+    display: inline-block;
+    border-radius: 8px;
+}
+
+#team-messages {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 300px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(255,255,255,0.9);
+    border: 2px solid #333;
+    padding: 10px;
+    border-radius: 10px;
+    font-family: sans-serif;
+    font-size: 14px;
+    box-shadow: 0 0 10px #00000030;
+}
+.team-msg {
+    margin-bottom: 8px;
+    animation: fadein 1s;
+}
+@keyframes fadein {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 1s;
+}
+
+
+
+.map-container {
+      position: relative;
+      display: inline-block;
+      max-width: 1000px;
+      margin-top: 2em;
+    }
+
+    .map-container img {
+      width: 100%;
+      border: 5px solid #ccc;
+      border-radius: 12px;
+    }
+
+    .map-button {
+      position: absolute;
+      background-color: rgba(0, 0, 0, 0.9);
+      border: 2px solid #444;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+      transition: transform 0.1s ease;
+    }
+
+    .map-button:hover {
+      transform: scale(1.05);
+    }
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1em;
+      margin-top: 1em;
+    }
+
+    .inventory-card {
+      background: #f4f4f4;
+      border: 1px solid #ccc;
+      padding: 1em;
+      border-radius: 8px;
+      min-height: 100px;
+    }
+
+    .category-toggle {
+      background-color: #dfeffd;
+      cursor: pointer;
+    }
+
+    .category-toggle:hover {
+      background-color: #cbe0ff;
+    }
+    #blacksmith-thinking p {
+      font-style: italic;
+      animation: fadeInOut 2s ease-in-out infinite;
+    }
+
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    .dungeon-move-table {
+        margin: 20px auto;
+        text-align: center;
+        border-collapse: collapse;
+      }
+
+      .dungeon-move-table td {
+        width: 120px;
+        height: 60px;
+      }
+
+      .move-button {
+        width: 100px;
+      }
+
+      .invisible {
+        visibility: hidden;
+      }
+
+/* Bestiary stat block */
+.lq-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* label | value */
+  gap: .5rem 1rem;
+  text-align: left;
+  margin-top: 1rem;
+  font-size: 0.95rem;
+}
+.lq-stat-grid dt { color: #6b7280; }          /* slate-ish */
+.lq-stat-grid dd { font-weight: 600; }        /* medium */
+.lq-tag-list { display: flex; flex-wrap: wrap; gap: .25rem; }
+.lq-tag { background: #eef2ff; border: 1px solid #c7d2fe; padding: 2px 6px; border-radius: 9999px; font-size: 12px; }
+
+.lq-hero { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem; }
+.lq-hero-head h1 { margin: 0; font-size: 2rem; }
+.lq-sub { color: #475569; margin-top: .25rem; }
+.lq-hero-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 2rem; align-items: start; }
+@media (max-width: 960px) { .lq-hero-grid { grid-template-columns: 1fr; } }
+
+/* Section head */
+.lq-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; margin-bottom: .5rem; }
+.lq-link { text-decoration: underline; color: #111827; }
+.lq-link:hover { opacity: .85; }
+
+/* Bestiary grid (left) */
+.lq-beast-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .75rem; }
+@media (min-width: 1280px) { .lq-beast-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+.lq-beast-card { display: block; border: 1px solid #e5e7eb; border-radius: .85rem; overflow: hidden; background: #fff; }
+.lq-beast-card:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.06); transition: all .15s ease; }
+.lq-beast-img { width: 100%; height: 120px; object-fit: cover; display: block; }
+.lq-beast-meta { padding: .5rem .6rem; }
+.lq-beast-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lq-beast-sub { font-size: .8rem; color: #64748b; }
+
+/* Right column */
+.lq-card { border: 1px solid #e5e7eb; border-radius: 1rem; padding: 1rem; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.04); }
+.lq-form { display: grid; gap: .5rem; }
+.lq-label { font-weight: 600; }
+.lq-input { border: 1px solid #cbd5e1; border-radius: .6rem; padding: .5rem .75rem; font-size: 1rem; }
+.lq-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
+.lq-btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border: 1px solid #e5e7eb; border-radius: .6rem; padding: .5rem .9rem; background: #fff; cursor: pointer; }
+.lq-btn:hover { background: #f8fafc; }
+.lq-btn-primary { background: #111827; color: #fff; border-color: #111827; }
+.lq-btn-primary:hover { opacity: .95; }
+.lq-inline { margin-top: .5rem; }
+.lq-muted { color: #64748b; margin-top: .5rem; }
+.lq-alert { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; padding: .5rem .75rem; border-radius: .6rem; margin-bottom: .75rem; }
+.lq-selling-points { margin-top: 1rem; display: grid; gap: .4rem; }
+.lq-point { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: .6rem; padding: .5rem .75rem; }
+.lq-cta-row { margin-top: 1rem; display: flex; gap: .5rem; flex-wrap: wrap; }
+
+
+/* --- Sprite System --- */
+.sprite {
+  width: calc(var(--w) * 1px);
+  height: calc(var(--h) * 1px);
+  background-image: var(--sheet);
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: calc(var(--w) * var(--frames) * 1px) calc(var(--h) * 1px);
+  transform: scale(var(--scale, 1));
+  transform-origin: bottom center;
+  image-rendering: pixelated; /* optional retro look */
+  margin: 0 auto 8px;
+}
+
+/* one-shot animation class; JS toggles these */
+.sprite.play {
+  animation: sprite-play calc(var(--frames) / var(--fps) * 1s) steps(var(--frames)) 1;
+}
+
+@keyframes sprite-play {
+  from { background-position: 0 0; }
+  to   { background-position: calc(-1 * (var(--frames) - 1) * var(--w) * 1px) 0; }
+}
+
+/* Optional visual cues per state, if you want */
+.sprite.attack { filter: none; }
+.sprite.hurt { filter: saturate(0.6) brightness(0.9); }
+.sprite.stagger { transform: translateX(-2px); }

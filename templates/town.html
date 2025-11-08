@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}{{ '🏙️ BitTown' }}{% endblock %}
+
+{% block content %}
+
+    <h1>🏙️ Welcome to BitTown!</h1>
+    <!-- ✅ Show job completion message -->
+    {% if job_message %}
+        <p style="color: green;">{{ job_message }}</p>
+    {% endif %}
+    <style>
+    /* 📍 Adjust these values based on your layout and test it in-browser */
+    #shop-btn { top: 26%; left: 18%; }
+    #town-office-btn { top: 55%; left: 52%; }
+    #hall-of-fame-btn { top: 20%; left: 70%; }
+    #team-fame-btn { top: 40%; left: 75%; }
+    #exit-btn { top: 82%; left: 46%; }
+    </style>
+    <script>
+function workInTown() {
+    fetch("{{ url_for('town.town_work') }}", { method: "POST" })
+        .then(response => response.json()) // ✅ Ensure JSON is properly handled
+        .then(data => {
+            if (!data.success) {
+                alert(data.message);  // ✅ Show message instead of blank page
+                if (data.message.includes("face the dangers")) {
+                    window.location.href = "{{ url_for('combat.encounter_enemy') }}"; // ✅ Redirect to combat
+                }
+            } else {
+                alert(data.message);  // ✅ Show success message
+            }
+        })
+        .catch(error => console.error("Error:", error));
+}
+</script>
+
+<div class="map-container">
+  <img src="{{ url_for('static', filename='bitTown.jpeg') }}" alt="BitTown Map">
+
+
+    <form action="{{ url_for('town.shop') }}">
+        <button class="map-button" id="shop-btn" type="submit">🛒 Visit the Mall</button>
+    </form>
+
+    <form action="{{ url_for('town.town_work') }}">
+        <button class="map-button" id="town-office-btn" type="submit">💼 Work at the Town Office (Earn Bits)</button>
+    </form>
+
+    <form action="{{ url_for('town.hall_of_fame') }}">
+        <button class="map-button" id="hall-of-fame-btn" type="submit">🏆 Visit the Hall of Fame</button>
+    </form>
+
+    <form action="{{ url_for('town.team_fame') }}">
+        <button class="map-button" id="team-fame-btn" type="submit">🏆 Teams Hall</button>
+    </form>
+
+    <form action="{{ url_for('map_view') }}">
+        <button class="map-button" id="exit-btn" type="submit">🚶 Leave Town</button>
+    </form>
+</div>
+{% endblock %}
