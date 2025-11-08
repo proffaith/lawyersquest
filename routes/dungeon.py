@@ -20,6 +20,11 @@ from utils.shared import degrade_gear
 
 from utils.rules import _get_answered_ids,_current_quest_info,_source_quest_ids,_resolve_rules_for_mode,_pick_question
 
+from services.question_service import (
+    select_question, prepare_question_data, get_template_for_context,
+    validate_answer, QuestionContext, QuestionResult
+)
+
 dungeon_bp = Blueprint('dungeon', __name__)
 
 def get_current_dungeon_room(squire_id, pos, quest_id=39):
@@ -150,6 +155,7 @@ def move_in_dungeon(direction):
 
 @dungeon_bp.route('/dungeon/mcq')
 def present_mcq():
+    """Unified MCQ presentation for dungeon"""
     squire_id = flask_session.get("squire_id")
     quest_id  = flask_session.get("quest_id")
     mode      = flask_session.get("mode") or "dungeon"
@@ -158,38 +164,43 @@ def present_mcq():
     if not squire_id or not quest_id:
         return redirect(url_for("login"))
 
-    with db_session() as db:
-        answered_ids = _get_answered_ids(db, squire_id, "multiple_choice")
-        rules = _resolve_rules_for_mode(db, quest_id, mode, qtype="mcq")
-        source_ids = _source_quest_ids(db, quest_id, rules)
-        if not source_ids:
-            flask_session["battle_summary"] = "No prior content to review yet. You must flee!"
-            return redirect(url_for("ajax_handle_boss_combat"))
+    db = db_session()
+    try:
+        # Get recent questions to exclude
+        recent_ids = flask_session.get("recent_mcq_ids", [])
 
-        mcq = _pick_question(db, MultipleChoiceQuestion, source_ids, answered_ids,
-                             difficulty=rules.get("difficulty"))
+        # Select question using unified service
+        mcq = select_question(
+            db=db,
+            squire_id=squire_id,
+            quest_id=quest_id,
+            question_type="multiple_choice",
+            mode=mode,
+            level=flask_session.get("level", 1),
+            exclude_recent=recent_ids
+        )
+
         if not mcq:
-            flask_session["battle_summary"] = "No question available. You must flee!"
-            return redirect(url_for("ajax_handle_boss_combat"))
+            flash("No question available.")
+            return redirect(url_for("dungeon.dungeon_map"))
 
-        flask_session["current_question"] = {
-            "id":            mcq.id,
-            "text":          mcq.question_text,
-            "options": {
-                "A": mcq.optionA, "B": mcq.optionB, "C": mcq.optionC, "D": mcq.optionD,
-            },
-            "correctAnswer": mcq.correctAnswer
-        }
-        # Optional per-session dedupe so players don't see repeats in one run
-        recent = set(flask_session.get("recent_mcq_ids", [])); recent.add(mcq.id)
+        # Prepare question data
+        question_data = prepare_question_data(mcq, "multiple_choice")
+        flask_session["current_question"] = question_data
+
+        # Track recent questions
+        recent = set(recent_ids)
+        recent.add(mcq.id)
         flask_session["recent_mcq_ids"] = list(recent)[-20:]
 
-        return render_template("dungeon_mcq.html",
-                               question=flask_session["current_question"], pos=pos)
+        return render_template("dungeon_mcq.html", question=question_data, pos=pos)
+    finally:
+        db.close()
 
 
 @dungeon_bp.route('/dungeon/tf')
 def present_tf():
+    """Unified True/False presentation for dungeon"""
     squire_id = flask_session.get("squire_id")
     quest_id  = flask_session.get("quest_id")
     mode      = flask_session.get("mode") or "dungeon"
@@ -198,25 +209,30 @@ def present_tf():
     if not squire_id or not quest_id:
         return redirect(url_for("login"))
 
-    with db_session() as db:
-        answered_ids = _get_answered_ids(db, squire_id, "true_false")
-        rules = _resolve_rules_for_mode(db, quest_id, mode, qtype="tf")
-        source_ids = _source_quest_ids(db, quest_id, rules)
-        if not source_ids:
-            flash("Nothing to review yet.")
-            return redirect(url_for("dungeon.dungeon_map"))
+    db = db_session()
+    try:
+        # Select question using unified service
+        tfq = select_question(
+            db=db,
+            squire_id=squire_id,
+            quest_id=quest_id,
+            question_type="true_false",
+            mode=mode,
+            level=flask_session.get("level", 1)
+        )
 
-        tfq = _pick_question(db, TrueFalseQuestion, source_ids, answered_ids,
-                             difficulty=rules.get("difficulty"))
         if not tfq:
             flash("No TF question available.")
             return redirect(url_for("dungeon.dungeon_map"))
 
         return render_template("dungeon_tf.html", question=tfq, pos=pos)
+    finally:
+        db.close()
 
 
 @dungeon_bp.route('/dungeon/riddle')
 def present_riddle():
+    """Unified riddle presentation for dungeon"""
     squire_id = flask_session.get("squire_id")
     quest_id  = flask_session.get("quest_id")
     mode      = flask_session.get("mode") or "dungeon"
@@ -225,49 +241,53 @@ def present_riddle():
     if not squire_id or not quest_id:
         return redirect(url_for("login"))
 
-    with db_session() as db:
-        answered_ids = _get_answered_ids(db, squire_id, "riddle")
-        rules = _resolve_rules_for_mode(db, quest_id, mode, qtype="riddle")
-        source_ids = _source_quest_ids(db, quest_id, rules)
-        if not source_ids:
-            flash("No riddles to review yet.")
-            return redirect(url_for("dungeon.dungeon_map"))
+    db = db_session()
+    try:
+        # Select question using unified service
+        r = select_question(
+            db=db,
+            squire_id=squire_id,
+            quest_id=quest_id,
+            question_type="riddle",
+            mode=mode,
+            level=flask_session.get("level", 1)
+        )
 
-        r = _pick_question(db, Riddle, source_ids, answered_ids,
-                           difficulty=rules.get("difficulty"))
         if not r:
             flash("No riddle available.")
             return redirect(url_for("dungeon.dungeon_map"))
 
+        # Get hint settings
         show_hint        = ishint(db, squire_id)
         show_word_count  = iswordcounthint(db, squire_id)
         show_word_length = iswordlengthhint(db, squire_id)
 
+        # Initialize riddle attempt tracking
         riddle_session = flask_session.get("riddle_attempts", {})
         riddle_session.setdefault("attempt_count", 0)
         riddle_session.setdefault("all_attempts", [])
         riddle_session.setdefault("partial_words_found", [])
         flask_session["riddle_attempts"] = riddle_session
 
-        flask_session["current_riddle"] = {
-            "id":               r.id,
-            "riddle_text":      r.riddle_text,
-            "answer":           r.answer,
-            "hint":             r.hint,
-            "word_length_hint": r.word_length_hint,
-            "word_count":       r.word_count,
+        # Prepare riddle data
+        riddle_data = prepare_question_data(r, "riddle")
+        riddle_data.update({
             "show_hint":        show_hint,
             "show_word_length": show_word_length,
             "show_word_count":  show_word_count
-        }
+        })
+        flask_session["current_riddle"] = riddle_data
 
         return render_template("dungeon_riddle.html",
-                               riddle=flask_session["current_riddle"],
-                               pos=pos, show_hint=show_hint,
-                               show_word_count=show_word_count)
+                             riddle=riddle_data,
+                             pos=pos, show_hint=show_hint,
+                             show_word_count=show_word_count)
+    finally:
+        db.close()
 
 @dungeon_bp.route('/dungeon/treasure')
 def present_treasure():
+    """Unified treasure riddle presentation for dungeon"""
     squire_id = flask_session.get("squire_id")
     quest_id  = flask_session.get("quest_id")
     mode      = flask_session.get("mode") or "dungeon"
@@ -276,18 +296,25 @@ def present_treasure():
     if not squire_id or not quest_id:
         return redirect(url_for("login"))
 
-    with db_session() as db:
-        answered_ids = _get_answered_ids(db, squire_id, "riddle")
-        rules = _resolve_rules_for_mode(db, quest_id, mode, qtype="riddle")
-        source_ids = _source_quest_ids(db, quest_id, rules)
-        r = _pick_question(db, Riddle, source_ids, answered_ids,
-                           difficulty=rules.get("difficulty"))
+    db = db_session()
+    try:
+        # Select question using unified service
+        r = select_question(
+            db=db,
+            squire_id=squire_id,
+            quest_id=quest_id,
+            question_type="riddle",
+            mode=mode,
+            level=flask_session.get("level", 1)
+        )
+
         if not r:
             flash("No treasure riddle available.")
             return redirect(url_for("dungeon.dungeon_map"))
 
         show_hint = ishint(db, squire_id)
 
+        # Prepare treasure riddle data
         flask_session["current_treasure_riddle"] = {
             "id": r.id,
             "riddle_id": r.id,
@@ -300,7 +327,9 @@ def present_treasure():
         }
 
         return render_template("dungeon_treasure.html",
-                               chest=flask_session["current_treasure_riddle"], pos=pos)
+                             chest=flask_session["current_treasure_riddle"], pos=pos)
+    finally:
+        db.close()
 
 
 

@@ -1,6 +1,6 @@
 # Question-related routes
 from flask import Blueprint, session, request, jsonify, render_template, redirect, url_for, flash
-from db import db_session, Squire, TrueFalseQuestion, SquireQuestion, MultipleChoiceQuestion, Team, SquireTournamentScore, SquireQuestionAttempt, Quest, MapNode
+from db import db_session, Squire, TrueFalseQuestion, SquireQuestion, MultipleChoiceQuestion, Team, SquireTournamentScore, SquireQuestionAttempt, Quest, MapNode, Enemy
 from sqlalchemy import func, and_, desc
 import random
 import logging
@@ -15,6 +15,10 @@ from utils.shared import update_squire_question
 
 from utils.api_calls import generate_openai_question
 from services.progress import update_squire_progress
+from services.question_service import (
+    select_question, prepare_question_data, get_template_for_context,
+    validate_answer, QuestionContext, QuestionResult
+)
 
 from utils.rules import _get_answered_ids,_current_quest_info,_source_quest_ids,_resolve_rules_for_mode,_pick_question
 
@@ -258,219 +262,61 @@ def handle_true_false_question():
 
 @questions_bp.route('/answer_question', methods=['GET'])
 def answer_question():
+    """Unified question presentation for regular enemy encounters"""
     squire_id   = session.get("squire_id")
     quest_id    = session.get("quest_id")
     level       = session.get("level") or 1
     pending_job = session.get("pending_job")
+
     if not (squire_id and quest_id):
         return redirect(url_for('login'))
 
     db = db_session()
     try:
-        # ---- dialect-safe random ----
-        try:
-            dialect = db.bind.dialect.name  # 'mysql', 'sqlite', 'postgresql', etc.
-        except Exception:
-            dialect = "unknown"
-        randfunc = func.rand() if dialect in ("mysql", "mariadb") else func.random()
-
-        # ---- dynamic mode/boundary ----
-        review_mode, node_type = is_review_mode(db, quest_id)  # returns (bool, str|None)
-        prev_boss = get_prev_boss_boundary(db, quest_id) if review_mode else None
-        if review_mode and prev_boss is None:
-            prev_boss = 0
-
-        # Always derive course_id from quest
-        course_id = get_course_id_for_quest(db, quest_id)
-        if course_id is None:
-            current_app.logger.warning(f"answer_question: quest_id={quest_id} has no course_id")
-            return redirect(url_for('login'))
-
-        # ----- pick question type safely -----
+        # Determine question type based on level and job
         if pending_job:
             question_type = random.choice(["true_false", "multiple_choice"]) if pending_job.get("job_id", 0) > 2 else "true_false"
         else:
             enemy = session.get("enemy") or {}
-            enemylevel = int(enemy.get("min_level", 1))
+            enemy_level = int(enemy.get("min_level", 1))
             lvl = int(level) if isinstance(level, int) else 1
-            question_type = random.choice(["true_false", "multiple_choice", "api_question"]) if (lvl > 2 and enemylevel > 2) else "true_false"
+            question_type = random.choice(["true_false", "multiple_choice", "api_question"]) if (lvl > 2 and enemy_level > 2) else "true_false"
 
-        # ----- scope helpers -----
-        def tf_scope(q, use_review: bool):
-            if use_review and prev_boss < quest_id:
-                return (q.join(Quest, Quest.id == TrueFalseQuestion.quest_id)
-                         .filter(Quest.course_id == course_id)
-                         .filter(TrueFalseQuestion.quest_id > prev_boss,
-                                 TrueFalseQuestion.quest_id < quest_id))
-            return q.filter(TrueFalseQuestion.quest_id == quest_id)
+        # Determine mode based on quest node type
+        review_mode, node_type = is_review_mode(db, quest_id)
+        mode = node_type if review_mode else None
 
-        def mc_scope(q, use_review: bool):
-            if use_review and prev_boss < quest_id:
-                return (q.join(Quest, Quest.id == MultipleChoiceQuestion.quest_id)
-                         .filter(Quest.course_id == course_id)
-                         .filter(MultipleChoiceQuestion.quest_id > prev_boss,
-                                 MultipleChoiceQuestion.quest_id < quest_id))
-            return q.filter(MultipleChoiceQuestion.quest_id == quest_id)
+        # Select question using unified service
+        question = select_question(
+            db=db,
+            squire_id=squire_id,
+            quest_id=quest_id,
+            question_type=question_type,
+            mode=mode,
+            level=lvl
+        )
 
-        # small logger to see window + totals
-        def log_counts(tf_total, mc_total, use_review):
-            logging.info(
-                f"/answer_question qid={quest_id} course={course_id} "
-                f"review={use_review} prev_boss={prev_boss} "
-                f"tf_total={tf_total} mc_total={mc_total} dialect={dialect}"
-            )
+        if not question:
+            session["battle_summary"] = "No question available. You must fight!"
+            return redirect(url_for("combat.combat"))
 
-        # ====== TRUE/FALSE ======
+        # Prepare question data for template
+        question_data = prepare_question_data(question, question_type)
+        session["current_question"] = question_data
+
+        # Get appropriate template
+        context = QuestionContext(source="enemy", enemy=session.get("enemy", {}))
+        template = get_template_for_context(question_type, context)
+
+        # Render with appropriate template
         if question_type == "true_false":
-            # try review window first (if review_mode), else single quest
-            use_review = bool(review_mode)
-            base_tf_query = tf_scope(db.query(TrueFalseQuestion), use_review)
-            total_qs = base_tf_query.count()
-
-            # Fallback to single quest if review window is empty
-            if total_qs == 0 and use_review:
-                use_review = False
-                base_tf_query = tf_scope(db.query(TrueFalseQuestion), use_review)
-                total_qs = base_tf_query.count()
-
-            # answered set (scoped the same way)
-            answered_rows = (
-                tf_scope(
-                    db.query(SquireQuestion.question_id)
-                      .filter(SquireQuestion.squire_id == squire_id,
-                              SquireQuestion.question_type == 'true_false')
-                      .join(TrueFalseQuestion, SquireQuestion.question_id == TrueFalseQuestion.id),
-                    use_review
-                )
-                .with_entities(SquireQuestion.question_id)
-                .all()
-            )
-            answered_ids = {qid for (qid,) in answered_rows}
-
-            log_counts(tf_total=total_qs, mc_total=-1, use_review=use_review)
-
-            # candidate query
-            q = tf_scope(
-                db.query(TrueFalseQuestion.id,
-                         TrueFalseQuestion.question,
-                         TrueFalseQuestion.correct_answer),
-                use_review
-            )
-
-            # exclude answered only if it wouldn't empty the pool
-            if total_qs > 0 and len(answered_ids) < total_qs:
-                q = q.filter(~TrueFalseQuestion.id.in_(answered_ids))
-
-            row = q.order_by(randfunc).first()
-
-            # if exclusion over-filtered, try once more WITHOUT exclusion
-            if not row and total_qs > 0:
-                q2 = tf_scope(
-                    db.query(TrueFalseQuestion.id,
-                             TrueFalseQuestion.question,
-                             TrueFalseQuestion.correct_answer),
-                    use_review
-                )
-                row = q2.order_by(randfunc).first()
-
-            if not row:
-                session["battle_summary"] = "No question available. You must fight!"
-                return redirect(url_for("combat.combat"))
-
-            session["current_question"] = {"id": row.id, "text": row.question}
             return render_template("answer_question.html",
-                                   question={"id": row.id, "question": row.question})
-
-        # ====== API (MC generated) ======
-        elif question_type == "api_question":
-            # choose a quest number from the window, else fall back to quest_id
-            use_review = bool(review_mode and prev_boss < quest_id - 1)
-            if use_review:
-                population = list(range(prev_boss + 1, quest_id))
-                r = random.choice(population) if population else quest_id-1
-                q_data = generate_openai_question(r)
-            else:
-                q_data = generate_openai_question(quest_id-1)
-
-            session["current_question"] = {
-                "id": "api",
-                "type": "api_generated",
-                "text": q_data["question"],
-                "options": q_data["options"],
-                "correct_answer": q_data["correct_answer"]
-            }
-            return render_template("answer_question_mc.html", question=session["current_question"])
-
-        # ====== MULTIPLE CHOICE ======
+                                 question={"id": question_data["id"], "question": question_data["text"]})
         else:
-            use_review = bool(review_mode)
-            base_mc_query = mc_scope(db.query(MultipleChoiceQuestion), use_review)
-            mc_total_qs = base_mc_query.count()
-
-            # Fallback to single quest if window empty
-            if mc_total_qs == 0 and use_review:
-                use_review = False
-                base_mc_query = mc_scope(db.query(MultipleChoiceQuestion), use_review)
-                mc_total_qs = base_mc_query.count()
-
-            log_counts(tf_total=-1, mc_total=mc_total_qs, use_review=use_review)
-
-            answered_mc = (
-                mc_scope(
-                    db.query(SquireQuestion.question_id)
-                      .filter(SquireQuestion.squire_id == squire_id,
-                              SquireQuestion.question_type == 'multiple_choice')
-                      .join(MultipleChoiceQuestion, SquireQuestion.question_id == MultipleChoiceQuestion.id),
-                    use_review
-                )
-                .with_entities(SquireQuestion.question_id)
-                .all()
-            )
-            mc_answered_ids = {qid for (qid,) in answered_mc}
-
-            mc_q = mc_scope(
-                db.query(MultipleChoiceQuestion.id,
-                         MultipleChoiceQuestion.question_text,
-                         MultipleChoiceQuestion.optionA,
-                         MultipleChoiceQuestion.optionB,
-                         MultipleChoiceQuestion.optionC,
-                         MultipleChoiceQuestion.optionD,
-                         MultipleChoiceQuestion.correctAnswer),
-                use_review
-            )
-            if mc_total_qs > 0 and len(mc_answered_ids) < mc_total_qs:
-                mc_q = mc_q.filter(~MultipleChoiceQuestion.id.in_(mc_answered_ids))
-
-            mc = mc_q.order_by(randfunc).first()
-
-            # try once more without exclusion if over-filtered
-            if not mc and mc_total_qs > 0:
-                mc2 = mc_scope(
-                    db.query(MultipleChoiceQuestion.id,
-                             MultipleChoiceQuestion.question_text,
-                             MultipleChoiceQuestion.optionA,
-                             MultipleChoiceQuestion.optionB,
-                             MultipleChoiceQuestion.optionC,
-                             MultipleChoiceQuestion.optionD,
-                             MultipleChoiceQuestion.correctAnswer),
-                    use_review
-                ).order_by(randfunc)
-                mc = mc2.first()
-
-            if not mc:
-                session["battle_summary"] = "No question available. You must fight!"
-                return redirect(url_for("combat.combat"))
-
-            session["current_question"] = {
-                "id": mc.id,
-                "text": mc.question_text,
-                "type": "multiple_choice",
-                "options": {"A": mc.optionA, "B": mc.optionB, "C": mc.optionC, "D": mc.optionD},
-            }
-            return render_template("answer_question_mc.html", question=session["current_question"])
+            return render_template("answer_question_mc.html", question=question_data)
 
     except Exception:
-        logging.exception(f"/answer_question crashed (quest_id={quest_id}, prev_boss={prev_boss if 'prev_boss' in locals() else None})")
+        logging.exception(f"/answer_question crashed (quest_id={quest_id})")
         session["battle_summary"] = "Question error. You must fight!"
         return redirect(url_for("combat.combat"))
     finally:
@@ -916,7 +762,7 @@ def check_MC_question_enemy():
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Boss and Tourney Section
 @questions_bp.route('/answer_MC_question', methods=['GET'])
 def answer_MC_question():
-    """Displays a random multiple‐choice question for boss combat."""
+    """Unified question presentation for boss combat and tournaments"""
     boss       = session.get('boss', None)
     squire_id  = session.get("squire_id")
     quest_id   = session.get("quest_id")
@@ -928,50 +774,36 @@ def answer_MC_question():
     if mode == "tournament" and 'tournament_score' not in session:
         session['tournament_score'] = 0
 
-    # pull in hunger if needed elsewhere
-    player_current_hunger = session.get("player_current_hunger", 0)
-    boss_current_hunger   = session.get("boss_current_hunger", 0)
-    session['boss_max_hunger'] = int(boss.get('max_hunger', 0))
-
+    # Initialize hunger for boss fights
+    if boss:
+        session['boss_max_hunger'] = int(boss.get('max_hunger', 0))
 
     db = db_session()
     try:
-        answered_ids = _get_answered_ids(db, squire_id, "multiple_choice")
-        rules        = _resolve_rules_for_mode(db, quest_id, mode, qtype="mcq")
-
-        # 1) compute the source quests (same course, prior by display_number/id)
-        source_ids = _source_quest_ids(db, quest_id, rules)
-        if not source_ids:
-            session["battle_summary"] = "No prior content to review yet. You must flee!"
-            return redirect(url_for("ajax_handle_boss_combat"))
-
-        # 2) pick a question; honors difficulty if your MCQ model has it
-        mcq = _pick_question(
-            db,
-            MultipleChoiceQuestion,
-            source_quest_ids=source_ids,
-            exclude_ids=answered_ids,
-            difficulty=rules.get("difficulty"),
+        # Select question using unified service
+        mcq = select_question(
+            db=db,
+            squire_id=squire_id,
+            quest_id=quest_id,
+            question_type="multiple_choice",
+            mode=mode,
+            level=session.get("level", 1)
         )
 
         if not mcq:
             session["battle_summary"] = "No question available. You must flee!"
             return redirect(url_for("ajax_handle_boss_combat"))
 
-        # 3) Store for validation in session
-        session["current_question"] = {
-            "id":            mcq.id,
-            "text":          mcq.question_text,
-            "optionA":       mcq.optionA,
-            "optionB":       mcq.optionB,
-            "optionC":       mcq.optionC,
-            "optionD":       mcq.optionD,
-            "correctAnswer": mcq.correctAnswer
-        }
+        # Prepare question data
+        question_data = prepare_question_data(mcq, "multiple_choice")
+        session["current_question"] = question_data
+
+        # Get appropriate template based on mode
+        context = QuestionContext(source="boss", boss=boss or {}, mode=mode)
+        template = get_template_for_context("multiple_choice", context)
 
         if mode == "tournament":
             return render_template('tourney_combat.html')
-
         else:
             return render_template(
                 'boss_combat.html',
@@ -979,7 +811,6 @@ def answer_MC_question():
                 enemy_message=session.pop("enemy_message", ""),
                 player_message=session.pop("player_message", "")
             )
-
 
     finally:
         db.close()
