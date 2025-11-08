@@ -140,6 +140,31 @@ app.config.update(
     MAIL_DEBUG=False,   # optional: logs more info
 )
 
+
+# --------- To Be Implemented -----------------
+
+#login_manager = LoginManager()
+#login_manager.login_view = 'login'  # or your login endpoint
+#login_manager.init_app(app)
+
+#@login_manager.user_loader
+#def load_user(user_id):
+#    db = db_session()
+#    try:
+#        squire = (
+#            db.query(Squire)
+#            .filter(func.lower(Squire.id) == user_id)
+#            .one_or_none()
+#        )
+#        return squire
+#    except Exception as e:
+#        logging.exception(f"Error returning logged in squire {e}")
+#    finally:
+#        db.close()
+
+
+
+
 # 2) Init AFTER config is set
 mail = Mail(app)
 
@@ -353,18 +378,20 @@ def getting_started():
     return render_template('getting_started.html')
 
 @app.route("/level_up")
-@login_required
 def level_up():
     new_level = flask_session.pop("new_level", None)
     flask_session.pop("leveled_up", None)
+    squire_id = flask_session.get("squire_id")
+    level = flask_session.get("level")
+
 
     if not new_level:
         return redirect(url_for("map_view"))  # or map/home if accessed accidentally
 
     db = db_session()
     try:
-        _, _, _, _, available = get_skill_state(db, current_user.squire_id, current_user.level)
-        return render_template("level_up.html", level=current_user.level, available_skill_points=available)
+        _, _, _, _, available = get_skill_state(db, squire_id, level)
+        return render_template("level_up.html", level=level, available_skill_points=available)
     finally:
         db.close()
 

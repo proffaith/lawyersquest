@@ -1,13 +1,15 @@
 # routes/skills.py
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from sqlalchemy import select
-from db import db_session, Skill, SquireSkillPoint
-from flask_login import current_user, login_required
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session as flask_session
+from sqlalchemy import select, func
+from db import db_session, Skill, SquireSkillPoint, LevelSkillGrant
+from flask_login import current_user, login_required, LoginManager
+
 
 skills_bp = Blueprint("skills", __name__, url_prefix="/skills")
 
 def get_skill_state(session, squire_id: int, current_level: int):
     """Returns (skills, allocated_by_skill_id, total_granted, total_allocated, available)."""
+    player_id = flask_session.get("squire_id")
     # total granted up to current_level
     total_granted = session.scalar(
         select(func.coalesce(func.sum(LevelSkillGrant.points_granted), 0))
@@ -28,19 +30,18 @@ def get_skill_state(session, squire_id: int, current_level: int):
     available = max(0, total_granted - total_allocated)
     return skills, allocated, total_granted, total_allocated, available
 
-@login_required
 @skills_bp.route("/", methods=["GET"])
 def manage_skills():
     db = db_session()
     try:
-        squire_id = current_user.squire_id  # adapt if your Squire id lives elsewhere
-        current_level = current_user.level  # or however you store level
+        squire_id = flask_session.get("squire_id")  # adapt if your Squire id lives elsewhere
+        current_level = flask_session.get("level")  # or however you store level
 
         skills, allocated, total_granted, total_allocated, available = get_skill_state(
             db, squire_id, current_level
         )
         return render_template(
-            "skills/manage_skills.html",
+            "../templates/manage_skills.html",
             skills=skills,
             allocated=allocated,
             available=available,
@@ -50,13 +51,12 @@ def manage_skills():
     finally:
         db.close()
 
-@login_required
 @skills_bp.route("/allocate", methods=["POST"])
 def allocate_skills():
     db = db_session()
     try:
-        squire_id = current_user.squire_id
-        current_level = current_user.level
+        squire_id = flask_session.get("squire_id")
+        current_level = flask_session.get("level")
 
         # Recompute server-side truth
         skills, allocated, _, _, available = get_skill_state(db, squire_id, current_level)

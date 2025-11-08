@@ -17468,3 +17468,1364 @@ TypeError: 'NoneType' object is not subscriptable
 2025-11-06 01:02:08,044 - root - DEBUG - Check_MC_question qid/user_answer 1414/C
 2025-11-06 01:02:08,955 - root - DEBUG - ⚔️ complete_quest start: squire=915, quest=77
 2025-11-06 01:02:09,397 - root - DEBUG - DEBUG: Quest Message in Session → []
+2025-11-07 21:52:35,335 - root - INFO - File logging enabled in development mode
+2025-11-07 21:52:36,073 - root - INFO - File logging enabled in development mode
+2025-11-07 21:52:36,099 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 21:52:46,820 - root - DEBUG - DEBUG: Quest Message in Session → []
+2025-11-07 22:01:33,074 - root - INFO - File logging enabled in development mode
+2025-11-07 22:01:33,706 - root - INFO - File logging enabled in development mode
+2025-11-07 22:01:33,730 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 22:01:42,943 - root - DEBUG - DEBUG: Quest Message in Session → []
+2025-11-07 22:03:11,233 - root - DEBUG - DEBUG: Quest Message in Session → []
+2025-11-07 22:03:15,741 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:03:16,245 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:03:42,318 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:03:42,791 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:03:47,707 - root - DEBUG - Moving W from (0,0) → (-1,0)
+2025-11-07 22:03:48,270 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:03:48,502 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:09,066 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:09,553 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:04:11,211 - root - DEBUG - Moving W from (-1,0) → (-2,0)
+2025-11-07 22:04:11,765 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:11,993 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:13,034 - root - DEBUG - Moving W from (-2,0) → (-3,0)
+2025-11-07 22:04:13,593 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:13,818 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:14,717 - root - DEBUG - Moving W from (-3,0) → (-4,0)
+2025-11-07 22:04:15,289 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:15,513 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:16,441 - root - DEBUG - Moving W from (-4,0) → (-5,0)
+2025-11-07 22:04:16,997 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:17,220 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:18,142 - root - DEBUG - Moving W from (-5,0) → (-6,0)
+2025-11-07 22:04:18,699 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:18,933 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:20,052 - root - DEBUG - Moving W from (-6,0) → (-7,0)
+2025-11-07 22:04:20,610 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:20,848 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:21,889 - root - DEBUG - Moving W from (-7,0) → (-8,0)
+2025-11-07 22:04:22,448 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:22,671 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:23,702 - root - DEBUG - Moving W from (-8,0) → (-9,0)
+2025-11-07 22:04:24,269 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:24,528 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:25,493 - root - DEBUG - Moving W from (-9,0) → (-10,0)
+2025-11-07 22:04:26,091 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:26,340 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:27,405 - root - DEBUG - Moving W from (-10,0) → (-11,0)
+2025-11-07 22:04:27,994 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:28,265 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:29,538 - root - DEBUG - Moving W from (-11,0) → (-12,0)
+2025-11-07 22:04:30,129 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:30,383 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:31,496 - root - DEBUG - Moving W from (-12,0) → (-13,0)
+2025-11-07 22:04:32,098 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:32,346 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:33,409 - root - DEBUG - Moving W from (-13,0) → (-14,0)
+2025-11-07 22:04:34,007 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:34,234 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:34,803 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:35,333 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:04:35,581 - root - DEBUG - Moving W from (-14,0) → (-15,0)
+2025-11-07 22:04:36,142 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:36,373 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:37,699 - root - DEBUG - Moving W from (-15,0) → (-16,0)
+2025-11-07 22:04:38,288 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:38,516 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:39,825 - root - DEBUG - Moving W from (-16,0) → (-17,0)
+2025-11-07 22:04:40,388 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:40,608 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:41,884 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 22:04:42,385 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 22:04:42,385 - root - DEBUG - combat_mods → squire=954, enemy=🕵️ Lex Lurker, gear=28, special=0, level=8, team_rank_mod=1, total=37
+2025-11-07 22:04:42,496 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 22:04:42,577 - root - DEBUG - Dist / Base / F / M: 0 4 False  False
+2025-11-07 22:04:42,578 - root - DEBUG - mod_enemy_max_hunger = 4
+2025-11-07 22:04:45,739 - root - INFO - /answer_question qid=39 course=1 review=True prev_boss=32 tf_total=567 mc_total=-1 dialect=mysql
+2025-11-07 22:04:50,025 - root - DEBUG - TF Check: squire=954, qid=2976, user=1, correct=1
+2025-11-07 22:04:52,681 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:53,148 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:04:55,236 - root - DEBUG - Moving W from (-17,0) → (-18,0)
+2025-11-07 22:04:55,821 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:56,048 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:04:57,838 - root - DEBUG - Moving W from (-18,0) → (-19,0)
+2025-11-07 22:04:58,408 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:04:58,633 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:00,410 - root - DEBUG - Moving W from (-19,0) → (-20,0)
+2025-11-07 22:05:00,988 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:01,225 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:02,307 - root - DEBUG - Moving W from (-20,0) → (-21,0)
+2025-11-07 22:05:02,885 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:03,105 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:04,130 - root - DEBUG - Moving W from (-21,0) → (-22,0)
+2025-11-07 22:05:04,723 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:12,753 - openai._base_client - DEBUG - Request options: {'method': 'post', 'url': '/chat/completions', 'files': None, 'json_data': {'messages': [{'role': 'system', 'content': "You are a trader, wily, smooth-talking, always looking for a profit. You're haggling over an item in a fantasy town."}, {'role': 'user', 'content': "The player offered 20 gold for '🥩 Steak Dinner', normally worth 50 gold. Respond as a clever NPC, and include a number for your counteroffer in the reply. Your response should be short, and end with: [Counteroffer: <amount>]"}], 'model': 'gpt-4'}}
+2025-11-07 22:05:12,837 - openai._base_client - DEBUG - Sending HTTP Request: POST https://api.openai.com/v1/chat/completions
+2025-11-07 22:05:12,838 - httpcore.connection - DEBUG - connect_tcp.started host='api.openai.com' port=443 local_address=None timeout=5.0 socket_options=None
+2025-11-07 22:05:12,922 - httpcore.connection - DEBUG - connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x10d8e96a0>
+2025-11-07 22:05:12,923 - httpcore.connection - DEBUG - start_tls.started ssl_context=<ssl.SSLContext object at 0x10a275770> server_hostname='api.openai.com' timeout=5.0
+2025-11-07 22:05:12,959 - httpcore.connection - DEBUG - start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x10d818f50>
+2025-11-07 22:05:12,959 - httpcore.http11 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2025-11-07 22:05:12,960 - httpcore.http11 - DEBUG - send_request_headers.complete
+2025-11-07 22:05:12,960 - httpcore.http11 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2025-11-07 22:05:12,960 - httpcore.http11 - DEBUG - send_request_body.complete
+2025-11-07 22:05:12,960 - httpcore.http11 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2025-11-07 22:05:17,335 - httpcore.http11 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Sat, 08 Nov 2025 03:05:17 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'access-control-expose-headers', b'X-Request-ID'), (b'openai-organization', b'faith-at-law-llc'), (b'openai-processing-ms', b'3425'), (b'openai-project', b'proj_YKiMl656CwpZNbwMKldQbl9h'), (b'openai-version', b'2020-10-01'), (b'x-envoy-upstream-service-time', b'3687'), (b'x-ratelimit-limit-requests', b'10000'), (b'x-ratelimit-limit-tokens', b'300000'), (b'x-ratelimit-remaining-requests', b'9999'), (b'x-ratelimit-remaining-tokens', b'299911'), (b'x-ratelimit-reset-requests', b'6ms'), (b'x-ratelimit-reset-tokens', b'17ms'), (b'x-request-id', b'req_024a559ac16146fa8b15f9439fcf1429'), (b'x-openai-proxy-wasm', b'v0.1'), (b'cf-cache-status', b'DYNAMIC'), (b'Set-Cookie', b'__cf_bm=rwXHKEkX.qMMXfDSjYbaczNB7LQDV6ey1LZsgoc8BDk-1762571117-1.0.1.1-tApdYFiolKTxrcoTSbASNinEfmPAQyjV8BU40QpMbCvQE36_zeLcy7qB3S.6N1GCbfpU2PQva98l8hEqQzqFRY7Q0iTmR7hVlEZmsI8Q8mk; path=/; expires=Sat, 08-Nov-25 03:35:17 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None'), (b'Strict-Transport-Security', b'max-age=31536000; includeSubDomains; preload'), (b'X-Content-Type-Options', b'nosniff'), (b'Set-Cookie', b'_cfuvid=xaOb4L_7HYpbm_k21r77NI5wXe7uMywMuNKfHTigGoI-1762571117337-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None'), (b'Server', b'cloudflare'), (b'CF-RAY', b'99b1d8f03e05e623-IAD'), (b'Content-Encoding', b'gzip'), (b'alt-svc', b'h3=":443"; ma=86400')])
+2025-11-07 22:05:17,337 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-07 22:05:17,337 - httpcore.http11 - DEBUG - receive_response_body.started request=<Request [b'POST']>
+2025-11-07 22:05:17,353 - httpcore.http11 - DEBUG - receive_response_body.complete
+2025-11-07 22:05:17,353 - httpcore.http11 - DEBUG - response_closed.started
+2025-11-07 22:05:17,353 - httpcore.http11 - DEBUG - response_closed.complete
+2025-11-07 22:05:17,353 - openai._base_client - DEBUG - HTTP Response: POST https://api.openai.com/v1/chat/completions "200 OK" Headers([('date', 'Sat, 08 Nov 2025 03:05:17 GMT'), ('content-type', 'application/json'), ('transfer-encoding', 'chunked'), ('connection', 'keep-alive'), ('access-control-expose-headers', 'X-Request-ID'), ('openai-organization', 'faith-at-law-llc'), ('openai-processing-ms', '3425'), ('openai-project', 'proj_YKiMl656CwpZNbwMKldQbl9h'), ('openai-version', '2020-10-01'), ('x-envoy-upstream-service-time', '3687'), ('x-ratelimit-limit-requests', '10000'), ('x-ratelimit-limit-tokens', '300000'), ('x-ratelimit-remaining-requests', '9999'), ('x-ratelimit-remaining-tokens', '299911'), ('x-ratelimit-reset-requests', '6ms'), ('x-ratelimit-reset-tokens', '17ms'), ('x-request-id', 'req_024a559ac16146fa8b15f9439fcf1429'), ('x-openai-proxy-wasm', 'v0.1'), ('cf-cache-status', 'DYNAMIC'), ('set-cookie', '__cf_bm=rwXHKEkX.qMMXfDSjYbaczNB7LQDV6ey1LZsgoc8BDk-1762571117-1.0.1.1-tApdYFiolKTxrcoTSbASNinEfmPAQyjV8BU40QpMbCvQE36_zeLcy7qB3S.6N1GCbfpU2PQva98l8hEqQzqFRY7Q0iTmR7hVlEZmsI8Q8mk; path=/; expires=Sat, 08-Nov-25 03:35:17 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None'), ('strict-transport-security', 'max-age=31536000; includeSubDomains; preload'), ('x-content-type-options', 'nosniff'), ('set-cookie', '_cfuvid=xaOb4L_7HYpbm_k21r77NI5wXe7uMywMuNKfHTigGoI-1762571117337-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None'), ('server', 'cloudflare'), ('cf-ray', '99b1d8f03e05e623-IAD'), ('content-encoding', 'gzip'), ('alt-svc', 'h3=":443"; ma=86400')])
+2025-11-07 22:05:17,354 - openai._base_client - DEBUG - request_id: req_024a559ac16146fa8b15f9439fcf1429
+2025-11-07 22:05:20,288 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:20,745 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:05:23,623 - root - DEBUG - Moving W from (-22,0) → (-23,0)
+2025-11-07 22:05:24,196 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:24,432 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:25,802 - root - DEBUG - Moving W from (-23,0) → (-24,0)
+2025-11-07 22:05:26,384 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:26,616 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:28,319 - root - DEBUG - Moving W from (-24,0) → (-25,0)
+2025-11-07 22:05:28,905 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:29,151 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:30,445 - root - DEBUG - Moving N from (-25,0) → (-25,1)
+2025-11-07 22:05:31,067 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:31,311 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:32,737 - root - DEBUG - Moving N from (-25,1) → (-25,2)
+2025-11-07 22:05:33,346 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:33,582 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:34,637 - root - DEBUG - Moving N from (-25,2) → (-25,3)
+2025-11-07 22:05:35,239 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:35,490 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:36,716 - root - DEBUG - Moving N from (-25,3) → (-25,4)
+2025-11-07 22:05:37,284 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:37,508 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:38,562 - root - DEBUG - Moving N from (-25,4) → (-25,5)
+2025-11-07 22:05:39,151 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:39,490 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:40,733 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 22:05:40,993 - root - DEBUG - Moving N from (-25,5) → (-25,6)
+2025-11-07 22:05:41,232 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 22:05:41,232 - root - DEBUG - combat_mods → squire=954, enemy=Unfriendly Lawyer, gear=28, special=0, level=8, team_rank_mod=1, total=37
+2025-11-07 22:05:41,336 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 22:05:41,424 - root - DEBUG - Dist / Base / F / M: 125 2 False  False
+2025-11-07 22:05:41,424 - root - DEBUG - mod_enemy_max_hunger = 3
+2025-11-07 22:05:41,548 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:41,788 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:47,544 - root - INFO - /answer_question qid=39 course=1 review=True prev_boss=32 tf_total=567 mc_total=-1 dialect=mysql
+2025-11-07 22:05:50,932 - root - DEBUG - TF Check: squire=954, qid=3227, user=1, correct=1
+2025-11-07 22:05:53,399 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:53,892 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:05:55,041 - root - DEBUG - Moving N from (-25,6) → (-25,7)
+2025-11-07 22:05:55,627 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:55,862 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:56,940 - root - DEBUG - Moving N from (-25,7) → (-25,8)
+2025-11-07 22:05:57,511 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:57,754 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:05:59,082 - root - DEBUG - Moving N from (-25,8) → (-25,9)
+2025-11-07 22:05:59,693 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:05:59,923 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:01,299 - root - DEBUG - Moving N from (-25,9) → (-25,10)
+2025-11-07 22:06:01,862 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:02,105 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:03,307 - root - DEBUG - Moving N from (-25,10) → (-25,11)
+2025-11-07 22:06:03,876 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:04,117 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:07,160 - root - DEBUG - Moving N from (-25,11) → (-25,12)
+2025-11-07 22:06:07,692 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:07,932 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:09,634 - root - DEBUG - Moving N from (-25,12) → (-25,13)
+2025-11-07 22:06:10,224 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:10,471 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:11,588 - root - DEBUG - Moving N from (-25,13) → (-25,14)
+2025-11-07 22:06:12,147 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:12,386 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:12,945 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:13,434 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:06:15,344 - root - DEBUG - Moving N from (-25,14) → (-25,15)
+2025-11-07 22:06:15,930 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:16,158 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:33,543 - root - DEBUG - Moving N from (-25,15) → (-25,16)
+2025-11-07 22:06:34,120 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:34,361 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:35,493 - root - DEBUG - Moving N from (-25,16) → (-25,17)
+2025-11-07 22:06:36,045 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:36,270 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:37,375 - root - DEBUG - Moving N from (-25,17) → (-25,18)
+2025-11-07 22:06:37,945 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:38,177 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:39,266 - root - DEBUG - Moving N from (-25,18) → (-25,19)
+2025-11-07 22:06:39,837 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:40,076 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:41,066 - root - DEBUG - Moving N from (-25,19) → (-25,20)
+2025-11-07 22:06:41,651 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:41,904 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:42,945 - root - DEBUG - Moving N from (-25,20) → (-25,21)
+2025-11-07 22:06:43,571 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:43,828 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:44,399 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:44,864 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:06:44,893 - root - DEBUG - Moving N from (-25,21) → (-25,22)
+2025-11-07 22:06:45,471 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:45,707 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:51,845 - root - DEBUG - Moving N from (-25,22) → (-25,23)
+2025-11-07 22:06:52,406 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:52,637 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:54,122 - root - DEBUG - Moving N from (-25,23) → (-25,24)
+2025-11-07 22:06:54,681 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:54,919 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:56,124 - root - DEBUG - Moving N from (-25,24) → (-25,25)
+2025-11-07 22:06:56,689 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:56,952 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:06:58,123 - root - DEBUG - Moving N from (-25,25) → (-25,26)
+2025-11-07 22:06:58,909 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:06:59,214 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:02,092 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:02,572 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:07:03,631 - root - DEBUG - Moving N from (-25,26) → (-25,27)
+2025-11-07 22:07:04,223 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:04,447 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:05,614 - root - DEBUG - Moving N from (-25,27) → (-25,28)
+2025-11-07 22:07:06,186 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:06,414 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:07,810 - root - DEBUG - Moving N from (-25,28) → (-25,29)
+2025-11-07 22:07:08,404 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:10,437 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:10,999 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:07:12,092 - root - DEBUG - Moving N from (-25,29) → (-25,30)
+2025-11-07 22:07:12,673 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:12,905 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:14,046 - root - DEBUG - Moving N from (-25,30) → (-25,31)
+2025-11-07 22:07:14,645 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:14,893 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:16,107 - root - DEBUG - Moving N from (-25,31) → (-25,32)
+2025-11-07 22:07:16,708 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:16,964 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:18,155 - root - DEBUG - Moving N from (-25,32) → (-25,33)
+2025-11-07 22:07:18,730 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:18,968 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:20,254 - root - DEBUG - Moving N from (-25,33) → (-25,34)
+2025-11-07 22:07:20,848 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:21,087 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:22,957 - root - DEBUG - Moving N from (-25,34) → (-25,35)
+2025-11-07 22:07:23,518 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:23,734 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:25,161 - root - DEBUG - Moving N from (-25,35) → (-25,36)
+2025-11-07 22:07:25,750 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:25,974 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:27,099 - root - DEBUG - Moving N from (-25,36) → (-25,37)
+2025-11-07 22:07:27,654 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:27,869 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:28,958 - root - DEBUG - Moving N from (-25,37) → (-25,38)
+2025-11-07 22:07:29,585 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:32,900 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:33,405 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:07:34,600 - root - DEBUG - Moving N from (-25,38) → (-25,39)
+2025-11-07 22:07:35,218 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:35,456 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:36,690 - root - DEBUG - Moving N from (-25,39) → (-25,40)
+2025-11-07 22:07:37,287 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:37,505 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:38,980 - root - DEBUG - Moving N from (-25,40) → (-25,41)
+2025-11-07 22:07:39,571 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:39,831 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:41,267 - root - DEBUG - Moving N from (-25,41) → (-25,42)
+2025-11-07 22:07:41,923 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:42,187 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:43,378 - root - DEBUG - Moving N from (-25,42) → (-25,43)
+2025-11-07 22:07:43,966 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:44,266 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:45,360 - root - DEBUG - Moving N from (-25,43) → (-25,44)
+2025-11-07 22:07:45,930 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:46,177 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:47,338 - root - DEBUG - Moving N from (-25,44) → (-25,45)
+2025-11-07 22:07:47,406 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 22:07:47,890 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 22:07:47,890 - root - DEBUG - combat_mods → squire=954, enemy=Rogue Judge, gear=28, special=0, level=8, team_rank_mod=1, total=37
+2025-11-07 22:07:47,918 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:07:48,024 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 22:07:48,090 - root - DEBUG - Dist / Base / F / M: 1100 2 False  False
+2025-11-07 22:07:48,091 - root - DEBUG - mod_enemy_max_hunger = 7
+2025-11-07 22:07:48,128 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:51,678 - root - INFO - /answer_question qid=39 course=1 review=True prev_boss=32 tf_total=567 mc_total=-1 dialect=mysql
+2025-11-07 22:07:55,105 - root - DEBUG - TF Check: squire=954, qid=2967, user=0, correct=0
+2025-11-07 22:07:57,747 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:07:58,239 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:07:59,430 - root - DEBUG - Moving N from (-25,45) → (-25,46)
+2025-11-07 22:07:59,995 - root - DEBUG - Combat Probability: 0.11
+2025-11-07 22:08:00,243 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:08:01,326 - root - DEBUG - Moving N from (-25,46) → (-25,47)
+2025-11-07 22:08:01,895 - root - DEBUG - Combat Probability: 0.13
+2025-11-07 22:08:02,123 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:08:03,350 - root - DEBUG - Moving N from (-25,47) → (-25,48)
+2025-11-07 22:08:03,915 - root - DEBUG - Combat Probability: 0.15000000000000002
+2025-11-07 22:08:04,138 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:08:05,393 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 22:08:05,629 - root - DEBUG - Moving N from (-25,48) → (-25,49)
+2025-11-07 22:08:05,858 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 22:08:05,858 - root - DEBUG - combat_mods → squire=954, enemy=Bureaucratic Troll, gear=28, special=0, level=8, team_rank_mod=1, total=37
+2025-11-07 22:08:05,965 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 22:08:06,050 - root - DEBUG - Dist / Base / F / M: 1200 2 True  False
+2025-11-07 22:08:06,050 - root - DEBUG - mod_enemy_max_hunger = 9
+2025-11-07 22:08:06,194 - root - DEBUG - Combat Probability: 0.19
+2025-11-07 22:08:06,417 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:08:09,634 - root - INFO - /answer_question qid=39 course=1 review=True prev_boss=32 tf_total=567 mc_total=-1 dialect=mysql
+2025-11-07 22:08:16,719 - root - DEBUG - TF Check: squire=954, qid=3446, user=1, correct=1
+2025-11-07 22:08:19,498 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:08:20,003 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:08:21,288 - root - DEBUG - Moving N from (-25,49) → (-25,50)
+2025-11-07 22:08:21,885 - root - DEBUG - Combat Probability: 0.21000000000000002
+2025-11-07 22:08:22,934 - root - DEBUG - Redirecting to room type handler: riddle
+2025-11-07 22:08:53,598 - root - DEBUG - Session contents: <SecureCookieSession {'battle_summary': 'Question error. You must fight!', 'blacksmith_last_offer': None, 'boss_defeated': True, 'boss_max_hunger': 16, 'course_id': 1, 'current_question': {'id': 3446, 'text': 'Harassment defense requires prompt corrective action.'}, 'current_riddle': {'answer': 'Collective bargaining agreement', 'hint': 'Lecture transcript', 'id': 569, 'riddle_text': 'What agreement through a union sets just-cause termination standards?', 'show_hint': False, 'show_word_count': True, 'show_word_length': True, 'word_count': 3, 'word_length_hint': '10 10 9'}, 'dungeon_pos': [0, 0], 'enemy': {'description': 'A red-tape loving beast blocks your progress with paperwork.', 'fps': 12, 'frame_h': 128, 'frame_w': 128, 'frames_attack': 1, 'frames_hurt': 1, 'frames_idle': 1, 'frames_stagger': 1, 'gold_reward': 4, 'has_weapon': True, 'id': 4, 'in_forest': True, 'in_mountain': False, 'max_hunger': 2, 'min_level': 1, 'name': 'Bureaucratic Troll', 'sprite_attack': 'sprites/bureaucratic_troll/attack.png', 'sprite_hurt': 'sprites/bureaucratic_troll/hurt.png', 'sprite_idle': 'sprites/bureaucratic_troll/idle.png', 'sprite_stagger': 'sprites/bureaucratic_troll/stagger.png', 'static_image': 'troll.jpeg', 'weakness': '📬 Stamp', 'xp_reward': 6}, 'enemy_current_hunger': 0, 'enemy_message': '💥 Good Answer! Lexiconis is getting hungrier.', 'forced_combat': False, 'hit_chance': 45, 'level': 4, 'mod_enemy_max_hunger': 9, 'mod_for_distance': 1200, 'mode': 'dungeon', 'player_current_hunger': 0, 'player_gold': 400, 'player_max_hunger': 8, 'quest_completed': True, 'quest_id': 39, 'question_chances': 68.0, 'question_id': None, 'riddle_attempts': {'all_attempts': [], 'attempt_count': 0, 'partial_words_found': []}, 'riddle_message': "You've solved all riddles for this quest!", 'safe_chances': 38, 'squire_id': 954, 'squire_name': 'Pink', 'squire_quest_id': 6251, 'team_id': 3}>
+2025-11-07 22:08:53,598 - root - DEBUG - Current riddle in session: {'answer': 'Collective bargaining agreement', 'hint': 'Lecture transcript', 'id': 569, 'riddle_text': 'What agreement through a union sets just-cause termination standards?', 'show_hint': False, 'show_word_count': True, 'show_word_length': True, 'word_count': 3, 'word_length_hint': '10 10 9'}
+2025-11-07 22:08:53,720 - root - INFO - Checking partial match: 'for cause termination' vs 'collective bargaining agreement'
+2025-11-07 22:08:53,721 - root - INFO - User words: ['for', 'cause', 'termination']
+2025-11-07 22:08:53,721 - root - INFO - Answer words: ['collective', 'bargaining', 'agreement']
+2025-11-07 22:08:53,721 - root - INFO - Partial match result: {'found_words': [], 'missing_words': [(0, 'collective'), (1, 'bargaining'), (2, 'agreement')], 'total_words': 3, 'found_count': 0}
+2025-11-07 22:09:01,453 - root - DEBUG - Redirecting to room type handler: true_false
+2025-11-07 22:09:07,621 - root - DEBUG - TF Check: squire=954, qid=3327, user=1, correct=1
+2025-11-07 22:09:12,061 - root - DEBUG - Redirecting to room type handler: treasure
+2025-11-07 22:09:29,188 - root - DEBUG - Calc Riddle Reward: level=4
+2025-11-07 22:09:29,221 - root - DEBUG - Calc Riddle Reward: picked magic belt with base uses 10
+2025-11-07 22:09:29,255 - root - DEBUG - Calc Riddle Reward: difficulty=Medium
+2025-11-07 22:09:35,001 - root - DEBUG - Redirecting to room type handler: true_false
+2025-11-07 22:09:43,827 - root - DEBUG - TF Check: squire=954, qid=3075, user=0, correct=0
+2025-11-07 22:13:22,826 - root - DEBUG - TF Check: squire=954, qid=3075, user=0, correct=0
+2025-11-07 22:15:30,286 - root - INFO - File logging enabled in development mode
+2025-11-07 22:15:30,316 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 22:15:36,587 - root - DEBUG - TF Check: squire=954, qid=3075, user=0, correct=0
+2025-11-07 22:16:24,546 - root - INFO - File logging enabled in development mode
+2025-11-07 22:16:24,578 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 22:21:08,154 - root - INFO - File logging enabled in development mode
+2025-11-07 22:21:08,180 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 22:21:52,976 - root - INFO - File logging enabled in development mode
+2025-11-07 22:21:53,004 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 22:22:03,570 - root - DEBUG - DEBUG: Quest Message in Session → []
+2025-11-07 22:22:08,383 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:22:08,849 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:22:37,704 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:22:38,176 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:22:39,341 - root - DEBUG - Moving W from (0,0) → (-1,0)
+2025-11-07 22:22:39,991 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:22:40,303 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:22:41,684 - root - DEBUG - Moving W from (-1,0) → (-2,0)
+2025-11-07 22:22:42,294 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:22:42,519 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:22:43,645 - root - DEBUG - Moving W from (-2,0) → (-3,0)
+2025-11-07 22:22:44,113 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 22:22:44,239 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:22:44,650 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 22:22:44,651 - root - DEBUG - combat_mods → squire=954, enemy=🐎 Subpoena Centaur, gear=29, special=0, level=10, team_rank_mod=1, total=40
+2025-11-07 22:22:44,776 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 22:22:44,866 - root - DEBUG - Dist / Base / F / M: 0 6 True  True
+2025-11-07 22:22:44,866 - root - DEBUG - mod_enemy_max_hunger = 8
+2025-11-07 22:22:48,820 - root - INFO - /answer_question qid=39 course=1 review=True prev_boss=32 tf_total=567 mc_total=-1 dialect=mysql
+2025-11-07 22:22:52,366 - root - DEBUG - TF Check: squire=954, qid=3211, user=1, correct=1
+2025-11-07 22:23:47,688 - root - INFO - File logging enabled in development mode
+2025-11-07 22:23:47,714 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 22:23:54,317 - root - DEBUG - DEBUG: Quest Message in Session → []
+2025-11-07 22:23:57,964 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:23:58,496 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:24:00,802 - root - DEBUG - Moving W from (0,0) → (-1,0)
+2025-11-07 22:24:01,395 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:04,977 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:05,437 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:24:06,519 - root - DEBUG - Moving W from (-1,0) → (-2,0)
+2025-11-07 22:24:07,106 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:07,333 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:08,798 - root - DEBUG - Moving W from (-2,0) → (-3,0)
+2025-11-07 22:24:09,379 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:09,597 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:11,349 - root - DEBUG - Moving W from (-3,0) → (-4,0)
+2025-11-07 22:24:11,942 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:12,160 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:13,262 - root - DEBUG - Moving W from (-4,0) → (-5,0)
+2025-11-07 22:24:13,822 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:14,048 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:15,401 - root - DEBUG - Moving W from (-5,0) → (-6,0)
+2025-11-07 22:24:16,043 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:16,281 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:17,393 - root - DEBUG - Moving W from (-6,0) → (-7,0)
+2025-11-07 22:24:17,982 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:18,233 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:19,236 - root - DEBUG - Moving W from (-7,0) → (-8,0)
+2025-11-07 22:24:19,840 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:22,813 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:23,337 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:24:24,310 - root - DEBUG - Moving W from (-8,0) → (-9,0)
+2025-11-07 22:24:24,916 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:27,748 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:28,225 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:24:29,699 - root - DEBUG - Moving W from (-9,0) → (-10,0)
+2025-11-07 22:24:30,273 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:33,565 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:34,033 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:24:35,055 - root - DEBUG - Moving W from (-10,0) → (-11,0)
+2025-11-07 22:24:35,625 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:35,848 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:37,987 - root - DEBUG - Moving W from (-11,0) → (-12,0)
+2025-11-07 22:24:38,541 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:38,819 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:40,150 - root - DEBUG - Moving W from (-12,0) → (-13,0)
+2025-11-07 22:24:40,740 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:40,998 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:42,081 - root - DEBUG - Moving W from (-13,0) → (-14,0)
+2025-11-07 22:24:42,655 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:42,945 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:44,485 - root - DEBUG - Moving W from (-14,0) → (-15,0)
+2025-11-07 22:24:45,044 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:45,265 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:24:46,902 - root - DEBUG - Moving W from (-15,0) → (-16,0)
+2025-11-07 22:24:47,485 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:24:47,729 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:26:17,936 - root - DEBUG - Moving W from (-16,0) → (-17,0)
+2025-11-07 22:26:18,501 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:26:18,718 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:26:20,213 - root - DEBUG - Moving W from (-17,0) → (-18,0)
+2025-11-07 22:26:20,763 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:26:20,991 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:26:22,180 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 22:26:22,650 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 22:26:22,651 - root - DEBUG - combat_mods → squire=954, enemy=Tax Auditor, gear=29, special=1, level=10, team_rank_mod=1, total=45
+2025-11-07 22:26:22,758 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 22:26:22,852 - root - DEBUG - Dist / Base / F / M: 0 2 False  False
+2025-11-07 22:26:22,852 - root - DEBUG - mod_enemy_max_hunger = 2
+2025-11-07 22:26:27,751 - root - INFO - /answer_question qid=39 course=1 review=True prev_boss=32 tf_total=567 mc_total=-1 dialect=mysql
+2025-11-07 22:26:31,156 - root - DEBUG - TF Check: squire=954, qid=3444, user=1, correct=1
+2025-11-07 22:27:10,880 - root - INFO - File logging enabled in development mode
+2025-11-07 22:27:10,908 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 22:27:16,960 - root - DEBUG - DEBUG: Quest Message in Session → []
+2025-11-07 22:27:20,854 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:21,354 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:27:23,206 - root - DEBUG - Moving W from (0,0) → (-1,0)
+2025-11-07 22:27:23,793 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:27:24,027 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:25,814 - root - DEBUG - Moving W from (-1,0) → (-2,0)
+2025-11-07 22:27:26,387 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:27:26,631 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:28,422 - root - DEBUG - Moving W from (-2,0) → (-3,0)
+2025-11-07 22:27:28,975 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:27:29,199 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:31,643 - root - DEBUG - Moving W from (-3,0) → (-4,0)
+2025-11-07 22:27:32,320 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:27:32,551 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:37,159 - root - DEBUG - Moving W from (-4,0) → (-5,0)
+2025-11-07 22:27:37,772 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:27:38,000 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:39,652 - root - DEBUG - Moving W from (-5,0) → (-6,0)
+2025-11-07 22:27:40,262 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:27:40,500 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:41,076 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:41,545 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:27:43,629 - root - DEBUG - Moving W from (-6,0) → (-7,0)
+2025-11-07 22:27:44,216 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:27:44,465 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:45,781 - root - DEBUG - Moving W from (-7,0) → (-8,0)
+2025-11-07 22:27:46,357 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:27:46,604 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:47,754 - root - DEBUG - Moving W from (-8,0) → (-9,0)
+2025-11-07 22:27:48,420 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:27:48,657 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:49,824 - root - DEBUG - Moving W from (-9,0) → (-10,0)
+2025-11-07 22:27:50,398 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:27:50,638 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:52,005 - root - DEBUG - Moving W from (-10,0) → (-11,0)
+2025-11-07 22:27:52,566 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:27:52,806 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:54,299 - root - DEBUG - Moving W from (-11,0) → (-12,0)
+2025-11-07 22:27:54,870 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:27:55,106 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:55,657 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:27:56,122 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:27:57,505 - root - DEBUG - Moving W from (-12,0) → (-13,0)
+2025-11-07 22:27:58,090 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:27:58,356 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:01,449 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:01,914 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:28:02,907 - root - DEBUG - Moving W from (-13,0) → (-14,0)
+2025-11-07 22:28:03,475 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:03,718 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:04,920 - root - DEBUG - Moving W from (-14,0) → (-15,0)
+2025-11-07 22:28:05,510 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:05,741 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:08,014 - root - DEBUG - Moving W from (-15,0) → (-16,0)
+2025-11-07 22:28:08,604 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:08,841 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:10,124 - root - DEBUG - Moving W from (-16,0) → (-17,0)
+2025-11-07 22:28:10,701 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:10,960 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:12,542 - root - DEBUG - Moving W from (-17,0) → (-18,0)
+2025-11-07 22:28:13,089 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:13,345 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:14,593 - root - DEBUG - Moving W from (-18,0) → (-19,0)
+2025-11-07 22:28:15,238 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:15,486 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:16,586 - root - DEBUG - Moving W from (-19,0) → (-20,0)
+2025-11-07 22:28:17,173 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:17,446 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:18,532 - root - DEBUG - Moving W from (-20,0) → (-21,0)
+2025-11-07 22:28:19,130 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:19,373 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:20,369 - root - DEBUG - Moving W from (-21,0) → (-22,0)
+2025-11-07 22:28:20,916 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:21,135 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:22,117 - root - DEBUG - Moving W from (-22,0) → (-23,0)
+2025-11-07 22:28:22,701 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:24,670 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:25,212 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:28:26,140 - root - DEBUG - Moving W from (-23,0) → (-24,0)
+2025-11-07 22:28:26,729 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:26,990 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:28,065 - root - DEBUG - Moving W from (-24,0) → (-25,0)
+2025-11-07 22:28:28,657 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:28,905 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:30,184 - root - DEBUG - Moving N from (-25,0) → (-25,1)
+2025-11-07 22:28:30,814 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:31,049 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:32,556 - root - DEBUG - Moving N from (-25,1) → (-25,2)
+2025-11-07 22:28:33,194 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:33,417 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:34,706 - root - DEBUG - Moving N from (-25,2) → (-25,3)
+2025-11-07 22:28:35,313 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:35,537 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:36,588 - root - DEBUG - Moving N from (-25,3) → (-25,4)
+2025-11-07 22:28:37,209 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:37,457 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:38,878 - root - DEBUG - Moving N from (-25,4) → (-25,5)
+2025-11-07 22:28:39,464 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:39,757 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:40,988 - root - DEBUG - Moving N from (-25,5) → (-25,6)
+2025-11-07 22:28:41,559 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:41,789 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:42,863 - root - DEBUG - Moving N from (-25,6) → (-25,7)
+2025-11-07 22:28:43,617 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:43,924 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:45,007 - root - DEBUG - Moving N from (-25,7) → (-25,8)
+2025-11-07 22:28:45,601 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:45,860 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:48,130 - root - DEBUG - Moving N from (-25,8) → (-25,9)
+2025-11-07 22:28:48,671 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:48,908 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:49,987 - root - DEBUG - Moving N from (-25,9) → (-25,10)
+2025-11-07 22:28:50,585 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:50,828 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:52,131 - root - DEBUG - Moving N from (-25,10) → (-25,11)
+2025-11-07 22:28:52,706 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:52,941 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:54,746 - root - DEBUG - Moving N from (-25,11) → (-25,12)
+2025-11-07 22:28:55,340 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:55,552 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:56,881 - root - DEBUG - Moving N from (-25,12) → (-25,13)
+2025-11-07 22:28:57,448 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:57,671 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:28:58,539 - root - DEBUG - Moving N from (-25,13) → (-25,14)
+2025-11-07 22:28:59,083 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:28:59,303 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:29:00,891 - root - DEBUG - Moving N from (-25,14) → (-25,15)
+2025-11-07 22:29:01,480 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:29:01,714 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:29:03,040 - root - DEBUG - Moving N from (-25,15) → (-25,16)
+2025-11-07 22:29:03,611 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:29:03,840 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:29:04,788 - root - DEBUG - Moving N from (-25,16) → (-25,17)
+2025-11-07 22:29:05,359 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:29:05,583 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:29:07,078 - root - DEBUG - Moving N from (-25,17) → (-25,18)
+2025-11-07 22:29:07,691 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:29:07,919 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:29:08,731 - root - DEBUG - Moving N from (-25,18) → (-25,19)
+2025-11-07 22:29:09,306 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:29:09,514 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:29:11,228 - root - DEBUG - Moving N from (-25,19) → (-25,20)
+2025-11-07 22:29:11,806 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:29:12,028 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:29:13,630 - root - DEBUG - Moving N from (-25,20) → (-25,21)
+2025-11-07 22:29:14,207 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:29:14,446 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:29:15,481 - root - DEBUG - Moving N from (-25,21) → (-25,22)
+2025-11-07 22:29:16,075 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:29:16,317 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:29:17,672 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 22:29:17,763 - root - DEBUG - Moving N from (-25,22) → (-25,23)
+2025-11-07 22:29:18,329 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 22:29:18,330 - root - DEBUG - combat_mods → squire=954, enemy=Bureaucratic Troll, gear=29, special=0, level=10, team_rank_mod=1, total=40
+2025-11-07 22:29:18,440 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 22:29:18,499 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:29:18,527 - root - DEBUG - Dist / Base / F / M: 550 2 False  False
+2025-11-07 22:29:18,528 - root - DEBUG - mod_enemy_max_hunger = 5
+2025-11-07 22:29:18,739 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:29:22,339 - root - INFO - /answer_question qid=39 course=1 review=True prev_boss=32 tf_total=567 mc_total=-1 dialect=mysql
+2025-11-07 22:29:49,993 - root - ERROR - General error in check_true_false_question
+Traceback (most recent call last):
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/connections.py", line 782, in _read_bytes
+    data = self._rfile.read(num_bytes)
+  File "/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/socket.py", line 719, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/ssl.py", line 1304, in recv_into
+    return self.read(nbytes, buffer)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.7/Frameworks/Python.framework/Versions/3.13/lib/python3.13/ssl.py", line 1138, in read
+    return self._sslobj.read(len, buffer)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+TimeoutError: [Errno 60] Operation timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 942, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/cursors.py", line 153, in execute
+    result = self._query(query)
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/cursors.py", line 322, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/connections.py", line 563, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/connections.py", line 825, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/connections.py", line 1199, in read
+    first_packet = self.connection._read_packet()
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/connections.py", line 744, in _read_packet
+    packet_header = self._read_bytes(4)
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/connections.py", line 788, in _read_bytes
+    raise err.OperationalError(
+    ...<2 lines>...
+    )
+pymysql.err.OperationalError: (2013, 'Lost connection to MySQL server during query ([Errno 60] Operation timed out)')
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/timfaith/dev/lq-github/routes/questions.py", line 502, in check_true_false_question
+    q = db.query(TrueFalseQuestion).get(int(question_id))
+  File "<string>", line 2, in get
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/util/deprecations.py", line 386, in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/orm/query.py", line 1126, in get
+    return self._get_impl(ident, loading.load_on_pk_identity)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/orm/query.py", line 1135, in _get_impl
+    return self.session._get_impl(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        mapper,
+        ^^^^^^^
+    ...<6 lines>...
+        execution_options=self._execution_options,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 3874, in _get_impl
+    return db_load_fn(
+        self,
+    ...<5 lines>...
+        bind_arguments=bind_arguments,
+    )
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/orm/loading.py", line 694, in load_on_pk_identity
+    session.execute(
+    ~~~~~~~~~~~~~~~^
+        q,
+        ^^
+    ...<2 lines>...
+        bind_arguments=bind_arguments,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2365, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2251, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1638, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1843, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1983, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2352, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/homebrew/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 942, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/cursors.py", line 153, in execute
+    result = self._query(query)
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/cursors.py", line 322, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/connections.py", line 563, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/connections.py", line 825, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/connections.py", line 1199, in read
+    first_packet = self.connection._read_packet()
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/connections.py", line 744, in _read_packet
+    packet_header = self._read_bytes(4)
+  File "/opt/homebrew/lib/python3.13/site-packages/pymysql/connections.py", line 788, in _read_bytes
+    raise err.OperationalError(
+    ...<2 lines>...
+    )
+sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (2013, 'Lost connection to MySQL server during query ([Errno 60] Operation timed out)')
+[SQL: SELECT true_false_questions.id AS true_false_questions_id, true_false_questions.question AS true_false_questions_question, true_false_questions.correct_answer AS true_false_questions_correct_answer, true_false_questions.hint AS true_false_questions_hint, true_false_questions.quest_id AS true_false_questions_quest_id, true_false_questions.enemy_id AS true_false_questions_enemy_id 
+FROM true_false_questions 
+WHERE true_false_questions.id = %(pk_1)s]
+[parameters: {'pk_1': 2952}]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-11-07 22:30:19,954 - root - INFO - File logging enabled in development mode
+2025-11-07 22:30:19,986 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 22:30:25,699 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:26,127 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:30:28,300 - root - DEBUG - Moving N from (-25,23) → (-25,24)
+2025-11-07 22:30:28,887 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:29,122 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:30,489 - root - DEBUG - Moving N from (-25,24) → (-25,25)
+2025-11-07 22:30:31,093 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:31,318 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:33,493 - root - DEBUG - Moving N from (-25,25) → (-25,26)
+2025-11-07 22:30:34,094 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:34,335 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:35,632 - root - DEBUG - Moving N from (-25,26) → (-25,27)
+2025-11-07 22:30:36,182 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:36,427 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:37,719 - root - DEBUG - Moving N from (-25,27) → (-25,28)
+2025-11-07 22:30:38,380 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:38,600 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:39,545 - root - DEBUG - Moving N from (-25,28) → (-25,29)
+2025-11-07 22:30:40,108 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:40,328 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:41,192 - root - DEBUG - Moving N from (-25,29) → (-25,30)
+2025-11-07 22:30:41,748 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:41,984 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:42,979 - root - DEBUG - Moving N from (-25,30) → (-25,31)
+2025-11-07 22:30:43,562 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:43,797 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:44,793 - root - DEBUG - Moving N from (-25,31) → (-25,32)
+2025-11-07 22:30:45,378 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:45,604 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:46,363 - root - DEBUG - Moving N from (-25,32) → (-25,33)
+2025-11-07 22:30:46,930 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:47,198 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:48,205 - root - DEBUG - Moving N from (-25,33) → (-25,34)
+2025-11-07 22:30:48,907 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:49,246 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:50,226 - root - DEBUG - Moving N from (-25,34) → (-25,35)
+2025-11-07 22:30:50,838 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:51,090 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:52,441 - root - DEBUG - Moving N from (-25,35) → (-25,36)
+2025-11-07 22:30:53,020 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:53,243 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:54,330 - root - DEBUG - Moving N from (-25,36) → (-25,37)
+2025-11-07 22:30:54,933 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:55,172 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:56,132 - root - DEBUG - Moving N from (-25,37) → (-25,38)
+2025-11-07 22:30:56,704 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:30:56,927 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:30:58,118 - root - DEBUG - Moving N from (-25,38) → (-25,39)
+2025-11-07 22:30:58,713 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:31:04,678 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:31:05,158 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:31:06,355 - root - DEBUG - Moving N from (-25,39) → (-25,40)
+2025-11-07 22:31:06,966 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:31:07,210 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:31:08,633 - root - DEBUG - Moving N from (-25,40) → (-25,41)
+2025-11-07 22:31:09,230 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:31:09,462 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:31:10,686 - root - DEBUG - Moving N from (-25,41) → (-25,42)
+2025-11-07 22:31:11,276 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:31:11,508 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:31:12,806 - root - DEBUG - Moving N from (-25,42) → (-25,43)
+2025-11-07 22:31:13,388 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:31:13,632 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:31:14,778 - root - DEBUG - Moving N from (-25,43) → (-25,44)
+2025-11-07 22:31:15,419 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:31:15,657 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:31:17,079 - root - DEBUG - Moving N from (-25,44) → (-25,45)
+2025-11-07 22:31:17,645 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 22:31:17,881 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:31:19,072 - root - DEBUG - Moving N from (-25,45) → (-25,46)
+2025-11-07 22:31:19,669 - root - DEBUG - Combat Probability: 0.11
+2025-11-07 22:31:19,925 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:31:21,060 - root - DEBUG - Moving N from (-25,46) → (-25,47)
+2025-11-07 22:31:21,677 - root - DEBUG - Combat Probability: 0.13
+2025-11-07 22:31:23,998 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:31:24,497 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:31:25,465 - root - DEBUG - Moving N from (-25,47) → (-25,48)
+2025-11-07 22:31:26,021 - root - DEBUG - Combat Probability: 0.15000000000000002
+2025-11-07 22:31:28,121 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:31:28,597 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 22:31:29,880 - root - DEBUG - Moving N from (-25,48) → (-25,49)
+2025-11-07 22:31:30,534 - root - DEBUG - Combat Probability: 0.19
+2025-11-07 22:31:30,784 - root - DEBUG - squire_id=954, quest_id=39
+2025-11-07 22:31:32,063 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 22:31:32,571 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 22:31:32,571 - root - DEBUG - combat_mods → squire=954, enemy=🦑 Contract Kraken, gear=29, special=0, level=10, team_rank_mod=1, total=40
+2025-11-07 22:31:32,704 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 22:31:32,786 - root - DEBUG - Dist / Base / F / M: 1225 4 True  False
+2025-11-07 22:31:32,786 - root - DEBUG - mod_enemy_max_hunger = 11
+2025-11-07 22:31:35,779 - root - INFO - /answer_question qid=39 course=1 review=True prev_boss=32 tf_total=567 mc_total=-1 dialect=mysql
+2025-11-07 22:31:39,066 - root - DEBUG - TF Check: squire=954, qid=3361, user=0, correct=0
+2025-11-07 23:13:17,324 - root - INFO - File logging enabled in development mode
+2025-11-07 23:13:17,351 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 23:13:24,437 - root - DEBUG - DEBUG: Quest Message in Session → []
+2025-11-07 23:13:30,305 - root - DEBUG - DEBUG: Quest Message in Session → []
+2025-11-07 23:13:35,310 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:13:36,305 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:13:38,435 - root - DEBUG - Moving N from (0,0) → (0,1)
+2025-11-07 23:13:38,993 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:13:39,008 - root - DEBUG - Moving N from (0,1) → (0,2)
+2025-11-07 23:13:39,233 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:13:39,562 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:13:39,791 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:13:41,474 - root - DEBUG - Moving E from (0,2) → (1,2)
+2025-11-07 23:13:42,065 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:13:42,301 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:13:43,256 - root - DEBUG - Moving E from (1,2) → (2,2)
+2025-11-07 23:13:43,861 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:13:44,079 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:13:44,644 - root - DEBUG - Moving E from (2,2) → (3,2)
+2025-11-07 23:13:45,232 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:13:45,488 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:13:47,252 - root - DEBUG - Moving E from (3,2) → (4,2)
+2025-11-07 23:13:47,820 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:13:48,053 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:13:49,152 - root - DEBUG - Moving E from (4,2) → (5,2)
+2025-11-07 23:13:49,715 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:13:49,991 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:13:52,532 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:13:53,048 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:13:54,036 - root - DEBUG - Moving E from (5,2) → (6,2)
+2025-11-07 23:13:54,615 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:13:54,831 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:13:55,947 - root - DEBUG - Moving E from (6,2) → (7,2)
+2025-11-07 23:13:56,475 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:13:56,711 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:13:57,691 - root - DEBUG - Moving E from (7,2) → (8,2)
+2025-11-07 23:13:58,242 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:13:58,476 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:13:59,414 - root - DEBUG - Moving E from (8,2) → (9,2)
+2025-11-07 23:13:59,970 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:14:00,209 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:14:01,383 - root - DEBUG - Moving E from (9,2) → (10,2)
+2025-11-07 23:14:01,994 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:14:02,801 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:14:03,951 - root - DEBUG - Moving E from (10,2) → (11,2)
+2025-11-07 23:14:04,505 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:14:04,734 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:17:56,321 - root - DEBUG - Moving N from (11,2) → (11,3)
+2025-11-07 23:17:56,865 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:17:57,105 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:17:58,133 - root - DEBUG - Moving N from (11,3) → (11,4)
+2025-11-07 23:17:58,828 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:17:59,395 - root - DEBUG - Moving N from (11,4) → (11,5)
+2025-11-07 23:17:59,934 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:00,152 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:03,102 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:03,606 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:18:04,821 - root - DEBUG - Moving N from (11,5) → (11,6)
+2025-11-07 23:18:05,423 - root - DEBUG - Combat Probability: 0.09
+2025-11-07 23:18:05,649 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:06,841 - root - DEBUG - Moving E from (11,6) → (12,6)
+2025-11-07 23:18:07,467 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:07,707 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:08,821 - root - DEBUG - Moving E from (12,6) → (13,6)
+2025-11-07 23:18:09,510 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:09,781 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:10,245 - root - DEBUG - Moving E from (13,6) → (14,6)
+2025-11-07 23:18:10,890 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:11,165 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:12,090 - root - DEBUG - Moving E from (14,6) → (15,6)
+2025-11-07 23:18:12,758 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:13,001 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:13,591 - root - DEBUG - Moving E from (15,6) → (16,6)
+2025-11-07 23:18:14,188 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:14,418 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:15,224 - root - DEBUG - Moving E from (16,6) → (17,6)
+2025-11-07 23:18:15,781 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:16,024 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:17,050 - root - DEBUG - Moving E from (17,6) → (18,6)
+2025-11-07 23:18:17,621 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:17,873 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:19,684 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:20,174 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:18:21,192 - root - DEBUG - Moving E from (18,6) → (19,6)
+2025-11-07 23:18:21,758 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:21,982 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:23,083 - root - DEBUG - Moving E from (19,6) → (20,6)
+2025-11-07 23:18:23,652 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:23,884 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:24,864 - root - DEBUG - Moving E from (20,6) → (21,6)
+2025-11-07 23:18:25,484 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:25,712 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:26,437 - root - DEBUG - Moving E from (21,6) → (22,6)
+2025-11-07 23:18:26,999 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:27,220 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:28,207 - root - DEBUG - Moving E from (22,6) → (23,6)
+2025-11-07 23:18:28,786 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:29,004 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:30,178 - root - DEBUG - Moving E from (23,6) → (24,6)
+2025-11-07 23:18:30,738 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:30,995 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:32,355 - root - DEBUG - Moving E from (24,6) → (25,6)
+2025-11-07 23:18:32,882 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:33,101 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:34,273 - root - DEBUG - Moving N from (25,6) → (25,7)
+2025-11-07 23:18:34,844 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:35,074 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:36,154 - root - DEBUG - Moving N from (25,7) → (25,8)
+2025-11-07 23:18:36,728 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:38,836 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:39,281 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:18:40,305 - root - DEBUG - Moving N from (25,8) → (25,9)
+2025-11-07 23:18:40,852 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:42,528 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:42,983 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:18:44,080 - root - DEBUG - Moving N from (25,9) → (25,10)
+2025-11-07 23:18:44,654 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:44,907 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:46,292 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 23:18:46,611 - root - DEBUG - Moving N from (25,10) → (25,11)
+2025-11-07 23:18:46,769 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 23:18:46,769 - root - DEBUG - combat_mods → squire=954, enemy=🧾 Deposition Demon, gear=29, special=0, level=10, team_rank_mod=1, total=40
+2025-11-07 23:18:46,887 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 23:18:46,969 - root - DEBUG - Dist / Base / F / M: 250 4 False  False
+2025-11-07 23:18:46,969 - root - DEBUG - mod_enemy_max_hunger = 6
+2025-11-07 23:18:47,166 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:18:47,397 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:18:49,729 - root - INFO - /answer_question qid=77 course=4 review=True prev_boss=0 tf_total=258 mc_total=-1 dialect=mysql
+2025-11-07 23:18:56,028 - root - DEBUG - TF Check: squire=954, qid=3991, user=1, correct=1
+2025-11-07 23:19:56,264 - root - INFO - File logging enabled in development mode
+2025-11-07 23:19:56,291 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 23:22:15,038 - root - INFO - File logging enabled in development mode
+2025-11-07 23:22:15,064 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 23:22:41,605 - root - INFO - File logging enabled in development mode
+2025-11-07 23:22:41,632 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 23:22:52,379 - root - INFO - File logging enabled in development mode
+2025-11-07 23:22:52,407 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 23:23:38,725 - root - INFO - File logging enabled in development mode
+2025-11-07 23:23:38,753 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 23:24:05,345 - root - INFO - File logging enabled in development mode
+2025-11-07 23:24:05,372 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 23:28:37,733 - root - INFO - File logging enabled in development mode
+2025-11-07 23:28:37,761 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 23:33:32,149 - root - INFO - File logging enabled in development mode
+2025-11-07 23:33:32,176 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 23:34:48,496 - root - INFO - File logging enabled in development mode
+2025-11-07 23:34:48,522 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 23:34:50,701 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:34:51,273 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:34:55,130 - root - DEBUG - Moving N from (25,11) → (25,12)
+2025-11-07 23:34:55,752 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:34:58,277 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:34:58,764 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:34:59,830 - root - DEBUG - Moving N from (25,12) → (25,13)
+2025-11-07 23:35:00,426 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:35:00,684 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:35:02,750 - root - DEBUG - Moving N from (25,13) → (25,14)
+2025-11-07 23:35:03,365 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:35:03,608 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:35:04,717 - root - DEBUG - Moving N from (25,14) → (25,15)
+2025-11-07 23:35:05,319 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:35:05,576 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:35:06,848 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 23:35:07,348 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 23:35:07,348 - root - DEBUG - combat_mods → squire=954, enemy=Bureaucratic Troll, gear=29, special=0, level=10, team_rank_mod=1, total=40
+2025-11-07 23:35:07,467 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 23:35:07,551 - root - DEBUG - Dist / Base / F / M: 375 2 False  False
+2025-11-07 23:35:07,551 - root - DEBUG - mod_enemy_max_hunger = 4
+2025-11-07 23:35:11,014 - root - INFO - /answer_question qid=77 course=4 review=True prev_boss=0 tf_total=258 mc_total=-1 dialect=mysql
+2025-11-07 23:35:20,634 - root - DEBUG - TF Check: squire=954, qid=4066, user=1, correct=0
+2025-11-07 23:35:21,885 - root - DEBUG - degrade_gear → squire=954, weapon_degraded=True, gear_degraded=29
+2025-11-07 23:35:23,557 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:35:24,061 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:35:33,085 - root - INFO - /answer_question qid=77 course=4 review=True prev_boss=0 tf_total=-1 mc_total=136 dialect=mysql
+2025-11-07 23:35:46,500 - root - DEBUG - Check_MC_question qid/user_answer 1380/C
+2025-11-07 23:35:52,292 - root - INFO - /answer_question qid=77 course=4 review=True prev_boss=0 tf_total=-1 mc_total=136 dialect=mysql
+2025-11-07 23:36:07,827 - root - DEBUG - Check_MC_question qid/user_answer 1495/C
+2025-11-07 23:36:13,826 - root - INFO - /answer_question qid=77 course=4 review=True prev_boss=0 tf_total=-1 mc_total=136 dialect=mysql
+2025-11-07 23:36:26,791 - root - DEBUG - Check_MC_question qid/user_answer 1397/A
+2025-11-07 23:36:53,253 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:36:53,763 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:36:55,228 - root - DEBUG - Moving E from (0,0) → (1,0)
+2025-11-07 23:36:55,794 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:36:56,047 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:36:57,006 - root - DEBUG - Moving E from (1,0) → (2,0)
+2025-11-07 23:36:57,626 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:36:57,867 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:36:58,905 - root - DEBUG - Moving E from (2,0) → (3,0)
+2025-11-07 23:36:59,490 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:36:59,725 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:37:00,698 - root - DEBUG - Moving E from (3,0) → (4,0)
+2025-11-07 23:37:01,297 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:37:01,537 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:37:02,618 - root - DEBUG - Moving E from (4,0) → (5,0)
+2025-11-07 23:37:03,250 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:37:03,466 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:37:04,246 - root - DEBUG - Moving E from (5,0) → (6,0)
+2025-11-07 23:37:04,809 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:37:05,049 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:37:06,278 - root - DEBUG - Moving E from (6,0) → (7,0)
+2025-11-07 23:37:06,849 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:37:07,077 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:37:08,353 - root - DEBUG - Moving E from (7,0) → (8,0)
+2025-11-07 23:37:08,938 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:37:09,164 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:37:10,406 - root - DEBUG - Moving E from (8,0) → (9,0)
+2025-11-07 23:37:11,036 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:37:11,301 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:37:12,484 - root - DEBUG - Moving E from (9,0) → (10,0)
+2025-11-07 23:37:13,084 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:37:13,331 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:37:14,409 - root - DEBUG - Moving E from (10,0) → (11,0)
+2025-11-07 23:37:14,991 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:37:15,236 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:37:16,332 - root - DEBUG - Moving E from (11,0) → (12,0)
+2025-11-07 23:37:16,903 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:37:17,139 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:37:53,218 - root - DEBUG - Moving E from (12,0) → (13,0)
+2025-11-07 23:37:53,753 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:37:53,969 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:37:55,434 - root - DEBUG - Moving E from (13,0) → (14,0)
+2025-11-07 23:37:55,985 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:37:56,205 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:37:57,200 - root - DEBUG - Moving E from (14,0) → (15,0)
+2025-11-07 23:37:57,785 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:01,881 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:02,364 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:38:03,425 - root - DEBUG - Moving E from (15,0) → (16,0)
+2025-11-07 23:38:04,018 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:06,143 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:06,684 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:38:07,668 - root - DEBUG - Moving E from (16,0) → (17,0)
+2025-11-07 23:38:08,257 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:08,497 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:09,774 - root - DEBUG - Moving E from (17,0) → (18,0)
+2025-11-07 23:38:10,339 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:10,566 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:11,758 - root - DEBUG - Moving E from (18,0) → (19,0)
+2025-11-07 23:38:12,343 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:12,573 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:13,590 - root - DEBUG - Moving E from (19,0) → (20,0)
+2025-11-07 23:38:14,169 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:14,402 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:14,994 - root - DEBUG - Moving E from (20,0) → (21,0)
+2025-11-07 23:38:15,522 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:15,693 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 23:38:15,720 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:16,188 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 23:38:16,189 - root - DEBUG - combat_mods → squire=954, enemy=Unfriendly Lawyer, gear=25, special=0, level=10, team_rank_mod=1, total=36
+2025-11-07 23:38:16,293 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 23:38:16,374 - root - DEBUG - Dist / Base / F / M: 0 2 False  False
+2025-11-07 23:38:16,374 - root - DEBUG - mod_enemy_max_hunger = 2
+2025-11-07 23:38:16,449 - root - DEBUG - Moving E from (21,0) → (22,0)
+2025-11-07 23:38:16,977 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:17,192 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:20,126 - root - INFO - /answer_question qid=77 course=4 review=True prev_boss=0 tf_total=258 mc_total=-1 dialect=mysql
+2025-11-07 23:38:24,388 - root - DEBUG - TF Check: squire=954, qid=3926, user=0, correct=0
+2025-11-07 23:38:26,788 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:27,279 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:38:28,495 - root - DEBUG - Moving E from (22,0) → (23,0)
+2025-11-07 23:38:29,052 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:29,296 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:30,337 - root - DEBUG - Moving E from (23,0) → (24,0)
+2025-11-07 23:38:30,934 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:31,171 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:32,228 - root - DEBUG - Moving E from (24,0) → (25,0)
+2025-11-07 23:38:32,806 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:33,054 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:34,193 - root - DEBUG - Moving E from (25,0) → (26,0)
+2025-11-07 23:38:34,762 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:34,986 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:35,929 - root - DEBUG - Moving E from (26,0) → (27,0)
+2025-11-07 23:38:36,509 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:36,721 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:37,796 - root - DEBUG - Moving E from (27,0) → (28,0)
+2025-11-07 23:38:38,321 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:38,548 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:39,538 - root - DEBUG - Moving E from (28,0) → (29,0)
+2025-11-07 23:38:40,109 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:40,332 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:41,310 - root - DEBUG - Moving E from (29,0) → (30,0)
+2025-11-07 23:38:41,864 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:42,100 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:43,135 - root - DEBUG - Moving E from (30,0) → (31,0)
+2025-11-07 23:38:43,727 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:43,976 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:44,946 - root - DEBUG - Moving E from (31,0) → (32,0)
+2025-11-07 23:38:45,568 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:45,815 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:46,881 - root - DEBUG - Moving E from (32,0) → (33,0)
+2025-11-07 23:38:47,463 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:47,731 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:48,810 - root - DEBUG - Moving E from (33,0) → (34,0)
+2025-11-07 23:38:49,402 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:50,910 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:51,381 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:38:52,407 - root - DEBUG - Moving E from (34,0) → (35,0)
+2025-11-07 23:38:53,001 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:53,234 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:54,385 - root - DEBUG - Moving E from (35,0) → (36,0)
+2025-11-07 23:38:54,932 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:57,501 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:38:57,984 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:38:59,052 - root - DEBUG - Moving E from (36,0) → (37,0)
+2025-11-07 23:38:59,652 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:38:59,884 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:01,286 - root - DEBUG - Moving E from (37,0) → (38,0)
+2025-11-07 23:39:01,858 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:39:02,096 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:03,252 - root - DEBUG - Moving E from (38,0) → (39,0)
+2025-11-07 23:39:03,907 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:39:04,136 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:05,246 - root - DEBUG - Moving E from (39,0) → (40,0)
+2025-11-07 23:39:05,846 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:39:06,074 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:07,751 - root - DEBUG - Moving N from (40,0) → (40,1)
+2025-11-07 23:39:08,321 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:39:08,570 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:09,652 - root - DEBUG - Moving N from (40,1) → (40,2)
+2025-11-07 23:39:09,809 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 23:39:10,216 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:39:10,295 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 23:39:10,296 - root - DEBUG - combat_mods → squire=954, enemy=🐎 Subpoena Centaur, gear=25, special=0, level=10, team_rank_mod=1, total=36
+2025-11-07 23:39:10,416 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:10,417 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 23:39:10,494 - root - DEBUG - Dist / Base / F / M: 40 6 False  False
+2025-11-07 23:39:10,495 - root - DEBUG - mod_enemy_max_hunger = 6
+2025-11-07 23:39:13,597 - root - INFO - /answer_question qid=77 course=4 review=True prev_boss=0 tf_total=-1 mc_total=136 dialect=mysql
+2025-11-07 23:39:27,964 - root - DEBUG - Check_MC_question qid/user_answer 1505/C
+2025-11-07 23:39:29,170 - root - DEBUG - degrade_gear → squire=954, weapon_degraded=False, gear_degraded=25
+2025-11-07 23:39:30,520 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:31,013 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:39:32,069 - root - DEBUG - Moving N from (40,2) → (40,3)
+2025-11-07 23:39:32,644 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:39:35,007 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:35,524 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:39:36,630 - root - DEBUG - Moving N from (40,3) → (40,4)
+2025-11-07 23:39:37,211 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:39:37,442 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:38,540 - root - DEBUG - Moving N from (40,4) → (40,5)
+2025-11-07 23:39:39,105 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:39:39,331 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:42,291 - root - DEBUG - Moving N from (40,5) → (40,6)
+2025-11-07 23:39:42,854 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:39:43,090 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:44,231 - root - DEBUG - Moving N from (40,6) → (40,7)
+2025-11-07 23:39:44,794 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:39:45,012 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:46,321 - root - DEBUG - Moving N from (40,7) → (40,8)
+2025-11-07 23:39:46,889 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:39:47,121 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:48,129 - root - DEBUG - Moving N from (40,8) → (40,9)
+2025-11-07 23:39:48,364 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 23:39:48,704 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:39:48,901 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 23:39:48,901 - root - DEBUG - combat_mods → squire=954, enemy=🕵️ Lex Lurker, gear=25, special=0, level=10, team_rank_mod=1, total=36
+2025-11-07 23:39:48,947 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:49,005 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 23:39:49,072 - root - DEBUG - Dist / Base / F / M: 360 4 False  False
+2025-11-07 23:39:49,072 - root - DEBUG - mod_enemy_max_hunger = 6
+2025-11-07 23:39:52,853 - root - INFO - /answer_question qid=77 course=4 review=True prev_boss=0 tf_total=258 mc_total=-1 dialect=mysql
+2025-11-07 23:39:56,382 - root - DEBUG - TF Check: squire=954, qid=4001, user=1, correct=1
+2025-11-07 23:39:58,814 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:39:59,302 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:40:00,312 - root - DEBUG - Moving N from (40,9) → (40,10)
+2025-11-07 23:40:00,888 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:01,144 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:02,256 - root - DEBUG - Moving N from (40,10) → (40,11)
+2025-11-07 23:40:02,816 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:03,046 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:04,526 - root - DEBUG - Moving N from (40,11) → (40,12)
+2025-11-07 23:40:05,123 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:05,357 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:06,541 - root - DEBUG - Moving N from (40,12) → (40,13)
+2025-11-07 23:40:07,140 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:07,359 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:08,716 - root - DEBUG - Moving N from (40,13) → (40,14)
+2025-11-07 23:40:09,296 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:09,540 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:15,046 - root - DEBUG - Moving N from (40,14) → (40,15)
+2025-11-07 23:40:15,614 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:15,838 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:16,453 - root - DEBUG - Moving N from (40,15) → (40,16)
+2025-11-07 23:40:17,034 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:17,261 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:18,361 - root - DEBUG - Moving N from (40,16) → (40,17)
+2025-11-07 23:40:18,945 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:19,177 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:20,326 - root - DEBUG - Moving N from (40,17) → (40,18)
+2025-11-07 23:40:20,885 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:21,117 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:22,313 - root - DEBUG - Moving N from (40,18) → (40,19)
+2025-11-07 23:40:22,941 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:23,176 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:24,240 - root - DEBUG - Moving N from (40,19) → (40,20)
+2025-11-07 23:40:24,784 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:25,012 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:26,099 - root - DEBUG - Moving N from (40,20) → (40,21)
+2025-11-07 23:40:26,243 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 23:40:26,660 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:26,736 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 23:40:26,736 - root - DEBUG - combat_mods → squire=954, enemy=🧾 Deposition Demon, gear=25, special=0, level=10, team_rank_mod=1, total=36
+2025-11-07 23:40:26,833 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 23:40:26,892 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:26,916 - root - DEBUG - Dist / Base / F / M: 800 4 False  False
+2025-11-07 23:40:26,917 - root - DEBUG - mod_enemy_max_hunger = 7
+2025-11-07 23:40:30,646 - root - INFO - /answer_question qid=77 course=4 review=True prev_boss=0 tf_total=258 mc_total=-1 dialect=mysql
+2025-11-07 23:40:35,685 - root - DEBUG - TF Check: squire=954, qid=4079, user=1, correct=1
+2025-11-07 23:40:37,844 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:38,265 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:40:39,237 - root - DEBUG - Moving N from (40,21) → (40,22)
+2025-11-07 23:40:39,752 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:39,956 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:40,985 - root - DEBUG - Moving N from (40,22) → (40,23)
+2025-11-07 23:40:41,500 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:41,716 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:42,786 - root - DEBUG - Moving N from (40,23) → (40,24)
+2025-11-07 23:40:43,332 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:43,547 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:44,682 - root - DEBUG - Moving N from (40,24) → (40,25)
+2025-11-07 23:40:45,243 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:45,454 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:47,128 - root - DEBUG - Moving N from (40,25) → (40,26)
+2025-11-07 23:40:47,682 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:47,911 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:49,308 - root - DEBUG - Moving N from (40,26) → (40,27)
+2025-11-07 23:40:49,837 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:50,046 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:51,412 - root - DEBUG - Moving N from (40,27) → (40,28)
+2025-11-07 23:40:51,945 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:52,134 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:53,303 - root - DEBUG - update_work_for_combat → squire=954, work_sessions reset
+2025-11-07 23:40:53,441 - root - DEBUG - Moving N from (40,28) → (40,29)
+2025-11-07 23:40:53,725 - root - DEBUG - Team 3 rank=10, bonus=1
+2025-11-07 23:40:53,725 - root - DEBUG - combat_mods → squire=954, enemy=⚔️ Pro Se Paladin, gear=25, special=0, level=10, team_rank_mod=1, total=36
+2025-11-07 23:40:53,820 - root - DEBUG - hunger_mods → squire=954, count=0
+2025-11-07 23:40:53,887 - root - DEBUG - Dist / Base / F / M: 1120 8 False  False
+2025-11-07 23:40:53,887 - root - DEBUG - mod_enemy_max_hunger = 13
+2025-11-07 23:40:53,954 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:40:54,182 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:40:57,233 - root - INFO - /answer_question qid=77 course=4 review=True prev_boss=0 tf_total=-1 mc_total=136 dialect=mysql
+2025-11-07 23:41:10,674 - root - DEBUG - Check_MC_question qid/user_answer 1503/A
+2025-11-07 23:41:12,838 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:41:13,320 - root - DEBUG - I am on the map just navigating like a navigator does.
+2025-11-07 23:41:14,457 - root - DEBUG - Moving N from (40,29) → (40,30)
+2025-11-07 23:41:15,074 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:41:15,308 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:41:16,562 - root - DEBUG - Moving N from (40,30) → (40,31)
+2025-11-07 23:41:17,147 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:41:17,388 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:41:18,711 - root - DEBUG - Moving N from (40,31) → (40,32)
+2025-11-07 23:41:19,299 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:41:19,563 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:41:39,757 - root - DEBUG - Moving N from (40,32) → (40,33)
+2025-11-07 23:41:40,326 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:41:40,562 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:41:41,585 - root - DEBUG - Moving N from (40,33) → (40,34)
+2025-11-07 23:41:42,206 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:41:42,417 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:41:43,316 - root - DEBUG - Moving N from (40,34) → (40,35)
+2025-11-07 23:41:43,866 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:41:44,090 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:41:45,132 - root - DEBUG - Moving N from (40,35) → (40,36)
+2025-11-07 23:41:45,677 - root - DEBUG - Combat Probability: 0.05
+2025-11-07 23:41:45,904 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:41:46,447 - root - DEBUG - Moving N from (40,36) → (40,37)
+2025-11-07 23:41:46,996 - root - DEBUG - Combat Probability: 0.11
+2025-11-07 23:41:47,228 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:41:48,489 - root - DEBUG - Moving N from (40,37) → (40,38)
+2025-11-07 23:41:49,040 - root - DEBUG - Combat Probability: 0.15000000000000002
+2025-11-07 23:41:49,279 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:41:50,337 - root - DEBUG - Moving N from (40,38) → (40,39)
+2025-11-07 23:41:50,940 - root - DEBUG - Combat Probability: 0.19
+2025-11-07 23:41:51,186 - root - DEBUG - squire_id=954, quest_id=77
+2025-11-07 23:41:52,574 - root - DEBUG - Moving N from (40,39) → (40,40)
+2025-11-07 23:41:53,172 - root - DEBUG - Combat Probability: 0.21000000000000002
+2025-11-07 23:42:06,134 - root - DEBUG - Check_MC_question qid/user_answer 1393/A
+2025-11-07 23:42:18,065 - root - DEBUG - Check_MC_question qid/user_answer 1407/A
+2025-11-07 23:42:31,666 - root - DEBUG - Check_MC_question qid/user_answer 1408/A
+2025-11-07 23:42:44,789 - root - DEBUG - Check_MC_question qid/user_answer 1412/A
+2025-11-07 23:42:48,538 - root - DEBUG - Check_MC_question qid/user_answer 1460/A
+2025-11-07 23:42:54,696 - root - DEBUG - Check_MC_question qid/user_answer 1405/C
+2025-11-07 23:43:03,606 - root - DEBUG - Check_MC_question qid/user_answer 1492/D
+2025-11-07 23:43:11,526 - root - DEBUG - Check_MC_question qid/user_answer 1442/A
+2025-11-07 23:43:20,088 - root - DEBUG - Check_MC_question qid/user_answer 1404/A
+2025-11-07 23:43:36,605 - root - DEBUG - Check_MC_question qid/user_answer 1445/A
+2025-11-07 23:43:55,848 - root - DEBUG - Check_MC_question qid/user_answer 1380/C
+2025-11-07 23:44:08,898 - root - DEBUG - Check_MC_question qid/user_answer 1461/B
+2025-11-07 23:44:16,013 - root - DEBUG - Check_MC_question qid/user_answer 1469/D
+2025-11-07 23:44:35,139 - root - DEBUG - Check_MC_question qid/user_answer 1424/B
+2025-11-07 23:44:47,520 - root - DEBUG - Check_MC_question qid/user_answer 1414/C
+2025-11-07 23:44:59,958 - root - DEBUG - Check_MC_question qid/user_answer 1465/A
+2025-11-07 23:45:10,268 - root - DEBUG - Check_MC_question qid/user_answer 1383/A
+2025-11-07 23:45:11,173 - root - DEBUG - ⚔️ complete_quest start: squire=954, quest=77
+2025-11-07 23:45:11,609 - root - DEBUG - DEBUG: Quest Message in Session → []
+2025-11-07 23:48:13,171 - root - INFO - File logging enabled in development mode
+2025-11-07 23:48:13,200 - werkzeug - WARNING -  * Debugger is active!
+2025-11-07 23:48:34,363 - root - INFO - File logging enabled in development mode
+2025-11-07 23:48:34,393 - werkzeug - WARNING -  * Debugger is active!
