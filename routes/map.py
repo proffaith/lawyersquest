@@ -172,7 +172,7 @@ def insert_dungeon_to_db(room_data, squire_id, quest_id) -> bool:
 
 
 
-def dungeon_exists(squire_id: int, quest_id: int = 39) -> bool:
+def dungeon_exists(squire_id: int, quest_id: int) -> bool:
     db = db_session()
 
     return db.query(DungeonRooms).filter_by(

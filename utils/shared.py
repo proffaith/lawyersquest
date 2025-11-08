@@ -1064,7 +1064,7 @@ from typing import List, Tuple
 
 Coord = Tuple[int, int]
 
-def generate_dungeon(squire_id, quest_id=39, size=10, path_length=50) -> List[Tuple[int, int, str]]:
+def generate_dungeon(squire_id, quest_id, size=10, path_length=50) -> List[Tuple[int, int, str]]:
     """
     Non-overlapping random path in a square bounds: -size+1..size-1 on both axes.
     Robust against dead-ends via backtracking; never infinite-loops.

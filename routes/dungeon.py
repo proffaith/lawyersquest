@@ -22,7 +22,7 @@ from utils.rules import _get_answered_ids,_current_quest_info,_source_quest_ids,
 
 dungeon_bp = Blueprint('dungeon', __name__)
 
-def get_current_dungeon_room(squire_id, pos, quest_id=39):
+def get_current_dungeon_room(squire_id, pos, quest_id):
     x, y = pos
     db = db_session()
 
@@ -33,7 +33,7 @@ def get_current_dungeon_room(squire_id, pos, quest_id=39):
         y=y
     ).first()
 
-def dungeon_room_exists(squire_id, pos, quest_id=39):
+def dungeon_room_exists(squire_id, pos, quest_id):
     x, y = pos
     db = db_session()
     return db.query(DungeonRooms).filter_by(
@@ -133,7 +133,8 @@ def dungeon_map():
 @dungeon_bp.route('/dungeon/move/<direction>', methods=["POST"])
 def move_in_dungeon(direction):
     current_pos = flask_session.get("dungeon_pos")
-    room = get_current_dungeon_room(flask_session["squire_id"], current_pos)
+    quest_id = flask_session.get("quest_id")
+    room = get_current_dungeon_room(flask_session["squire_id"], current_pos, quest_id)
 
     if direction not in room.allowed_directions:
         flash("🚧 A wall blocks your path.")
@@ -141,7 +142,7 @@ def move_in_dungeon(direction):
 
     dx, dy = {"N": (0, -1), "S": (0, 1), "E": (1, 0), "W": (-1, 0)}[direction]
     new_pos = (current_pos[0] + dx, current_pos[1] + dy)
-    if not dungeon_room_exists(flask_session["squire_id"], new_pos):
+    if not dungeon_room_exists(flask_session["squire_id"], new_pos, quest_id):
         flash("That part of the dungeon is shrouded in mystery.")
         return redirect(url_for("dungeon.dungeon_map"))
 
@@ -379,11 +380,11 @@ def check_treasure():
 
 @dungeon_bp.route('/dungeon/boss')
 def boss_battle():
-    """Initialize the dungeon boss encounter for quest 39."""
+    """Initialize the dungeon boss encounter."""
     squire_id = flask_session.get("squire_id")
     quest_id = flask_session.get("quest_id")
 
-    if not squire_id or quest_id != 39:
+    if not squire_id or not quest_id:
         return redirect(url_for("dungeon.dungeon_map"))
 
     db = db_session()
