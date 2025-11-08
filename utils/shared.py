@@ -11,7 +11,7 @@ from db import (
     SquireQuestion, SquireRiddleProgress, Riddle, Enemy, Inventory, WizardItem,
     Job, MapFeature, MultipleChoiceQuestion, TrueFalseQuestion, ShopItem, SquireQuestStatus,
     TeamMessage, TreasureChest, XpThreshold, ChestHint, SquireQuestionAttempt,
-    MapNode
+    MapNode, Skill, SquireSkillPoint, EnemySkillSusceptibility
     )
 
 from sqlalchemy import or_, func, and_, asc, not_, desc, select, case
@@ -2193,12 +2193,69 @@ def calculate_hit_chance(squire_id: int, level: int) -> float:
 # hit_chance = calculate_hit_chance(squire_id=2, level=3)
 # print(f"Hit chance: {hit_chance:.2f}%")
 
+def calculate_skill_bonus(squire_id: int, enemy_name: str, db) -> int:
+    """
+    Calculate combat bonus from skill points allocated to skills that are effective
+    against the given enemy.
+
+    Returns an integer bonus based on:
+    - Squire's allocated skill points for relevant skills
+    - Enemy's susceptibility weight for those skills (typically 50-150, default 100)
+
+    Formula: sum of (skill_points * (weight / 100)) for each applicable skill
+    """
+    # Get the enemy record
+    enemy = db.query(Enemy).filter(Enemy.name == enemy_name).one_or_none()
+    if not enemy:
+        return 0
+
+    # Get all skill susceptibilities for this enemy
+    susceptibilities = (
+        db.query(EnemySkillSusceptibility)
+        .filter(EnemySkillSusceptibility.enemy_id == enemy.id)
+        .all()
+    )
+
+    if not susceptibilities:
+        return 0
+
+    # Get squire's allocated skill points
+    squire_skills = (
+        db.query(SquireSkillPoint)
+        .filter(SquireSkillPoint.squire_id == squire_id)
+        .all()
+    )
+
+    # Create a map of skill_id -> points
+    skill_points_map = {sp.skill_id: sp.points for sp in squire_skills}
+
+    # Calculate total bonus
+    total_bonus = 0
+    for susceptibility in susceptibilities:
+        skill_id = susceptibility.skill_id
+        weight = susceptibility.weight  # typically 50-150, default 100
+        points = skill_points_map.get(skill_id, 0)
+
+        if points > 0:
+            # Each skill point adds (weight/100) to the bonus
+            # e.g., 5 points in a skill with weight 150 = 5 * 1.5 = 7.5 -> 7
+            bonus = int(points * (weight / 100.0))
+            total_bonus += bonus
+            logging.debug(
+                f"Skill bonus: skill_id={skill_id}, points={points}, "
+                f"weight={weight}, bonus={bonus}"
+            )
+
+    return total_bonus
+
+
 def combat_mods(squire_id: int, enemy_name: str, level: int) -> int:
     """
     Calculates combat modifiers:
       - +1 per 'gear' item with uses remaining
       - +5 per 'special' item effective against the given enemy
       - +2 per player level
+      - Bonus based on skill points allocated to skills effective against this enemy
     """
     db = db_session()
     try:
@@ -2256,13 +2313,16 @@ def combat_mods(squire_id: int, enemy_name: str, level: int) -> int:
 
             logging.debug(f"Team {team.id} rank={rank}, bonus={team_rank_mod}")
 
+        # 5) Skill-based bonus
+        skill_mod = calculate_skill_bonus(squire_id, enemy_name, db)
+
         # Final total mods
-        total_mods = base_mod + (enemy_mod * 5) + level_mod + team_rank_mod
+        total_mods = base_mod + (enemy_mod * 5) + level_mod + team_rank_mod + skill_mod
 
         logging.debug(
             f"combat_mods → squire={squire_id}, enemy={enemy_name}, "
             f"gear={base_mod}, special={enemy_mod}, level={level_mod}, "
-            f"team_rank_mod={team_rank_mod}, total={total_mods}"
+            f"team_rank_mod={team_rank_mod}, skill_mod={skill_mod}, total={total_mods}"
         )
 
         return total_mods

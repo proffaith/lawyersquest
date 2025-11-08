@@ -1,7 +1,7 @@
 # routes/skills.py
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from sqlalchemy import select
-from db import db_session, Skill, SquireSkillPoint
+from sqlalchemy import select, func
+from db import db_session, Skill, SquireSkillPoint, LevelSkillGrant
 from flask_login import current_user, login_required
 
 skills_bp = Blueprint("skills", __name__, url_prefix="/skills")
@@ -17,7 +17,7 @@ def get_skill_state(session, squire_id: int, current_level: int):
     # current allocations
     rows = session.execute(
         select(SquireSkillPoint.skill_id, SquireSkillPoint.points)
-        .where(SquireSkillPoint.squire_id == player_id)
+        .where(SquireSkillPoint.squire_id == squire_id)
     ).all()
     allocated = {sid: pts for sid, pts in rows}
     total_allocated = sum(allocated.values())
